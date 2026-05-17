@@ -39,7 +39,7 @@ const styles = {
     left: 0,
     right: 0,
     height: '65px',
-    background: '#000', // black background
+    background: '#000',
     display: 'flex',
     justifyContent: 'space-around',
     alignItems: 'center',
@@ -49,14 +49,14 @@ const styles = {
   item: {
     textAlign: 'center',
     fontSize: '11px',
-    color: '#FF69B4', // hot pink inactive
+    color: '#FF69B4',
     cursor: 'pointer',
     flex: 1
   },
   activeItem: {
     textAlign: 'center',
     fontSize: '11px',
-    color: '#FF1493', // darker hot pink active
+    color: '#FF1493',
     cursor: 'pointer',
     flex: 1
   },
