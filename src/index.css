@@ -30,8 +30,8 @@ input[type="button"],
   border-radius: 8px;
   padding: 10px 16px;
   cursor: pointer;
-  font-weight: 600;
-  font-size: 14px;
+  fontWeight: 600;
+  fontSize: 14px;
   transition: background 0.2s ease;
 }
 
@@ -93,4 +93,18 @@ textarea:focus {
 /* Headings */
 h1, h2, h3, h4, h5, h6 {
   color: #000;
+}
+
+/* Remove default list styles */
+ul, ol {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* Images responsive by default */
+img {
+  max-width: 100%;
+  height: auto;
+  display: block;
 }
