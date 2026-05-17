@@ -10,7 +10,6 @@ function BottomBar() {
     { label: 'Deposit', path: '/deposit', icon: '💳' },
     { label: 'Withdraw', path: '/withdraw', icon: '💰' },
     { label: 'My Team', path: '/team', icon: '👥' },
-    { label: 'Invite', path: '/invite', icon: '📨' },
     { label: 'Settings', path: '/settings', icon: '⚙️' },
   ];
 
@@ -39,30 +38,30 @@ const styles = {
     bottom: 0,
     left: 0,
     right: 0,
-    height: '60px',
-    background: '#fff',
+    height: '65px',
+    background: '#000', // black background
     display: 'flex',
     justifyContent: 'space-around',
     alignItems: 'center',
-    borderTop: '1px solid #ddd',
+    borderTop: '1px solid #222',
     zIndex: 1000
   },
   item: {
     textAlign: 'center',
     fontSize: '11px',
-    color: '#888',
+    color: '#FF69B4', // hot pink inactive
     cursor: 'pointer',
     flex: 1
   },
   activeItem: {
     textAlign: 'center',
     fontSize: '11px',
-    color: '#ff6b35',
+    color: '#FF1493', // darker hot pink active
     cursor: 'pointer',
     flex: 1
   },
   icon: {
-    fontSize: '20px',
+    fontSize: '22px',
     marginBottom: '2px'
   },
   label: {

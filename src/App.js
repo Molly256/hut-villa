@@ -1,14 +1,15 @@
 import React, { useState, useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-dom';
+import BottomBar from './BottomBar'; // add this
+
 import Login from './pages/Login';
 import Register from './pages/Register';
 import Dashboard from './pages/Dashboard';
 import MyTeam from './pages/MyTeam';
 import ManagerContact from './pages/ManagerContact';
 import Invite from './pages/Invite';
-import Downloadapp from './pages/Downloadapp'; // fixed path
+import Downloadapp from './pages/Downloadapp';
 
-// New pages
 import Deposit from './pages/Deposit';
 import Withdraw from './pages/Withdraw';
 import VipTask from './pages/VipTask';
@@ -19,6 +20,40 @@ import ModifyPassword from './pages/ModifyPassword';
 function DashboardWrapper(props) {
   const navigate = useNavigate();
   return <Dashboard {...props} onNavigate={navigate} />;
+}
+
+function AppContent({ user, handleLogout, setUser, rentedHuts, setRentedHuts, avatar, setAvatar }) {
+  const location = useLocation();
+  
+  // Don't show bottom bar on login/register pages
+  const hideBottomBar = !user || ['/', '/login', '/register'].includes(location.pathname);
+
+  return (
+    <div style={{ paddingBottom: hideBottomBar ? 0 : '70px' }}>
+      <Routes>
+        <Route path="/" element={!user ? <Login onLogin={handleLogin} /> : <Navigate to="/dashboard" />} />
+        <Route path="/login" element={!user ? <Login onLogin={handleLogin} /> : <Navigate to="/dashboard" />} />
+        <Route path="/register" element={!user ? <Register onRegister={handleLogin} /> : <Navigate to="/dashboard" />} />
+        
+        <Route path="/dashboard" element={user ? <DashboardWrapper user={user} handleLogout={handleLogout} /> : <Navigate to="/login" />} />
+        <Route path="/team" element={user ? <MyTeam user={user} /> : <Navigate to="/login" />} />
+        <Route path="/contact" element={user ? <ManagerContact /> : <Navigate to="/login" />} />
+        <Route path="/invite" element={user ? <Invite user={user} /> : <Navigate to="/login" />} />
+        <Route path="/download" element={user ? <Downloadapp /> : <Navigate to="/login" />} />
+        
+        <Route path="/deposit" element={user ? <Deposit user={user} setUser={setUser} /> : <Navigate to="/login" />} />
+        <Route path="/withdraw" element={user ? <Withdraw user={user} setUser={setUser} /> : <Navigate to="/login" />} />
+        <Route path="/vip-task" element={user ? <VipTask user={user} setUser={setUser} rentedHuts={rentedHuts} setRentedHuts={setRentedHuts} /> : <Navigate to="/login" />} />
+        <Route path="/bill" element={user ? <Bill /> : <Navigate to="/login" />} />
+        <Route path="/settings" element={user ? <Settings user={user} setUser={setUser} rentedHuts={rentedHuts} setAvatar={setAvatar} avatar={avatar} /> : <Navigate to="/login" />} />
+        <Route path="/modifypassword" element={user ? <ModifyPassword user={user} setUser={setUser} /> : <Navigate to="/login" />} />
+        
+        <Route path="*" element={<Navigate to="/" />} />
+      </Routes>
+
+      {!hideBottomBar && <BottomBar />}
+    </div>
+  );
 }
 
 function App() {
@@ -36,7 +71,6 @@ function App() {
       setUser(parsedUser);
       setAvatar(parsedUser.avatar || 'https://via.placeholder.com/80');
       
-      // Load rented huts for this user
       const huts = localStorage.getItem(`huts_${parsedUser.phone}`);
       setRentedHuts(huts ? JSON.parse(huts) : []);
     }
@@ -67,27 +101,15 @@ function App() {
 
   return (
     <Router>
-      <Routes>
-        <Route path="/" element={!user ? <Login onLogin={handleLogin} /> : <Navigate to="/dashboard" />} />
-        <Route path="/login" element={!user ? <Login onLogin={handleLogin} /> : <Navigate to="/dashboard" />} />
-        <Route path="/register" element={!user ? <Register onRegister={handleLogin} /> : <Navigate to="/dashboard" />} />
-        
-        <Route path="/dashboard" element={user ? <DashboardWrapper user={user} handleLogout={handleLogout} /> : <Navigate to="/login" />} />
-        <Route path="/team" element={user ? <MyTeam user={user} /> : <Navigate to="/login" />} />
-        <Route path="/contact" element={user ? <ManagerContact /> : <Navigate to="/login" />} />
-        <Route path="/invite" element={user ? <Invite user={user} /> : <Navigate to="/login" />} />
-        <Route path="/download" element={user ? <Downloadapp /> : <Navigate to="/login" />} />
-        
-        {/* New routes */}
-        <Route path="/deposit" element={user ? <Deposit user={user} setUser={setUser} /> : <Navigate to="/login" />} />
-        <Route path="/withdraw" element={user ? <Withdraw user={user} setUser={setUser} /> : <Navigate to="/login" />} />
-        <Route path="/vip-task" element={user ? <VipTask user={user} setUser={setUser} rentedHuts={rentedHuts} setRentedHuts={setRentedHuts} /> : <Navigate to="/login" />} />
-        <Route path="/bill" element={user ? <Bill /> : <Navigate to="/login" />} />
-        <Route path="/settings" element={user ? <Settings user={user} setUser={setUser} rentedHuts={rentedHuts} setAvatar={setAvatar} avatar={avatar} /> : <Navigate to="/login" />} />
-        <Route path="/modifypassword" element={user ? <ModifyPassword user={user} setUser={setUser} /> : <Navigate to="/login" />} />
-        
-        <Route path="*" element={<Navigate to="/" />} />
-      </Routes>
+      <AppContent 
+        user={user} 
+        handleLogout={handleLogout} 
+        setUser={setUser}
+        rentedHuts={rentedHuts}
+        setRentedHuts={setRentedHuts}
+        avatar={avatar}
+        setAvatar={setAvatar}
+      />
     </Router>
   );
 }
