@@ -3,14 +3,20 @@ import { useEffect, useState } from 'react';
 
 function Dashboard() {
   const navigate = useNavigate();
-  const [user, setUser] = useState({ nickname: 'User', phone: '', avatar: null });
+  const [user, setUser] = useState({ phone: '', balance: 0 });
 
   useEffect(() => {
-    const savedUser = localStorage.getItem('hutvilla_user');
-    if (savedUser) {
-      const parsed = JSON.parse(savedUser);
-      setUser({ ...parsed });
-    }
+    const loadUser = () => {
+      const savedUser = localStorage.getItem('hutvilla_user');
+      if (savedUser) {
+        setUser(JSON.parse(savedUser));
+      }
+    };
+    loadUser();
+    
+    // Reload data when user returns to this page
+    window.addEventListener('focus', loadUser);
+    return () => window.removeEventListener('focus', loadUser);
   }, []);
 
   const menuItems = [
@@ -26,32 +32,24 @@ function Dashboard() {
 
   return (
     <div style={styles.wrapper}>
-      <div style={styles.header}>
-        <div style={styles.userRow}>
-          <div style={styles.avatar}>
-            {user.avatar ? (
-              <img src={user.avatar} alt="avatar" style={styles.avatarImg} />
-            ) : (
-              <div style={styles.avatarDefault}>👤</div>
-            )}
-          </div>
-          <div style={styles.userInfo}>
-            <div style={styles.phone}>{user.phone || user.nickname || 'User'}</div>
-            <div style={styles.balanceLabel}>Account Balance</div>
-            <div style={styles.balanceAmount}></div>
-          </div>
+      {/* Top white card with user info */}
+      <div style={styles.topCard}>
+        <div style={styles.avatar}>👤</div>
+        <div style={styles.phone}>{user.phone}</div>
+        <div style={styles.balanceLabel}>Account Balance</div>
+        <div style={styles.balanceAmount}>
+          {user.balance ? `${user.balance.toLocaleString()} UGX` : ''}
         </div>
       </div>
 
-      <div style={styles.content}>
-        <div style={styles.grid}>
-          {menuItems.map((item) => (
-            <div key={item.label} onClick={() => navigate(item.path)} style={styles.card}>
-              <div style={styles.icon}>{item.icon}</div>
-              <div style={styles.label}>{item.label}</div>
-            </div>
-          ))}
-        </div>
+      {/* 8 menu icons */}
+      <div style={styles.grid}>
+        {menuItems.map((item) => (
+          <div key={item.label} onClick={() => navigate(item.path)} style={styles.card}>
+            <div style={styles.icon}>{item.icon}</div>
+            <div style={styles.label}>{item.label}</div>
+          </div>
+        ))}
       </div>
     </div>
   );
@@ -59,95 +57,70 @@ function Dashboard() {
 
 const styles = {
   wrapper: {
-    minHeight: '100vh',
     background: '#ff69b4',
-    display: 'flex',
-    flexDirection: 'column',
-    paddingBottom: '60px',
+    padding: '12px',
+    paddingBottom: '70px', // space for bottom nav
+    minHeight: 'auto', // no extra space
   },
-  header: {
-    background: '#ff69b4',
-    padding: '12px 16px 8px',
-  },
-  userRow: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '12px',
+  topCard: {
     background: '#fff',
     borderRadius: '8px',
-    padding: '10px 12px',
+    padding: '16px 12px',
+    textAlign: 'center',
+    marginBottom: '12px',
   },
   avatar: {
-    width: '42px',
-    height: '42px',
+    width: '48px',
+    height: '48px',
     borderRadius: '50%',
-    background: '#fff0f6',
+    background: '#e3f2fd',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    overflow: 'hidden',
-    flexShrink: 0,
-  },
-  avatarImg: {
-    width: '100%',
-    height: '100%',
-    objectFit: 'cover',
-  },
-  avatarDefault: {
-    fontSize: '22px',
-    color: '#ff69b4',
-  },
-  userInfo: {
-    flex: 1,
-    textAlign: 'center',
+    margin: '0 auto 8px',
+    fontSize: '28px',
+    color: '#2196f3',
   },
   phone: {
-    fontSize: '13px',
-    color: '#666',
-    marginBottom: '2px',
+    fontSize: '16px',
+    fontWeight: '600',
+    color: '#333',
+    marginBottom: '4px',
+    minHeight: '20px',
   },
   balanceLabel: {
     fontSize: '12px',
     color: '#999',
   },
   balanceAmount: {
-    fontSize: '18px',
-    fontWeight: '600',
+    fontSize: '20px',
+    fontWeight: '700',
     color: '#ff69b4',
     minHeight: '24px',
-  },
-  content: {
-    background: '#ff69b4',
-    padding: '10px',
-    flex: 1,
+    marginTop: '2px',
   },
   grid: {
     display: 'grid',
     gridTemplateColumns: 'repeat(4, 1fr)',
-    gap: '8px',
+    gap: '10px',
   },
   card: {
     background: '#fff',
-    borderRadius: '6px',
-    padding: '12px 4px',
+    borderRadius: '8px',
+    padding: '14px 6px',
     textAlign: 'center',
     cursor: 'pointer',
-    boxShadow: '0 1px 4px rgba(0,0,0,0.08)',
-    minHeight: '78px',
-    display: 'flex',
-    flexDirection: 'column',
-    justifyContent: 'center',
-    alignItems: 'center',
+    boxShadow: '0 2px 4px rgba(0,0,0,0.06)',
+    transition: 'transform 0.1s',
   },
   icon: {
-    fontSize: '26px',
-    marginBottom: '4px',
+    fontSize: '28px',
+    marginBottom: '6px',
   },
   label: {
-    fontSize: '11px',
+    fontSize: '12px',
     color: '#333',
     fontWeight: '500',
-    lineHeight: '1.1',
   }
 };
 
