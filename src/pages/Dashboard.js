@@ -30,33 +30,26 @@ function Dashboard() {
 
   return (
     <div style={styles.wrapper}>
-      {/* Top white card with user info */}
-      <div style={styles.topCard}>
-        <div style={styles.avatar}>👤</div>
-        <div style={styles.phone}>{user.phone}</div>
-        <div style={styles.balanceLabel}>Account Balance</div>
-        <div style={styles.balanceAmount}>
-          {user.balance ? `${user.balance.toLocaleString()} UGX` : ''}
-        </div>
-      </div>
-
-      {/* 8 menu icons */}
-      <div style={styles.grid}>
-        {menuItems.map((item) => (
-          <div key={item.label} onClick={() => navigate(item.path)} style={styles.card}>
-            <div style={styles.icon}>{item.icon}</div>
-            <div style={styles.label}>{item.label}</div>
+      <div style={styles.overlay}>
+        {/* Top white card with user info */}
+        <div style={styles.topCard}>
+          <div style={styles.avatar}>👤</div>
+          <div style={styles.phone}>{user.phone}</div>
+          <div style={styles.balanceLabel}>Account Balance</div>
+          <div style={styles.balanceAmount}>
+            {user.balance ? `${user.balance.toLocaleString()} UGX` : ''}
           </div>
-        ))}
-      </div>
+        </div>
 
-      {/* Full width banner image */}
-      <div style={styles.bannerWrap}>
-        <img 
-          src="/assets/huts/wallpaper%20hut.jpeg" 
-          alt="Hut Villa" 
-          style={styles.bannerImg}
-        />
+        {/* 8 menu icons */}
+        <div style={styles.grid}>
+          {menuItems.map((item) => (
+            <div key={item.label} onClick={() => navigate(item.path)} style={styles.card}>
+              <div style={styles.icon}>{item.icon}</div>
+              <div style={styles.label}>{item.label}</div>
+            </div>
+          ))}
+        </div>
       </div>
     </div>
   );
@@ -64,10 +57,20 @@ function Dashboard() {
 
 const styles = {
   wrapper: {
-    background: '#ff69b4',
+    backgroundImage: 'url(/assets/huts/wallpaper%20hut.jpeg)',
+    backgroundSize: 'cover',
+    backgroundPosition: 'center',
+    backgroundRepeat: 'no-repeat',
+    backgroundAttachment: 'fixed',
+    minHeight: '100vh',
+    width: '100%',
+  },
+  overlay: {
+    background: 'rgba(255, 105, 180, 0.8)',
+    minHeight: '100vh',
+    width: '100%',
     padding: '12px',
     paddingBottom: '70px',
-    minHeight: '100vh',
     boxSizing: 'border-box',
   },
   topCard: {
@@ -76,6 +79,7 @@ const styles = {
     padding: '16px 12px',
     textAlign: 'center',
     marginBottom: '12px',
+    boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
   },
   avatar: {
     width: '48px',
@@ -111,7 +115,6 @@ const styles = {
     display: 'grid',
     gridTemplateColumns: 'repeat(4, 1fr)',
     gap: '10px',
-    marginBottom: '12px',
   },
   card: {
     background: '#fff',
@@ -119,7 +122,7 @@ const styles = {
     padding: '14px 6px',
     textAlign: 'center',
     cursor: 'pointer',
-    boxShadow: '0 2px 4px rgba(0,0,0,0.06)',
+    boxShadow: '0 2px 6px rgba(0,0,0,0.08)',
   },
   icon: {
     fontSize: '28px',
@@ -130,17 +133,6 @@ const styles = {
     color: '#333',
     fontWeight: '500',
   },
-  bannerWrap: {
-    width: '100%',
-    borderRadius: '8px',
-    overflow: 'hidden',
-  },
-  bannerImg: {
-    width: '100%',
-    height: 'auto',
-    display: 'block',
-    objectFit: 'cover',
-  }
 };
 
 export default Dashboard;
