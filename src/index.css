@@ -54,8 +54,14 @@ button:disabled,
   opacity: 0.7;
 }
 
-/* Icons and links */
+/* Icons and links - force hot pink with !important */
 svg, 
+svg * {
+  color: #ff69b4 !important;
+  fill: #ff69b4 !important;
+  stroke: #ff69b4 !important;
+}
+
 a {
   color: #ff69b4;
 }
