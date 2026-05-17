@@ -13,8 +13,6 @@ function Dashboard() {
       }
     };
     loadUser();
-    
-    // Reload data when user returns to this page
     window.addEventListener('focus', loadUser);
     return () => window.removeEventListener('focus', loadUser);
   }, []);
@@ -51,6 +49,15 @@ function Dashboard() {
           </div>
         ))}
       </div>
+
+      {/* Full width banner image */}
+      <div style={styles.bannerWrap}>
+        <img 
+          src="attachment://0" 
+          alt="Hut Villa" 
+          style={styles.bannerImg}
+        />
+      </div>
     </div>
   );
 }
@@ -59,8 +66,9 @@ const styles = {
   wrapper: {
     background: '#ff69b4',
     padding: '12px',
-    paddingBottom: '70px', // space for bottom nav
-    minHeight: 'auto', // no extra space
+    paddingBottom: '70px',
+    minHeight: '100vh',
+    boxSizing: 'border-box',
   },
   topCard: {
     background: '#fff',
@@ -103,6 +111,7 @@ const styles = {
     display: 'grid',
     gridTemplateColumns: 'repeat(4, 1fr)',
     gap: '10px',
+    marginBottom: '12px',
   },
   card: {
     background: '#fff',
@@ -111,7 +120,6 @@ const styles = {
     textAlign: 'center',
     cursor: 'pointer',
     boxShadow: '0 2px 4px rgba(0,0,0,0.06)',
-    transition: 'transform 0.1s',
   },
   icon: {
     fontSize: '28px',
@@ -121,6 +129,17 @@ const styles = {
     fontSize: '12px',
     color: '#333',
     fontWeight: '500',
+  },
+  bannerWrap: {
+    width: '100%',
+    borderRadius: '8px',
+    overflow: 'hidden',
+  },
+  bannerImg: {
+    width: '100%',
+    height: 'auto',
+    display: 'block',
+    objectFit: 'cover',
   }
 };
 
