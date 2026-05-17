@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-dom';
-import BottomBar from './BottomBar'; // add this
+import BottomBar from './components/BottomBar';
 
 import Login from './pages/Login';
 import Register from './pages/Register';
@@ -22,7 +22,7 @@ function DashboardWrapper(props) {
   return <Dashboard {...props} onNavigate={navigate} />;
 }
 
-function AppContent({ user, handleLogout, setUser, rentedHuts, setRentedHuts, avatar, setAvatar }) {
+function AppContent({ user, handleLogin, handleLogout, setUser, rentedHuts, setRentedHuts, avatar, setAvatar }) {
   const location = useLocation();
   
   // Don't show bottom bar on login/register pages
@@ -103,6 +103,7 @@ function App() {
     <Router>
       <AppContent 
         user={user} 
+        handleLogin={handleLogin}
         handleLogout={handleLogout} 
         setUser={setUser}
         rentedHuts={rentedHuts}
