@@ -54,7 +54,7 @@ button:disabled,
   opacity: 0.7;
 }
 
-/* Icons and links - force hot pink with !important */
+/* Icons and links */
 svg, 
 svg * {
   color: #ff69b4 !important;
@@ -70,7 +70,7 @@ a:hover {
   color: #ff1493;
 }
 
-/* Form inputs on white background */
+/* Form inputs */
 input, 
 select, 
 textarea {

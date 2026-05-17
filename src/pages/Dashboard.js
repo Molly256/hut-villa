@@ -57,7 +57,7 @@ function Dashboard() {
 
 const styles = {
   wrapper: {
-    backgroundImage: 'url(/assets/huts/wallpaper%20hut.jpeg)',
+    backgroundImage: 'url(/assets/huts/hut-bg.jpg)',
     backgroundSize: 'cover',
     backgroundPosition: 'center',
     backgroundRepeat: 'no-repeat',
