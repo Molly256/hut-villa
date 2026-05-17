@@ -3,10 +3,7 @@ import { useEffect, useState } from 'react';
 
 function Dashboard() {
   const navigate = useNavigate();
-  const [user, setUser] = useState({ 
-    nickname: 'User', 
-    avatar: null 
-  });
+  const [user, setUser] = useState({ nickname: 'User', phone: '', avatar: null });
 
   useEffect(() => {
     const savedUser = localStorage.getItem('hutvilla_user');
@@ -16,19 +13,21 @@ function Dashboard() {
     }
   }, []);
 
-  // Only 5 center icons as requested
   const menuItems = [
     { label: 'Deposit', icon: '💳', path: '/deposit' },
     { label: 'Withdraw', icon: '💸', path: '/withdraw' },
     { label: 'VIP Task', icon: '🏠', path: '/vip-task' },
     { label: 'Transactions', icon: '📄', path: '/bill' },
     { label: 'Invite', icon: '📨', path: '/invite' },
+    { label: 'My Team', icon: '👥', path: '/team' },
+    { label: 'Manager Contact', icon: '📞', path: '/contact' },
+    { label: 'Settings', icon: '⚙️', path: '/settings' },
   ];
 
   return (
     <div style={styles.wrapper}>
       <div style={styles.header}>
-        <div style={styles.userBar}>
+        <div style={styles.userRow}>
           <div style={styles.avatar}>
             {user.avatar ? (
               <img src={user.avatar} alt="avatar" style={styles.avatarImg} />
@@ -36,7 +35,11 @@ function Dashboard() {
               <div style={styles.avatarDefault}>👤</div>
             )}
           </div>
-          <span style={styles.username}>{user.nickname || 'User'}</span>
+          <div style={styles.userInfo}>
+            <div style={styles.phone}>{user.phone || user.nickname || 'User'}</div>
+            <div style={styles.balanceLabel}>Account Balance</div>
+            <div style={styles.balanceAmount}></div>
+          </div>
         </div>
       </div>
 
@@ -57,27 +60,33 @@ function Dashboard() {
 const styles = {
   wrapper: {
     minHeight: '100vh',
-    background: '#ff69b4', // hot pink background
+    background: '#ff69b4',
+    display: 'flex',
+    flexDirection: 'column',
+    paddingBottom: '60px',
   },
   header: {
     background: '#ff69b4',
-    padding: '15px 20px',
-    color: '#fff',
+    padding: '12px 16px 8px',
   },
-  userBar: {
+  userRow: {
     display: 'flex',
     alignItems: 'center',
-    gap: '10px',
+    gap: '12px',
+    background: '#fff',
+    borderRadius: '8px',
+    padding: '10px 12px',
   },
   avatar: {
-    width: '40px',
-    height: '40px',
+    width: '42px',
+    height: '42px',
     borderRadius: '50%',
-    background: '#fff',
+    background: '#fff0f6',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
     overflow: 'hidden',
+    flexShrink: 0,
   },
   avatarImg: {
     width: '100%',
@@ -85,39 +94,60 @@ const styles = {
     objectFit: 'cover',
   },
   avatarDefault: {
-    fontSize: '20px',
+    fontSize: '22px',
+    color: '#ff69b4',
   },
-  username: {
-    fontSize: '16px',
+  userInfo: {
+    flex: 1,
+    textAlign: 'center',
+  },
+  phone: {
+    fontSize: '13px',
+    color: '#666',
+    marginBottom: '2px',
+  },
+  balanceLabel: {
+    fontSize: '12px',
+    color: '#999',
+  },
+  balanceAmount: {
+    fontSize: '18px',
     fontWeight: '600',
-    color: '#fff',
+    color: '#ff69b4',
+    minHeight: '24px',
   },
   content: {
     background: '#ff69b4',
-    padding: '15px',
+    padding: '10px',
+    flex: 1,
   },
   grid: {
     display: 'grid',
     gridTemplateColumns: 'repeat(4, 1fr)',
-    gap: '12px',
+    gap: '8px',
   },
   card: {
     background: '#fff',
-    borderRadius: '8px',
-    padding: '18px 10px',
+    borderRadius: '6px',
+    padding: '12px 4px',
     textAlign: 'center',
     cursor: 'pointer',
-    boxShadow: '0 2px 6px rgba(0,0,0,0.1)',
+    boxShadow: '0 1px 4px rgba(0,0,0,0.08)',
+    minHeight: '78px',
+    display: 'flex',
+    flexDirection: 'column',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   icon: {
-    fontSize: '32px', // larger emoji for visibility
-    marginBottom: '6px',
-    filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.15))', // makes emoji pop on pink
+    fontSize: '26px',
+    marginBottom: '4px',
   },
   label: {
-    fontSize: '13px',
+    fontSize: '11px',
     color: '#333',
     fontWeight: '500',
+    lineHeight: '1.1',
   }
 };
 
