@@ -53,7 +53,7 @@ function Dashboard() {
       {/* Full width banner image */}
       <div style={styles.bannerWrap}>
         <img 
-          src="attachment://0" 
+          src="/assets/huts/wallpaper%20hut.jpeg" 
           alt="Hut Villa" 
           style={styles.bannerImg}
         />
