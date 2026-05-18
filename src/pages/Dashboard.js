@@ -50,50 +50,48 @@ function Dashboard() {
   ];
 
   return (
-    <div style={styles.pageWrapper}>
-      <div style={styles.phoneFrame}>
-        <div style={styles.overlay}>
-          {/* Top white card with user info */}
-          <div style={styles.topCard}>
-            <div style={styles.avatarCircle} onClick={() => fileInputRef.current.click()}>
-              {user.avatar? (
-                <img src={user.avatar} alt="avatar" style={styles.avatarImg} />
-              ) : (
-                <div style={styles.avatarPlaceholder}>👤</div>
-              )}
-            </div>
-            <input
-              type="file"
-              ref={fileInputRef}
-              style={{ display: 'none' }}
-              accept="image/*"
-              onChange={handleAvatarChange}
-            />
-
-            <div style={styles.nickname}>{user.nickname || 'User'}</div>
-            <div style={styles.phone}>{user.phone}</div>
-            <div style={styles.balance}>{user.balance? `${user.balance.toLocaleString()} UGX` : '0 UGX'}</div>
+    <div style={styles.wrapper}>
+      <div style={styles.overlay}>
+        {/* Top white card with user info */}
+        <div style={styles.topCard}>
+          <div style={styles.avatarCircle} onClick={() => fileInputRef.current.click()}>
+            {user.avatar? (
+              <img src={user.avatar} alt="avatar" style={styles.avatarImg} />
+            ) : (
+              <div style={styles.avatarPlaceholder}>👤</div>
+            )}
           </div>
+          <input
+            type="file"
+            ref={fileInputRef}
+            style={{ display: 'none' }}
+            accept="image/*"
+            onChange={handleAvatarChange}
+          />
 
-          {/* 8 menu icons */}
-          <div style={styles.grid}>
-            {menuItems.map((item) => (
-              <div key={item.label} onClick={() => navigate(item.path)} style={styles.card}>
-                <div style={styles.icon}>{item.icon}</div>
-                <div style={styles.label}>{item.label}</div>
-              </div>
-            ))}
-          </div>
+          <div style={styles.nickname}>{user.nickname || 'User'}</div>
+          <div style={styles.phone}>{user.phone}</div>
+          <div style={styles.balance}>{user.balance? `${user.balance.toLocaleString()} UGX` : '0 UGX'}</div>
+        </div>
 
-          {/* Rotating notice */}
-          <div style={styles.noticeWrapper}>
-            <div style={styles.notice}>
-              Welcome to Hut Villa site invest with confidence 🎉🎉🎊
+        {/* 8 menu icons */}
+        <div style={styles.grid}>
+          {menuItems.map((item) => (
+            <div key={item.label} onClick={() => navigate(item.path)} style={styles.card}>
+              <div style={styles.icon}>{item.icon}</div>
+              <div style={styles.label}>{item.label}</div>
             </div>
+          ))}
+        </div>
+
+        {/* Rotating notice */}
+        <div style={styles.noticeWrapper}>
+          <div style={styles.notice}>
+            Welcome to Hut Villa site invest with confidence 🎉🎉🎊
           </div>
         </div>
 
-        {/* Bottom bar inside phone frame */}
+        {/* Bottom bar */}
         <div style={styles.bottomBar}>
           {bottomNav.map((item) => (
             <div key={item.label} style={styles.navItem} onClick={() => navigate(item.path)}>
@@ -108,41 +106,25 @@ function Dashboard() {
 }
 
 const styles = {
-  pageWrapper: {
-    minHeight: '100vh',
-    width: '100%',
-    background: '#000',
-    display: 'flex',
-    justifyContent: 'center',
-    alignItems: 'flex-start',
-    padding: '20px 0',
-  },
-  phoneFrame: {
-    width: '100%',
-    maxWidth: '420px',
-    height: '100vh',
-    maxHeight: '900px',
+  wrapper: {
     backgroundImage: 'url(/bg.jpg)',
     backgroundSize: 'cover',
     backgroundPosition: 'center',
     backgroundRepeat: 'no-repeat',
+    backgroundAttachment: 'fixed',
+    minHeight: '100vh',
+    width: '100%',
     position: 'relative',
-    overflow: 'hidden',
-    boxShadow: '0 0 30px rgba(0,0,0,0.4)',
-    borderRadius: '24px',
-    display: 'flex',
-    flexDirection: 'column',
   },
   overlay: {
     background: 'rgba(0, 0, 0, 0.35)',
-    flex: 1,
+    minHeight: '100vh',
     width: '100%',
-    padding: '16px 16px 16px',
+    padding: '16px 16px 80px',
     boxSizing: 'border-box',
     display: 'flex',
     flexDirection: 'column',
     justifyContent: 'space-between',
-    overflowY: 'auto',
   },
   topCard: {
     background: '#fff',
@@ -240,14 +222,17 @@ const styles = {
     animation: 'marquee 12s linear infinite',
   },
   bottomBar: {
+    position: 'fixed',
+    bottom: 0,
+    left: 0,
+    right: 0,
     height: '64px',
     background: '#fff',
     display: 'flex',
     justifyContent: 'space-around',
     alignItems: 'center',
     borderTop: '1px solid #eee',
-    borderBottomLeftRadius: '24px',
-    borderBottomRightRadius: '24px',
+    zIndex: 100,
   },
   navItem: {
     display: 'flex',
