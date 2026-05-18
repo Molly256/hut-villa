@@ -1,0 +1,57 @@
+.download-section {
+  display: flex;
+  justify-content: center;
+  padding: 50px 20px;
+  background: linear-gradient(135deg, #fff5f8 0%, #ffe6f0 100%);
+}
+
+.download-content {
+  text-align: center;
+  max-width: 500px;
+  background: white;
+  padding: 40px 30px;
+  border-radius: 20px;
+  box-shadow: 0 8px 24px rgba(255, 194, 209, 0.3);
+}
+
+.download-content h2 {
+  color: #d63384;
+  margin-bottom: 12px;
+  font-size: 28px;
+}
+
+.download-content p {
+  color: #555;
+  font-size: 16px;
+  line-height: 1.6;
+  margin-bottom: 20px;
+}
+
+.install-btn {
+  background: #d63384;
+  color: white;
+  border: none;
+  padding: 14px 32px;
+  font-size: 16px;
+  font-weight: 600;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: transform 0.2s, background 0.2s;
+}
+
+.install-btn:hover {
+  background: #b0256a;
+  transform: translateY(-2px);
+}
+
+.install-steps {
+  margin-top: 25px;
+  padding-top: 20px;
+  border-top: 1px solid #f0f0f0;
+  font-size: 14px;
+  color: #666;
+}
+
+.install-steps p {
+  margin: 5px 0;
+}

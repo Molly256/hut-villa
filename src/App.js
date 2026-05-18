@@ -6,7 +6,7 @@ import Dashboard from './pages/Dashboard';
 import MyTeam from './pages/MyTeam';
 import ManagerContact from './pages/ManagerContact';
 import Invite from './pages/Invite';
-import Download from './pages/Download';
+import Downloadapp from './pages/Downloadapp'; // fixed path
 
 // New pages
 import Deposit from './pages/Deposit';
@@ -76,7 +76,7 @@ function App() {
         <Route path="/team" element={user ? <MyTeam user={user} /> : <Navigate to="/login" />} />
         <Route path="/contact" element={user ? <ManagerContact /> : <Navigate to="/login" />} />
         <Route path="/invite" element={user ? <Invite user={user} /> : <Navigate to="/login" />} />
-        <Route path="/download" element={user ? <Download /> : <Navigate to="/login" />} />
+        <Route path="/download" element={user ? <Downloadapp /> : <Navigate to="/login" />} />
         
         {/* New routes */}
         <Route path="/deposit" element={user ? <Deposit user={user} setUser={setUser} /> : <Navigate to="/login" />} />
