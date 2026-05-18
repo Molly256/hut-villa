@@ -1,9 +1,10 @@
 import { useNavigate } from 'react-router-dom';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 
 function Dashboard() {
   const navigate = useNavigate();
-  const [user, setUser] = useState({ phone: '', balance: 0 });
+  const fileInputRef = useRef(null);
+  const [user, setUser] = useState({ phone: '', balance: 0, nickname: '', avatar: '' });
 
   useEffect(() => {
     const loadUser = () => {
@@ -16,6 +17,19 @@ function Dashboard() {
     window.addEventListener('focus', loadUser);
     return () => window.removeEventListener('focus', loadUser);
   }, []);
+
+  const handleAvatarChange = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      const updatedUser = {...user, avatar: reader.result };
+      setUser(updatedUser);
+      localStorage.setItem('hutvilla_user', JSON.stringify(updatedUser));
+    };
+    reader.readAsDataURL(file);
+  };
 
   const menuItems = [
     { label: 'Deposit', icon: '💳', path: '/deposit' },
@@ -33,12 +47,24 @@ function Dashboard() {
       <div style={styles.overlay}>
         {/* Top white card with user info */}
         <div style={styles.topCard}>
-          <div style={styles.avatar}>👤</div>
-          <div style={styles.phone}>{user.phone}</div>
-          <div style={styles.balanceLabel}>Account Balance</div>
-          <div style={styles.balanceAmount}>
-            {user.balance ? `${user.balance.toLocaleString()} UGX` : ''}
+          <div style={styles.avatarCircle} onClick={() => fileInputRef.current.click()}>
+            {user.avatar? (
+              <img src={user.avatar} alt="avatar" style={styles.avatarImg} />
+            ) : (
+              <div style={styles.avatarPlaceholder}>👤</div>
+            )}
           </div>
+          <input
+            type="file"
+            ref={fileInputRef}
+            style={{ display: 'none' }}
+            accept="image/*"
+            onChange={handleAvatarChange}
+          />
+
+          <div style={styles.nickname}>{user.nickname || 'User'}</div>
+          <div style={styles.phone}>{user.phone}</div>
+          <div style={styles.balance}>{user.balance? `${user.balance.toLocaleString()} UGX` : '0 UGX'}</div>
         </div>
 
         {/* 8 menu icons */}
@@ -51,7 +77,7 @@ function Dashboard() {
           ))}
         </div>
 
-        {/* Rotating notice - now centered in the middle space */}
+        {/* Rotating notice */}
         <div style={styles.noticeWrapper}>
           <div style={styles.notice}>
             Welcome to Hut Villa site invest with confidence 🎉🎉🎊
@@ -81,45 +107,54 @@ const styles = {
     boxSizing: 'border-box',
     display: 'flex',
     flexDirection: 'column',
-    justifyContent: 'space-between', // distributes space so notice sits in the middle
+    justifyContent: 'space-between',
   },
   topCard: {
     background: '#fff',
     borderRadius: '10px',
-    padding: '18px 12px',
+    padding: '20px 12px',
     textAlign: 'center',
     marginBottom: '20px',
     boxShadow: '0 2px 8px rgba(0,0,0,0.12)',
   },
-  avatar: {
-    width: '48px',
-    height: '48px',
+  avatarCircle: {
+    width: '70px',
+    height: '70px',
     borderRadius: '50%',
+    margin: '0 auto 10px',
     background: '#e3f2fd',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    margin: '0 auto 8px',
-    fontSize: '28px',
+    overflow: 'hidden',
+    cursor: 'pointer',
+    border: '2px solid #ff69b4',
+  },
+  avatarImg: {
+    width: '100%',
+    height: '100%',
+    objectFit: 'cover',
+  },
+  avatarPlaceholder: {
+    fontSize: '36px',
     color: '#2196f3',
   },
-  phone: {
-    fontSize: '16px',
-    fontWeight: '600',
+  nickname: {
+    fontSize: '18px',
+    fontWeight: '700',
     color: '#333',
     marginBottom: '4px',
-    minHeight: '20px',
   },
-  balanceLabel: {
-    fontSize: '12px',
-    color: '#999',
+  phone: {
+    fontSize: '15px',
+    fontWeight: '500',
+    color: '#555',
+    marginBottom: '6px',
   },
-  balanceAmount: {
+  balance: {
     fontSize: '20px',
     fontWeight: '700',
     color: '#ff69b4',
-    minHeight: '24px',
-    marginTop: '2px',
   },
   grid: {
     display: 'grid',
@@ -127,7 +162,6 @@ const styles = {
     gap: '18px',
     marginTop: '42px',
     alignContent: 'start',
-    // removed flexGrow: 1
   },
   card: {
     background: '#fff',
@@ -172,8 +206,7 @@ const styles = {
   },
 };
 
-// Inject keyframes for marquee animation
-if (typeof document !== 'undefined') {
+if (typeof document!== 'undefined') {
   const styleSheet = document.createElement('style');
   styleSheet.innerText = `
     @keyframes marquee {
