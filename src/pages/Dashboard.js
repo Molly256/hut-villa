@@ -50,6 +50,13 @@ function Dashboard() {
             </div>
           ))}
         </div>
+
+        {/* Rotating notice */}
+        <div style={styles.noticeWrapper}>
+          <div style={styles.notice}>
+            Welcome to Hut Villa site invest with confidence 🎉🎉🎊
+          </div>
+        </div>
       </div>
     </div>
   );
@@ -70,7 +77,7 @@ const styles = {
     background: 'rgba(0, 0, 0, 0.35)',
     minHeight: '100vh',
     width: '100%',
-    padding: '16px 16px 80px', // more side padding
+    padding: '16px 16px 80px',
     boxSizing: 'border-box',
     display: 'flex',
     flexDirection: 'column',
@@ -116,8 +123,8 @@ const styles = {
   grid: {
     display: 'grid',
     gridTemplateColumns: 'repeat(4, 1fr)',
-    gap: '18px', // increased gap so they're not close
-    marginTop: '42px', // lowered them more
+    gap: '18px',
+    marginTop: '42px',
     flexGrow: 1,
     alignContent: 'start',
   },
@@ -128,7 +135,7 @@ const styles = {
     textAlign: 'center',
     cursor: 'pointer',
     boxShadow: '0 3px 8px rgba(0,0,0,0.12)',
-    minHeight: '98px', // taller cards fill space better
+    minHeight: '98px',
     display: 'flex',
     flexDirection: 'column',
     justifyContent: 'center',
@@ -144,6 +151,36 @@ const styles = {
     fontWeight: '500',
     lineHeight: '1.2',
   },
+  noticeWrapper: {
+    marginTop: 'auto',
+    marginBottom: '20px',
+    overflow: 'hidden',
+    width: '100%',
+    background: '#000',
+    padding: '10px 0',
+    borderRadius: '8px',
+  },
+  notice: {
+    display: 'inline-block',
+    whiteSpace: 'nowrap',
+    color: '#ff69b4',
+    fontSize: '15px',
+    fontWeight: '700',
+    letterSpacing: '0.5px',
+    animation: 'marquee 12s linear infinite',
+  },
 };
+
+// Inject keyframes for marquee animation
+if (typeof document !== 'undefined') {
+  const styleSheet = document.createElement('style');
+  styleSheet.innerText = `
+    @keyframes marquee {
+      0% { transform: translateX(100%); }
+      100% { transform: translateX(-100%); }
+    }
+  `;
+  document.head.appendChild(styleSheet);
+}
 
 export default Dashboard;
