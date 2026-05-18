@@ -70,7 +70,7 @@ const styles = {
     background: 'rgba(0, 0, 0, 0.35)',
     minHeight: '100vh',
     width: '100%',
-    padding: '16px 12px 80px',
+    padding: '16px 16px 80px', // more side padding
     boxSizing: 'border-box',
     display: 'flex',
     flexDirection: 'column',
@@ -116,27 +116,27 @@ const styles = {
   grid: {
     display: 'grid',
     gridTemplateColumns: 'repeat(4, 1fr)',
-    gap: '12px',
-    marginTop: '28px', // pushes buttons down
-    flexGrow: 1, // lets grid fill the middle space
+    gap: '18px', // increased gap so they're not close
+    marginTop: '42px', // lowered them more
+    flexGrow: 1,
     alignContent: 'start',
   },
   card: {
     background: '#fff',
-    borderRadius: '10px',
-    padding: '16px 8px',
+    borderRadius: '12px',
+    padding: '18px 10px',
     textAlign: 'center',
     cursor: 'pointer',
-    boxShadow: '0 2px 6px rgba(0,0,0,0.1)',
-    minHeight: '92px', // makes cards taller to fill space
+    boxShadow: '0 3px 8px rgba(0,0,0,0.12)',
+    minHeight: '98px', // taller cards fill space better
     display: 'flex',
     flexDirection: 'column',
     justifyContent: 'center',
     alignItems: 'center',
   },
   icon: {
-    fontSize: '30px',
-    marginBottom: '8px',
+    fontSize: '32px',
+    marginBottom: '10px',
   },
   label: {
     fontSize: '12px',
