@@ -57,7 +57,7 @@ function Dashboard() {
 
 const styles = {
   wrapper: {
-    backgroundImage: 'url(/bg.jpg)',  // updated path
+    backgroundImage: 'url(/bg.jpg)',
     backgroundSize: 'cover',
     backgroundPosition: 'center',
     backgroundRepeat: 'no-repeat',
@@ -67,7 +67,7 @@ const styles = {
     position: 'relative',
   },
   overlay: {
-    background: 'rgba(255, 105, 180, 0.65)',
+    background: 'rgba(0, 0, 0, 0.35)',
     minHeight: '100vh',
     width: '100%',
     padding: '12px',
