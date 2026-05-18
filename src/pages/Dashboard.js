@@ -32,9 +32,7 @@ function Dashboard() {
   };
 
   const handleDownloadApp = () => {
-    // Change this to your actual APK/download link
-    const appUrl = 'https://your-app-download-link.com';
-    window.open(appUrl, '_blank');
+    navigate('/download');
   };
 
   const menuItems = [
@@ -46,7 +44,7 @@ function Dashboard() {
     { label: 'My Team', icon: '👥', path: '/team' },
     { label: 'Manager Contact', icon: '📞', path: '/contact' },
     { label: 'Settings', icon: '⚙️', path: '/settings' },
-    { label: 'Download App', icon: '📱', action: handleDownloadApp }, // new button
+    { label: 'Download App', icon: '📱', action: handleDownloadApp },
   ];
 
   const bottomNav = [
@@ -81,7 +79,7 @@ function Dashboard() {
           <div style={styles.balance}>{user.balance? `${user.balance.toLocaleString()} UGX` : '0 UGX'}</div>
         </div>
 
-        {/* Rotating notice - now above icons */}
+        {/* Rotating notice */}
         <div style={styles.noticeWrapper}>
           <div style={styles.notice}>
             Welcome to Hut Villa site invest with confidence 🎉🎉🎊
