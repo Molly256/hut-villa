@@ -43,44 +43,46 @@ function Dashboard() {
   ];
 
   return (
-    <div style={styles.wrapper}>
-      <div style={styles.overlay}>
-        {/* Top white card with user info */}
-        <div style={styles.topCard}>
-          <div style={styles.avatarCircle} onClick={() => fileInputRef.current.click()}>
-            {user.avatar? (
-              <img src={user.avatar} alt="avatar" style={styles.avatarImg} />
-            ) : (
-              <div style={styles.avatarPlaceholder}>👤</div>
-            )}
-          </div>
-          <input
-            type="file"
-            ref={fileInputRef}
-            style={{ display: 'none' }}
-            accept="image/*"
-            onChange={handleAvatarChange}
-          />
-
-          <div style={styles.nickname}>{user.nickname || 'User'}</div>
-          <div style={styles.phone}>{user.phone}</div>
-          <div style={styles.balance}>{user.balance? `${user.balance.toLocaleString()} UGX` : '0 UGX'}</div>
-        </div>
-
-        {/* 8 menu icons */}
-        <div style={styles.grid}>
-          {menuItems.map((item) => (
-            <div key={item.label} onClick={() => navigate(item.path)} style={styles.card}>
-              <div style={styles.icon}>{item.icon}</div>
-              <div style={styles.label}>{item.label}</div>
+    <div style={styles.pageWrapper}>
+      <div style={styles.phoneFrame}>
+        <div style={styles.overlay}>
+          {/* Top white card with user info */}
+          <div style={styles.topCard}>
+            <div style={styles.avatarCircle} onClick={() => fileInputRef.current.click()}>
+              {user.avatar? (
+                <img src={user.avatar} alt="avatar" style={styles.avatarImg} />
+              ) : (
+                <div style={styles.avatarPlaceholder}>👤</div>
+              )}
             </div>
-          ))}
-        </div>
+            <input
+              type="file"
+              ref={fileInputRef}
+              style={{ display: 'none' }}
+              accept="image/*"
+              onChange={handleAvatarChange}
+            />
 
-        {/* Rotating notice */}
-        <div style={styles.noticeWrapper}>
-          <div style={styles.notice}>
-            Welcome to Hut Villa site invest with confidence 🎉🎉🎊
+            <div style={styles.nickname}>{user.nickname || 'User'}</div>
+            <div style={styles.phone}>{user.phone}</div>
+            <div style={styles.balance}>{user.balance? `${user.balance.toLocaleString()} UGX` : '0 UGX'}</div>
+          </div>
+
+          {/* 8 menu icons */}
+          <div style={styles.grid}>
+            {menuItems.map((item) => (
+              <div key={item.label} onClick={() => navigate(item.path)} style={styles.card}>
+                <div style={styles.icon}>{item.icon}</div>
+                <div style={styles.label}>{item.label}</div>
+              </div>
+            ))}
+          </div>
+
+          {/* Rotating notice */}
+          <div style={styles.noticeWrapper}>
+            <div style={styles.notice}>
+              Welcome to Hut Villa site invest with confidence 🎉🎉🎊
+            </div>
           </div>
         </div>
       </div>
@@ -89,15 +91,27 @@ function Dashboard() {
 }
 
 const styles = {
-  wrapper: {
+  pageWrapper: {
+    minHeight: '100vh',
+    width: '100%',
+    background: '#000',
+    display: 'flex',
+    justifyContent: 'center',
+    alignItems: 'flex-start',
+    padding: '20px 0',
+  },
+  phoneFrame: {
+    width: '100%',
+    maxWidth: '420px',
+    minHeight: '100vh',
     backgroundImage: 'url(/bg.jpg)',
     backgroundSize: 'cover',
     backgroundPosition: 'center',
     backgroundRepeat: 'no-repeat',
-    backgroundAttachment: 'fixed',
-    minHeight: '100vh',
-    width: '100%',
     position: 'relative',
+    overflow: 'hidden',
+    boxShadow: '0 0 30px rgba(0,0,0,0.4)',
+    borderRadius: '24px',
   },
   overlay: {
     background: 'rgba(0, 0, 0, 0.35)',
