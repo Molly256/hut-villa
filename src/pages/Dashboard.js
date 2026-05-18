@@ -57,21 +57,23 @@ function Dashboard() {
 
 const styles = {
   wrapper: {
-    backgroundImage: 'url(/assets/huts/hut-bg.jpg)',
+    backgroundImage: 'url(/bg.jpg)',  // updated path
     backgroundSize: 'cover',
     backgroundPosition: 'center',
     backgroundRepeat: 'no-repeat',
     backgroundAttachment: 'fixed',
     minHeight: '100vh',
     width: '100%',
+    position: 'relative',
   },
   overlay: {
-    background: 'rgba(255, 105, 180, 0.8)',
+    background: 'rgba(255, 105, 180, 0.65)',
     minHeight: '100vh',
     width: '100%',
     padding: '12px',
     paddingBottom: '70px',
     boxSizing: 'border-box',
+    position: 'relative',
   },
   topCard: {
     background: '#fff',
