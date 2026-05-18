@@ -74,7 +74,14 @@ function Dashboard() {
           <div style={styles.balance}>{user.balance? `${user.balance.toLocaleString()} UGX` : '0 UGX'}</div>
         </div>
 
-        {/* 8 menu icons */}
+        {/* Rotating notice - now above icons */}
+        <div style={styles.noticeWrapper}>
+          <div style={styles.notice}>
+            Welcome to Hut Villa site invest with confidence 🎉🎉🎊
+          </div>
+        </div>
+
+        {/* 8 menu icons - pushed down with more spacing */}
         <div style={styles.grid}>
           {menuItems.map((item) => (
             <div key={item.label} onClick={() => navigate(item.path)} style={styles.card}>
@@ -82,13 +89,6 @@ function Dashboard() {
               <div style={styles.label}>{item.label}</div>
             </div>
           ))}
-        </div>
-
-        {/* Rotating notice */}
-        <div style={styles.noticeWrapper}>
-          <div style={styles.notice}>
-            Welcome to Hut Villa site invest with confidence 🎉🎉🎊
-          </div>
         </div>
 
         {/* Bottom bar */}
@@ -124,14 +124,13 @@ const styles = {
     boxSizing: 'border-box',
     display: 'flex',
     flexDirection: 'column',
-    justifyContent: 'space-between',
   },
   topCard: {
     background: '#fff',
     borderRadius: '10px',
     padding: '20px 12px',
     textAlign: 'center',
-    marginBottom: '20px',
+    marginBottom: '24px',
     boxShadow: '0 2px 8px rgba(0,0,0,0.12)',
   },
   avatarCircle: {
@@ -173,43 +172,12 @@ const styles = {
     fontWeight: '700',
     color: '#ff69b4',
   },
-  grid: {
-    display: 'grid',
-    gridTemplateColumns: 'repeat(4, 1fr)',
-    gap: '18px',
-    marginTop: '42px',
-    alignContent: 'start',
-  },
-  card: {
-    background: '#fff',
-    borderRadius: '12px',
-    padding: '18px 10px',
-    textAlign: 'center',
-    cursor: 'pointer',
-    boxShadow: '0 3px 8px rgba(0,0,0,0.12)',
-    minHeight: '98px',
-    display: 'flex',
-    flexDirection: 'column',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  icon: {
-    fontSize: '32px',
-    marginBottom: '10px',
-  },
-  label: {
-    fontSize: '12px',
-    color: '#333',
-    fontWeight: '500',
-    lineHeight: '1.2',
-  },
   noticeWrapper: {
-    marginTop: '20px',
-    marginBottom: '20px',
+    marginBottom: '32px',
     overflow: 'hidden',
     width: '100%',
     background: '#000',
-    padding: '10px 0',
+    padding: '12px 0',
     borderRadius: '8px',
   },
   notice: {
@@ -220,6 +188,36 @@ const styles = {
     fontWeight: '700',
     letterSpacing: '0.5px',
     animation: 'marquee 12s linear infinite',
+  },
+  grid: {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(4, 1fr)',
+    gap: '22px',
+    marginTop: '0',
+    marginBottom: '20px',
+  },
+  card: {
+    background: '#fff',
+    borderRadius: '12px',
+    padding: '20px 10px',
+    textAlign: 'center',
+    cursor: 'pointer',
+    boxShadow: '0 3px 8px rgba(0,0,0,0.12)',
+    minHeight: '105px',
+    display: 'flex',
+    flexDirection: 'column',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  icon: {
+    fontSize: '34px',
+    marginBottom: '12px',
+  },
+  label: {
+    fontSize: '13px',
+    color: '#333',
+    fontWeight: '500',
+    lineHeight: '1.2',
   },
   bottomBar: {
     position: 'fixed',
