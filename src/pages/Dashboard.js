@@ -31,6 +31,12 @@ function Dashboard() {
     reader.readAsDataURL(file);
   };
 
+  const handleDownloadApp = () => {
+    // Change this to your actual APK/download link
+    const appUrl = 'https://your-app-download-link.com';
+    window.open(appUrl, '_blank');
+  };
+
   const menuItems = [
     { label: 'Deposit', icon: '💳', path: '/deposit' },
     { label: 'Withdraw', icon: '💸', path: '/withdraw' },
@@ -40,6 +46,7 @@ function Dashboard() {
     { label: 'My Team', icon: '👥', path: '/team' },
     { label: 'Manager Contact', icon: '📞', path: '/contact' },
     { label: 'Settings', icon: '⚙️', path: '/settings' },
+    { label: 'Download App', icon: '📱', action: handleDownloadApp }, // new button
   ];
 
   const bottomNav = [
@@ -81,10 +88,14 @@ function Dashboard() {
           </div>
         </div>
 
-        {/* 8 menu icons - pushed down with more spacing */}
+        {/* 9 menu icons */}
         <div style={styles.grid}>
           {menuItems.map((item) => (
-            <div key={item.label} onClick={() => navigate(item.path)} style={styles.card}>
+            <div
+              key={item.label}
+              onClick={() => item.action? item.action() : navigate(item.path)}
+              style={styles.card}
+            >
               <div style={styles.icon}>{item.icon}</div>
               <div style={styles.label}>{item.label}</div>
             </div>
