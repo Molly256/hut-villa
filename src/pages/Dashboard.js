@@ -70,18 +70,18 @@ const styles = {
     background: 'rgba(0, 0, 0, 0.35)',
     minHeight: '100vh',
     width: '100%',
-    padding: '12px',
-    paddingBottom: '70px',
+    padding: '16px 12px 80px',
     boxSizing: 'border-box',
-    position: 'relative',
+    display: 'flex',
+    flexDirection: 'column',
   },
   topCard: {
     background: '#fff',
-    borderRadius: '8px',
-    padding: '16px 12px',
+    borderRadius: '10px',
+    padding: '18px 12px',
     textAlign: 'center',
-    marginBottom: '12px',
-    boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+    marginBottom: '20px',
+    boxShadow: '0 2px 8px rgba(0,0,0,0.12)',
   },
   avatar: {
     width: '48px',
@@ -116,24 +116,33 @@ const styles = {
   grid: {
     display: 'grid',
     gridTemplateColumns: 'repeat(4, 1fr)',
-    gap: '10px',
+    gap: '12px',
+    marginTop: '28px', // pushes buttons down
+    flexGrow: 1, // lets grid fill the middle space
+    alignContent: 'start',
   },
   card: {
     background: '#fff',
-    borderRadius: '8px',
-    padding: '14px 6px',
+    borderRadius: '10px',
+    padding: '16px 8px',
     textAlign: 'center',
     cursor: 'pointer',
-    boxShadow: '0 2px 6px rgba(0,0,0,0.08)',
+    boxShadow: '0 2px 6px rgba(0,0,0,0.1)',
+    minHeight: '92px', // makes cards taller to fill space
+    display: 'flex',
+    flexDirection: 'column',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   icon: {
-    fontSize: '28px',
-    marginBottom: '6px',
+    fontSize: '30px',
+    marginBottom: '8px',
   },
   label: {
     fontSize: '12px',
     color: '#333',
     fontWeight: '500',
+    lineHeight: '1.2',
   },
 };
 
