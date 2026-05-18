@@ -9,7 +9,6 @@ function VipTask({ user }) {
   const [rentedHuts, setRentedHuts] = useState([]);
 
   useEffect(() => {
-    // Load rented huts from localStorage
     const savedHuts = localStorage.getItem(`huts_${user.phone}`);
     if (savedHuts) {
       setRentedHuts(JSON.parse(savedHuts));
@@ -17,7 +16,6 @@ function VipTask({ user }) {
   }, [user.phone]);
 
   useEffect(() => {
-    // Save rented huts whenever they change
     localStorage.setItem(`huts_${user.phone}`, JSON.stringify(rentedHuts));
   }, [rentedHuts, user.phone]);
 
@@ -128,22 +126,55 @@ function VipTask({ user }) {
     };
   };
 
+  const HutItem = ({ hut, isRented, maturity, onRent, onCollect }) => (
+    <div style={styles.listItem}>
+      <img 
+        src={hut.img} 
+        alt={hut.name} 
+        style={styles.hutImage}
+        onError={(e) => e.target.style.display = 'none'} 
+      />
+      <div style={styles.hutInfo}>
+        <h3 style={styles.hutName}>{hut.name}</h3>
+        <p style={styles.detail}>Price: {hut.rent.toLocaleString()}ugx</p>
+        <p style={styles.detail}>Lock: {hut.days} Days</p>
+        <p style={styles.detail}>Total income: {hut.income.toLocaleString()}ugx</p>
+        {onRent && !isRented && (
+          <button onClick={() => onRent(hut)} style={styles.rentButton}>
+            Rent Now
+          </button>
+        )}
+        {onCollect && maturity?.matured && !maturity?.collected && (
+          <button onClick={() => onCollect(hut.id)} style={styles.collectButton}>
+            Collect Income
+          </button>
+        )}
+        {isRented && maturity && !maturity.matured && !maturity.collected && (
+          <p style={styles.statusText}>{maturity.timeLeft}</p>
+        )}
+        {maturity?.collected && (
+          <p style={styles.doneLabel}>✓ Income Collected</p>
+        )}
+      </div>
+    </div>
+  );
+
   return (
-    <div style={{ padding: '30px', minHeight: '100vh', background: '#f5f5f5' }}>
+    <div style={styles.page}>
       <button 
         onClick={() => navigate('/dashboard')} 
-        style={{ marginBottom: '15px', padding: '8px 16px', borderRadius: '8px', border: 'none', background: '#333', color: '#fff', cursor: 'pointer' }}
+        style={styles.backBtn}
       >
         ← Back
       </button>
 
-      <h2 style={{ textAlign: 'center', marginBottom: '10px' }}>VIP Tasks</h2>
-      <h4 style={{ textAlign: 'center', marginBottom: '20px', color: '#ff6b35' }}>
+      <h2 style={styles.title}>VIP Tasks</h2>
+      <h4 style={styles.balance}>
         Balance: {userBalance.toLocaleString()}ugx
       </h4>
       
       {/* Tabs */}
-      <div style={{ display: 'flex', justifyContent: 'center', gap: '10px', marginBottom: '30px' }}>
+      <div style={styles.tabWrapper}>
         <button 
           onClick={() => setActiveTab('VIP LITE')}
           style={activeTab === 'VIP LITE' ? styles.activeTab : styles.inactiveTab}
@@ -158,56 +189,38 @@ function VipTask({ user }) {
         </button>
       </div>
 
-      {/* Hut grid */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '20px', marginBottom: '40px' }}>
-        {hutsToShow.map((hut) => (
-          <div key={hut.id} style={styles.card}>
-            <img 
-              src={hut.img} 
-              alt={hut.name} 
-              style={styles.image}
-              onError={(e) => e.target.style.display = 'none'} 
+      {/* Hut list - VIP LITE/PRO */}
+      <div style={styles.list}>
+        {hutsToShow.map((hut) => {
+          const rentedHut = rentedHuts.find(h => h.id === hut.id && !h.collected);
+          return (
+            <HutItem 
+              key={hut.id} 
+              hut={hut} 
+              isRented={!!rentedHut}
+              onRent={handleRent}
             />
-            <h3 style={styles.name}>{hut.name}</h3>
-            <p style={styles.detail}>Rent: {hut.rent.toLocaleString()}ugx</p>
-            <p style={styles.detail}>Days: {hut.days}</p>
-            <p style={styles.detail}>Income: {hut.income.toLocaleString()}ugx</p>
-            <button onClick={() => handleRent(hut)} style={styles.rentButton}>
-              Rent Now
-            </button>
-          </div>
-        ))}
+          );
+        })}
       </div>
 
       {/* Active Rented Huts */}
-      <div style={{ marginBottom: '40px' }}>
+      <div style={styles.section}>
         <h3 style={styles.sectionTitle}>Active Rented Huts</h3>
         {activeHuts.length === 0 ? (
-          <p style={{ textAlign: 'center' }}>No active rented huts</p>
+          <p style={{ textAlign: 'center', color: '#666' }}>No active rented huts</p>
         ) : (
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '15px' }}>
+          <div style={styles.list}>
             {activeHuts.map(hut => {
               const maturity = getMaturityInfo(hut.rentedAt, hut.days);
               return (
-                <div key={hut.id} style={styles.activeCard}>
-                  <img 
-                    src={hut.img} 
-                    alt={hut.name} 
-                    style={styles.smallImage}
-                    onError={(e) => e.target.style.display = 'none'} 
-                  />
-                  <h4>{hut.name}</h4>
-                  <p>Amount Paid: {hut.rent.toLocaleString()}ugx</p>
-                  <p>Locked for: {hut.days} days</p>
-                  <p>Maturity Date: {maturity.date}</p>
-                  <p>Status: {maturity.timeLeft}</p>
-                  <p>Expected Income: {hut.income.toLocaleString()}ugx</p>
-                  {maturity.matured && (
-                    <button onClick={() => handleCollect(hut.id)} style={styles.collectButton}>
-                      Collect Income
-                    </button>
-                  )}
-                </div>
+                <HutItem 
+                  key={`active-${hut.id}`} 
+                  hut={hut} 
+                  isRented={true}
+                  maturity={maturity}
+                  onCollect={handleCollect}
+                />
               );
             })}
           </div>
@@ -215,26 +228,23 @@ function VipTask({ user }) {
       </div>
 
       {/* Expired Rented Huts */}
-      <div>
+      <div style={styles.section}>
         <h3 style={styles.sectionTitle}>Expired Rented Huts</h3>
         {expiredHuts.length === 0 ? (
-          <p style={{ textAlign: 'center' }}>No expired huts yet</p>
+          <p style={{ textAlign: 'center', color: '#666' }}>No expired huts yet</p>
         ) : (
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '15px' }}>
-            {expiredHuts.map(hut => (
-              <div key={hut.id} style={styles.expiredCard}>
-                <img 
-                  src={hut.img} 
-                  alt={hut.name} 
-                  style={styles.smallImage}
-                  onError={(e) => e.target.style.display = 'none'} 
+          <div style={styles.list}>
+            {expiredHuts.map(hut => {
+              const maturity = { collected: true };
+              return (
+                <HutItem 
+                  key={`expired-${hut.id}`} 
+                  hut={hut} 
+                  isRented={true}
+                  maturity={maturity}
                 />
-                <h4>{hut.name}</h4>
-                <p>Amount Paid: {hut.rent.toLocaleString()}ugx</p>
-                <p>Income Collected: {hut.income.toLocaleString()}ugx</p>
-                <p style={styles.doneLabel}>✓ Income Collection Done</p>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>
@@ -243,104 +253,142 @@ function VipTask({ user }) {
 }
 
 const styles = {
+  page: {
+    padding: '20px 12px 80px',
+    minHeight: '100vh',
+    background: '#f5f5f5',
+  },
+  backBtn: {
+    marginBottom: '15px',
+    padding: '8px 16px',
+    borderRadius: '8px',
+    border: 'none',
+    background: '#333',
+    color: '#fff',
+    cursor: 'pointer',
+    fontSize: '14px',
+  },
+  title: {
+    textAlign: 'center',
+    marginBottom: '8px',
+    fontSize: '22px',
+    fontWeight: '700',
+  },
+  balance: {
+    textAlign: 'center',
+    marginBottom: '20px',
+    color: '#ff6b35',
+    fontSize: '16px',
+    fontWeight: '600',
+  },
+  tabWrapper: {
+    display: 'flex',
+    justifyContent: 'center',
+    gap: '10px',
+    marginBottom: '24px',
+  },
   activeTab: {
-    padding: '8px 20px',
+    padding: '10px 24px',
     background: '#ff6b35',
     color: '#fff',
     border: 'none',
     borderRadius: '20px',
     fontWeight: '600',
-    cursor: 'pointer'
+    cursor: 'pointer',
+    fontSize: '14px',
   },
   inactiveTab: {
-    padding: '8px 20px',
+    padding: '10px 24px',
     background: '#eee',
     color: '#333',
     border: 'none',
     borderRadius: '20px',
     fontWeight: '600',
-    cursor: 'pointer'
+    cursor: 'pointer',
+    fontSize: '14px',
   },
-  card: {
-    background: '#fff',
+  list: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '12px',
+  },
+  listItem: {
+    background: '#1a1a1a',
     borderRadius: '12px',
-    padding: '15px',
-    textAlign: 'center',
-    boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
+    display: 'flex',
+    overflow: 'hidden',
+    border: '1px solid #2a2a2a',
   },
-  activeCard: {
-    background: '#fff',
-    borderRadius: '12px',
-    padding: '15px',
-    boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
-    border: '2px solid #4caf50'
-  },
-  expiredCard: {
-    background: '#f5f5f5',
-    borderRadius: '12px',
-    padding: '15px',
-    boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
-    opacity: 0.8
-  },
-  image: {
-    width: '100%',
-    height: '140px',
+  hutImage: {
+    width: '130px',
+    height: '130px',
     objectFit: 'cover',
-    borderRadius: '8px',
-    marginBottom: '10px'
+    flexShrink: 0,
   },
-  smallImage: {
-    width: '100%',
-    height: '100px',
-    objectFit: 'cover',
-    borderRadius: '8px',
-    marginBottom: '8px'
+  hutInfo: {
+    flex: 1,
+    padding: '12px 14px',
+    display: 'flex',
+    flexDirection: 'column',
+    justifyContent: 'center',
   },
-  name: {
-    fontSize: '16px',
-    fontWeight: '600',
-    marginBottom: '8px'
+  hutName: {
+    fontSize: '18px',
+    fontWeight: '700',
+    margin: '0 0 6px',
+    color: '#2196f3',
   },
   detail: {
-    fontSize: '13px',
-    color: '#555',
-    margin: '3px 0'
-  },
-  sectionTitle: {
-    marginBottom: '15px',
-    borderBottom: '2px solid #ff6b35',
-    paddingBottom: '5px'
+    fontSize: '14px',
+    color: '#fff',
+    margin: '2px 0',
   },
   rentButton: {
     width: '100%',
     padding: '10px',
-    marginTop: '12px',
+    marginTop: '10px',
     background: '#ff6b35',
     color: '#fff',
     border: 'none',
     borderRadius: '6px',
     fontSize: '14px',
     fontWeight: '600',
-    cursor: 'pointer'
+    cursor: 'pointer',
   },
   collectButton: {
     width: '100%',
     padding: '10px',
-    marginTop: '12px',
+    marginTop: '10px',
     background: 'hotpink',
     color: '#fff',
     border: 'none',
     borderRadius: '6px',
     fontSize: '14px',
     fontWeight: '600',
-    cursor: 'pointer'
+    cursor: 'pointer',
+  },
+  statusText: {
+    marginTop: '8px',
+    fontSize: '13px',
+    color: '#ff6b35',
+    fontWeight: '600',
   },
   doneLabel: {
     marginTop: '8px',
-    color: '#2e7d32',
+    color: '#4caf50',
     fontWeight: '600',
-    fontSize: '14px'
-  }
+    fontSize: '14px',
+  },
+  section: {
+    marginTop: '35px',
+  },
+  sectionTitle: {
+    marginBottom: '12px',
+    borderBottom: '2px solid #ff6b35',
+    paddingBottom: '6px',
+    fontSize: '18px',
+    color: '#000',
+  },
 };
 
 export default VipTask;
