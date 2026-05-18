@@ -51,7 +51,7 @@ function Dashboard() {
           ))}
         </div>
 
-        {/* Rotating notice */}
+        {/* Rotating notice - now centered in the middle space */}
         <div style={styles.noticeWrapper}>
           <div style={styles.notice}>
             Welcome to Hut Villa site invest with confidence 🎉🎉🎊
@@ -81,6 +81,7 @@ const styles = {
     boxSizing: 'border-box',
     display: 'flex',
     flexDirection: 'column',
+    justifyContent: 'space-between', // distributes space so notice sits in the middle
   },
   topCard: {
     background: '#fff',
@@ -125,8 +126,8 @@ const styles = {
     gridTemplateColumns: 'repeat(4, 1fr)',
     gap: '18px',
     marginTop: '42px',
-    flexGrow: 1,
     alignContent: 'start',
+    // removed flexGrow: 1
   },
   card: {
     background: '#fff',
@@ -152,7 +153,7 @@ const styles = {
     lineHeight: '1.2',
   },
   noticeWrapper: {
-    marginTop: 'auto',
+    marginTop: '20px',
     marginBottom: '20px',
     overflow: 'hidden',
     width: '100%',
