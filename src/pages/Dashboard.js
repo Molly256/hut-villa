@@ -42,6 +42,13 @@ function Dashboard() {
     { label: 'Settings', icon: '⚙️', path: '/settings' },
   ];
 
+  const bottomNav = [
+    { label: 'Home', icon: '🏠', path: '/dashboard' },
+    { label: 'Task', icon: '📋', path: '/vip-task' },
+    { label: 'Deposit', icon: '💳', path: '/deposit' },
+    { label: 'Me', icon: '👤', path: '/profile' },
+  ];
+
   return (
     <div style={styles.pageWrapper}>
       <div style={styles.phoneFrame}>
@@ -85,6 +92,16 @@ function Dashboard() {
             </div>
           </div>
         </div>
+
+        {/* Bottom bar inside phone frame */}
+        <div style={styles.bottomBar}>
+          {bottomNav.map((item) => (
+            <div key={item.label} style={styles.navItem} onClick={() => navigate(item.path)}>
+              <div style={styles.navIcon}>{item.icon}</div>
+              <div style={styles.navLabel}>{item.label}</div>
+            </div>
+          ))}
+        </div>
       </div>
     </div>
   );
@@ -103,7 +120,8 @@ const styles = {
   phoneFrame: {
     width: '100%',
     maxWidth: '420px',
-    minHeight: '100vh',
+    height: '100vh',
+    maxHeight: '900px',
     backgroundImage: 'url(/bg.jpg)',
     backgroundSize: 'cover',
     backgroundPosition: 'center',
@@ -112,16 +130,19 @@ const styles = {
     overflow: 'hidden',
     boxShadow: '0 0 30px rgba(0,0,0,0.4)',
     borderRadius: '24px',
+    display: 'flex',
+    flexDirection: 'column',
   },
   overlay: {
     background: 'rgba(0, 0, 0, 0.35)',
-    minHeight: '100vh',
+    flex: 1,
     width: '100%',
-    padding: '16px 16px 80px',
+    padding: '16px 16px 16px',
     boxSizing: 'border-box',
     display: 'flex',
     flexDirection: 'column',
     justifyContent: 'space-between',
+    overflowY: 'auto',
   },
   topCard: {
     background: '#fff',
@@ -217,6 +238,33 @@ const styles = {
     fontWeight: '700',
     letterSpacing: '0.5px',
     animation: 'marquee 12s linear infinite',
+  },
+  bottomBar: {
+    height: '64px',
+    background: '#fff',
+    display: 'flex',
+    justifyContent: 'space-around',
+    alignItems: 'center',
+    borderTop: '1px solid #eee',
+    borderBottomLeftRadius: '24px',
+    borderBottomRightRadius: '24px',
+  },
+  navItem: {
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    justifyContent: 'center',
+    cursor: 'pointer',
+    flex: 1,
+  },
+  navIcon: {
+    fontSize: '22px',
+    marginBottom: '2px',
+  },
+  navLabel: {
+    fontSize: '11px',
+    color: '#333',
+    fontWeight: '500',
   },
 };
 
