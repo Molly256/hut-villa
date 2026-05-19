@@ -8,6 +8,7 @@ export default function Bill() {
   const navigate = useNavigate();
 
   const phoneNumber = localStorage.getItem('userPhone');
+  const API_URL = process.env.REACT_APP_API_URL; // Add this line
 
   useEffect(() => {
     if (!phoneNumber) {
@@ -16,10 +17,9 @@ export default function Bill() {
       return;
     }
 
-    fetch(`/api/transactions/${phoneNumber}`)
+    fetch(`${API_URL}/api/transactions/${phoneNumber}`) // Change this line
      .then(res => res.json())
      .then(data => {
-        // Format data to match your UI
         const formatted = data.map((tx, idx) => ({
           id: idx + 1,
           type: tx.type || (tx.method? 'Deposit' : 'Withdrawal'),
@@ -35,7 +35,7 @@ export default function Bill() {
         setTransactions([]);
         setLoading(false);
       });
-  }, [phoneNumber]);
+  }, [phoneNumber, API_URL]); // Add API_URL to deps
 
   const filteredBills = filter === "All"
    ? transactions
