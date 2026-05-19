@@ -1,21 +1,45 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-
-const mockBills = [
-  { id: 1, type: "Deposit", amount: 50000, status: "Completed", date: "2025-10-03 14:22" },
-  { id: 2, type: "Withdrawal", amount: -20000, status: "Pending", date: "2025-10-02 09:15" },
-  { id: 3, type: "VIP Purchase", amount: -100000, status: "Completed", date: "2025-10-01 18:40" },
-  { id: 4, type: "Daily Reward", amount: 6000, status: "Completed", date: "2025-10-01 00:01" },
-  { id: 5, type: "Withdrawal", amount: -15000, status: "Failed", date: "2025-09-30 22:10" },
-];
 
 export default function Bill() {
   const [filter, setFilter] = useState("All");
+  const [transactions, setTransactions] = useState([]);
+  const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
-  const filteredBills = filter === "All" 
-    ? mockBills 
-    : mockBills.filter(b => b.type === filter);
+  const phoneNumber = localStorage.getItem('userPhone');
+
+  useEffect(() => {
+    if (!phoneNumber) {
+      setTransactions([]);
+      setLoading(false);
+      return;
+    }
+
+    fetch(`/api/transactions/${phoneNumber}`)
+     .then(res => res.json())
+     .then(data => {
+        // Format data to match your UI
+        const formatted = data.map((tx, idx) => ({
+          id: idx + 1,
+          type: tx.type || (tx.method? 'Deposit' : 'Withdrawal'),
+          amount: tx.type === 'Withdrawal'? -tx.amount : tx.amount,
+          status: tx.status || 'Pending',
+          date: new Date(tx.timestamp).toLocaleString('en-UG')
+        }));
+        setTransactions(formatted);
+        setLoading(false);
+      })
+     .catch(err => {
+        console.error(err);
+        setTransactions([]);
+        setLoading(false);
+      });
+  }, [phoneNumber]);
+
+  const filteredBills = filter === "All"
+   ? transactions
+    : transactions.filter(b => b.type === filter);
 
   const getStatusColor = (status) => {
     if (status === "Completed") return "#28a745";
@@ -24,20 +48,20 @@ export default function Bill() {
   };
 
   const getAmountColor = (amount) => {
-    return amount >= 0 ? "#28a745" : "#dc3545";
+    return amount >= 0? "#28a745" : "#dc3545";
   };
 
   return (
     <div style={{ padding: "20px", background: "#f5f5f5", minHeight: "100vh" }}>
-      <button 
-        onClick={() => navigate('/dashboard')} 
+      <button
+        onClick={() => navigate('/dashboard')}
         style={{ marginBottom: '15px', padding: '8px 16px', borderRadius: '8px', border: 'none', background: '#333', color: '#fff', cursor: 'pointer' }}
       >
         ← Back
       </button>
 
       <h2 style={{ textAlign: "center", marginBottom: "20px" }}>Transaction History</h2>
-      
+
       <div style={{ display: "flex", gap: "8px", marginBottom: "20px", overflowX: "auto", paddingBottom: "5px" }}>
         {["All", "Deposit", "Withdrawal", "VIP Purchase", "Daily Reward"].map(f => (
           <button
@@ -47,8 +71,8 @@ export default function Bill() {
               padding: "8px 16px",
               border: "none",
               borderRadius: "20px",
-              background: filter === f ? "#ff6b35" : "#fff",
-              color: filter === f ? "#fff" : "#333",
+              background: filter === f? "#ff6b35" : "#fff",
+              color: filter === f? "#fff" : "#333",
               fontWeight: "bold",
               whiteSpace: "nowrap",
               cursor: "pointer"
@@ -60,18 +84,22 @@ export default function Bill() {
       </div>
 
       <div>
-        {filteredBills.length === 0 ? (
+        {loading? (
           <div style={{ textAlign: "center", padding: "40px", color: "#666" }}>
-            No transactions found
+            Loading...
+          </div>
+        ) : filteredBills.length === 0? (
+          <div style={{ textAlign: "center", padding: "40px", color: "#666" }}>
+            No transactions yet
           </div>
         ) : (
           filteredBills.map(bill => (
-            <div 
-              key={bill.id} 
-              style={{ 
-                background: "#fff", 
-                padding: "15px", 
-                borderRadius: "12px", 
+            <div
+              key={bill.id}
+              style={{
+                background: "#fff",
+                padding: "15px",
+                borderRadius: "12px",
                 marginBottom: "12px",
                 boxShadow: "0 2px 6px rgba(0,0,0,0.05)"
               }}
@@ -82,16 +110,16 @@ export default function Bill() {
                   <p style={{ margin: 0, fontSize: "13px", color: "#666" }}>{bill.date}</p>
                 </div>
                 <div style={{ textAlign: "right" }}>
-                  <p style={{ 
-                    margin: "0 0 4px", 
-                    fontSize: "18px", 
+                  <p style={{
+                    margin: "0 0 4px",
+                    fontSize: "18px",
                     fontWeight: "bold",
                     color: getAmountColor(bill.amount)
                   }}>
-                    {bill.amount >= 0 ? "+" : ""}{Math.abs(bill.amount).toLocaleString()} UGX
+                    {bill.amount >= 0? "+" : ""}{Math.abs(bill.amount).toLocaleString()} UGX
                   </p>
-                  <span style={{ 
-                    fontSize: "12px", 
+                  <span style={{
+                    fontSize: "12px",
                     color: getStatusColor(bill.status),
                     fontWeight: "bold"
                   }}>
