@@ -4,7 +4,7 @@ import { useEffect, useState, useRef } from 'react';
 function Dashboard() {
   const navigate = useNavigate();
   const fileInputRef = useRef(null);
-  const [user, setUser] = useState({ phone: '', balance: 0, nickname: '', avatar: '' });
+  const [user, setUser] = useState({ phone: '', balance: 0, nickname: '', avatar: '', role: '' });
 
   useEffect(() => {
     const loadUser = () => {
@@ -44,6 +44,8 @@ function Dashboard() {
     { label: 'My Team', icon: '👥', path: '/team' },
     { label: 'Manager Contact', icon: '📞', path: '/contact' },
     { label: 'Settings', icon: '⚙️', path: '/settings' },
+    // Admin button only for admins
+   ...(user.role === 'admin'? [{ label: 'Admin', icon: '👑', path: '/admin' }] : []),
     { label: 'Download App', icon: '📱', action: handleDownloadApp },
   ];
 
@@ -86,7 +88,7 @@ function Dashboard() {
           </div>
         </div>
 
-        {/* 9 menu icons */}
+        {/* 9+ menu icons */}
         <div style={styles.grid}>
           {menuItems.map((item) => (
             <div
