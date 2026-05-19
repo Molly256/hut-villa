@@ -8,7 +8,7 @@ export default function Bill() {
   const navigate = useNavigate();
 
   const phoneNumber = localStorage.getItem('userPhone');
-  const API_URL = process.env.REACT_APP_API_URL; // Add this line
+  const API_URL = process.env.REACT_APP_API_URL;
 
   useEffect(() => {
     if (!phoneNumber) {
@@ -17,13 +17,13 @@ export default function Bill() {
       return;
     }
 
-    fetch(`${API_URL}/api/transactions/${phoneNumber}`) // Change this line
+    fetch(`${API_URL}/api/transactions/${phoneNumber}`)
      .then(res => res.json())
      .then(data => {
         const formatted = data.map((tx, idx) => ({
           id: idx + 1,
-          type: tx.type || (tx.method? 'Deposit' : 'Withdrawal'),
-          amount: tx.type === 'Withdrawal'? -tx.amount : tx.amount,
+          type: tx.type || (tx.method ? 'Deposit' : 'Withdrawal'),
+          amount: tx.type === 'Withdrawal' ? -tx.amount : tx.amount,
           status: tx.status || 'Pending',
           date: new Date(tx.timestamp).toLocaleString('en-UG')
         }));
@@ -35,7 +35,7 @@ export default function Bill() {
         setTransactions([]);
         setLoading(false);
       });
-  }, [phoneNumber, API_URL]); // Add API_URL to deps
+  }, [phoneNumber, API_URL]);
 
   const filteredBills = filter === "All"
    ? transactions
@@ -48,7 +48,7 @@ export default function Bill() {
   };
 
   const getAmountColor = (amount) => {
-    return amount >= 0? "#28a745" : "#dc3545";
+    return amount >= 0 ? "#28a745" : "#dc3545";
   };
 
   return (
@@ -63,7 +63,7 @@ export default function Bill() {
       <h2 style={{ textAlign: "center", marginBottom: "20px" }}>Transaction History</h2>
 
       <div style={{ display: "flex", gap: "8px", marginBottom: "20px", overflowX: "auto", paddingBottom: "5px" }}>
-        {["All", "Deposit", "Withdrawal", "VIP Purchase", "Daily Reward"].map(f => (
+        {["All", "Deposit", "Withdrawal", "VIP Purchase"].map(f => (
           <button
             key={f}
             onClick={() => setFilter(f)}
@@ -71,8 +71,8 @@ export default function Bill() {
               padding: "8px 16px",
               border: "none",
               borderRadius: "20px",
-              background: filter === f? "#ff6b35" : "#fff",
-              color: filter === f? "#fff" : "#333",
+              background: filter === f ? "#ff6b35" : "#fff",
+              color: filter === f ? "#fff" : "#333",
               fontWeight: "bold",
               whiteSpace: "nowrap",
               cursor: "pointer"
@@ -84,11 +84,11 @@ export default function Bill() {
       </div>
 
       <div>
-        {loading? (
+        {loading ? (
           <div style={{ textAlign: "center", padding: "40px", color: "#666" }}>
             Loading...
           </div>
-        ) : filteredBills.length === 0? (
+        ) : filteredBills.length === 0 ? (
           <div style={{ textAlign: "center", padding: "40px", color: "#666" }}>
             No transactions yet
           </div>
@@ -116,7 +116,7 @@ export default function Bill() {
                     fontWeight: "bold",
                     color: getAmountColor(bill.amount)
                   }}>
-                    {bill.amount >= 0? "+" : ""}{Math.abs(bill.amount).toLocaleString()} UGX
+                    {bill.amount >= 0 ? "+" : ""}{Math.abs(bill.amount).toLocaleString()} UGX
                   </p>
                   <span style={{
                     fontSize: "12px",
