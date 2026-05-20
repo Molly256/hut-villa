@@ -58,9 +58,12 @@ function Dashboard() {
     { label: 'Manager Contact', icon: '📞', path: '/contact' },
     { label: 'Settings', icon: '⚙️', path: '/settings' },
 
-    // Admin button only shows for your number
-   ...(user.phone === ADMIN_PHONE
-     ? [{ label: 'Admin', icon: '👑', action: handleAdminClick }]
+    // Admin buttons only show for your number
+    ...(user.phone === ADMIN_PHONE
+      ? [
+          { label: 'Admin', icon: '🔐', action: handleAdminClick },
+          { label: 'Transactions', icon: '💰', path: '/admin/transactions' }
+        ]
       : []),
 
     { label: 'Download App', icon: '📱', action: handleDownloadApp },
@@ -79,7 +82,7 @@ function Dashboard() {
         {/* Top white card with user info */}
         <div style={styles.topCard}>
           <div style={styles.avatarCircle} onClick={() => fileInputRef.current.click()}>
-            {user.avatar? (
+            {user.avatar ? (
               <img src={user.avatar} alt="avatar" style={styles.avatarImg} />
             ) : (
               <div style={styles.avatarPlaceholder}>👤</div>
@@ -95,7 +98,7 @@ function Dashboard() {
 
           <div style={styles.nickname}>{user.nickname || 'User'}</div>
           <div style={styles.phone}>{user.phone}</div>
-          <div style={styles.balance}>{user.balance? `${user.balance.toLocaleString()} UGX` : '0 UGX'}</div>
+          <div style={styles.balance}>{user.balance ? `${user.balance.toLocaleString()} UGX` : '0 UGX'}</div>
         </div>
 
         {/* Rotating notice */}
@@ -110,7 +113,7 @@ function Dashboard() {
           {menuItems.map((item) => (
             <div
               key={item.label}
-              onClick={() => item.action? item.action() : navigate(item.path)}
+              onClick={() => item.action ? item.action() : navigate(item.path)}
               style={styles.card}
             >
               <div style={styles.icon}>{item.icon}</div>
@@ -133,7 +136,6 @@ function Dashboard() {
   );
 }
 
-// styles unchanged...
 const styles = {
   wrapper: {
     backgroundImage: 'url(/bg.jpg)',
@@ -280,7 +282,7 @@ const styles = {
   },
 };
 
-if (typeof document!== 'undefined') {
+if (typeof document !== 'undefined') {
   const styleSheet = document.createElement('style');
   styleSheet.innerText = `
     @keyframes marquee {
