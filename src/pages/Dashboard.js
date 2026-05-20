@@ -6,10 +6,6 @@ function Dashboard() {
   const fileInputRef = useRef(null);
   const [user, setUser] = useState({ phone: '', balance: 0, nickname: '', avatar: '', role: '' });
 
-  // SET YOUR ADMIN DETAILS HERE - use 9 digits only
-  const ADMIN_PHONE = '753520252'; 
-  const ADMIN_PASS = 'admin256$'; 
-
   useEffect(() => {
     const loadUser = () => {
       const savedUser = localStorage.getItem('hutvilla_user');
@@ -41,7 +37,7 @@ function Dashboard() {
 
   const handleAdminClick = () => {
     const pass = prompt("Enter admin password:");
-    if (pass === ADMIN_PASS) {
+    if (pass === 'admin256$') {
       navigate('/admin');
     } else {
       alert("Wrong password");
@@ -78,7 +74,7 @@ function Dashboard() {
         {/* Top white card with user info */}
         <div style={styles.topCard}>
           <div style={styles.avatarCircle} onClick={() => fileInputRef.current.click()}>
-            {user.avatar ? (
+            {user.avatar? (
               <img src={user.avatar} alt="avatar" style={styles.avatarImg} />
             ) : (
               <div style={styles.avatarPlaceholder}>👤</div>
@@ -94,7 +90,7 @@ function Dashboard() {
 
           <div style={styles.nickname}>{user.nickname || 'User'}</div>
           <div style={styles.phone}>{user.phone}</div>
-          <div style={styles.balance}>{user.balance ? `${user.balance.toLocaleString()} UGX` : '0 UGX'}</div>
+          <div style={styles.balance}>{user.balance? `${user.balance.toLocaleString()} UGX` : '0 UGX'}</div>
         </div>
 
         {/* Rotating notice */}
@@ -109,7 +105,7 @@ function Dashboard() {
           {menuItems.map((item) => (
             <div
               key={item.label}
-              onClick={() => item.action ? item.action() : navigate(item.path)}
+              onClick={() => item.action? item.action() : navigate(item.path)}
               style={styles.card}
             >
               <div style={styles.icon}>{item.icon}</div>
@@ -278,7 +274,7 @@ const styles = {
   },
 };
 
-if (typeof document !== 'undefined') {
+if (typeof document!== 'undefined') {
   const styleSheet = document.createElement('style');
   styleSheet.innerText = `
     @keyframes marquee {
