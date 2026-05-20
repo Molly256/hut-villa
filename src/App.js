@@ -17,7 +17,7 @@ import Bill from './pages/Bill';
 import Settings from './pages/Settings';
 import ModifyPassword from './pages/ModifyPassword';
 import Admin from './admin';
-import AdminTransactions from './adminTransactions'; // added
+import AdminTransactions from './adminTransactions';
 
 function DashboardWrapper(props) {
   const navigate = useNavigate();
@@ -52,7 +52,7 @@ function AppContent({ user, handleLogin, handleLogout, setUser, rentedHuts, setR
         
         {/* Admin routes */}
         <Route path="/admin" element={<Admin />} />
-        <Route path="/admin/transactions" element={<AdminTransactions />} /> {/* added */}
+        <Route path="/admin/transactions" element={<AdminTransactions />} />
         
         <Route path="*" element={<Navigate to="/" />} />
       </Routes>
@@ -68,13 +68,10 @@ function App() {
   const [avatar, setAvatar] = useState('https://via.placeholder.com/80');
   const [rentedHuts, setRentedHuts] = useState([]);
 
+  // FIXED: Keep full phone number, don't strip 256
   const normalizePhone = (phone) => {
     if (!phone) return '';
-    let p = phone.replace(/\D/g, '');
-    if (p.startsWith('256') && p.length === 12) {
-      return p.slice(3);
-    }
-    return p;
+    return phone.replace(/\D/g, '');
   };
 
   useEffect(() => {
@@ -94,9 +91,12 @@ function App() {
   }, []);
 
   const handleLogin = (userData) => {
+    // FIXED: Map phoneNumber from DB to phone for frontend
     const normalizedUser = {
       ...userData,
-      phone: normalizePhone(userData.phone)
+      phone: normalizePhone(userData.phoneNumber || userData.phone),
+      nickname: userData.nickname || userData.name || 'User',
+      role: userData.role || ''
     };
     
     setUser(normalizedUser);
