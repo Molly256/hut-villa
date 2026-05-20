@@ -64,13 +64,9 @@ function Dashboard() {
     { label: 'Manager Contact', icon: '📞', path: '/contact' },
     { label: 'Settings', icon: '⚙️', path: '/settings' },
 
-    // Admin buttons show if isAdmin is true
-    ...(isAdmin
-      ? [
-          { label: 'Admin', icon: '🔐', action: handleAdminClick },
-          { label: 'Transactions', icon: '💰', path: '/admin/transactions' }
-        ]
-      : []),
+    // TEMP: Always visible for testing display
+    { label: 'Admin', icon: '🔐', action: handleAdminClick },
+    { label: 'Admin Transactions', icon: '💰', path: '/admin/transactions' },
 
     { label: 'Download App', icon: '📱', action: handleDownloadApp },
   ];
