@@ -16,6 +16,8 @@ import VipTask from './pages/VipTask';
 import Bill from './pages/Bill';
 import Settings from './pages/Settings';
 import ModifyPassword from './pages/ModifyPassword';
+import Admin from './admin';
+import AdminTransactions from './adminTransactions'; // added
 
 function DashboardWrapper(props) {
   const navigate = useNavigate();
@@ -25,8 +27,8 @@ function DashboardWrapper(props) {
 function AppContent({ user, handleLogin, handleLogout, setUser, rentedHuts, setRentedHuts, avatar, setAvatar }) {
   const location = useLocation();
   
-  // Don't show bottom bar on login/register pages
-  const hideBottomBar = !user || ['/', '/login', '/register'].includes(location.pathname);
+  // hide bottom bar on auth + admin pages
+  const hideBottomBar = !user || ['/', '/login', '/register', '/admin', '/admin/transactions'].includes(location.pathname);
 
   return (
     <div style={{ paddingBottom: hideBottomBar ? 0 : '70px' }}>
@@ -48,6 +50,10 @@ function AppContent({ user, handleLogin, handleLogout, setUser, rentedHuts, setR
         <Route path="/settings" element={user ? <Settings user={user} setUser={setUser} rentedHuts={rentedHuts} setAvatar={setAvatar} avatar={avatar} /> : <Navigate to="/login" />} />
         <Route path="/modifypassword" element={user ? <ModifyPassword user={user} setUser={setUser} /> : <Navigate to="/login" />} />
         
+        {/* Admin routes */}
+        <Route path="/admin" element={<Admin />} />
+        <Route path="/admin/transactions" element={<AdminTransactions />} /> {/* added */}
+        
         <Route path="*" element={<Navigate to="/" />} />
       </Routes>
 
@@ -62,7 +68,6 @@ function App() {
   const [avatar, setAvatar] = useState('https://via.placeholder.com/80');
   const [rentedHuts, setRentedHuts] = useState([]);
 
-  // Helper: normalize phone to 9 digits
   const normalizePhone = (phone) => {
     if (!phone) return '';
     let p = phone.replace(/\D/g, '');
@@ -78,7 +83,6 @@ function App() {
     
     if (storedUser && isLoggedIn === 'true') {
       const parsedUser = JSON.parse(storedUser);
-      // Normalize phone on load
       parsedUser.phone = normalizePhone(parsedUser.phone);
       setUser(parsedUser);
       setAvatar(parsedUser.avatar || 'https://via.placeholder.com/80');
@@ -90,7 +94,6 @@ function App() {
   }, []);
 
   const handleLogin = (userData) => {
-    // Normalize phone before saving
     const normalizedUser = {
       ...userData,
       phone: normalizePhone(userData.phone)
