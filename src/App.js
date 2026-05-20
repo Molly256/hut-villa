@@ -62,12 +62,24 @@ function App() {
   const [avatar, setAvatar] = useState('https://via.placeholder.com/80');
   const [rentedHuts, setRentedHuts] = useState([]);
 
+  // Helper: normalize phone to 9 digits
+  const normalizePhone = (phone) => {
+    if (!phone) return '';
+    let p = phone.replace(/\D/g, '');
+    if (p.startsWith('256') && p.length === 12) {
+      return p.slice(3);
+    }
+    return p;
+  };
+
   useEffect(() => {
     const storedUser = localStorage.getItem('hutvilla_user');
     const isLoggedIn = localStorage.getItem('isLoggedIn');
     
     if (storedUser && isLoggedIn === 'true') {
       const parsedUser = JSON.parse(storedUser);
+      // Normalize phone on load
+      parsedUser.phone = normalizePhone(parsedUser.phone);
       setUser(parsedUser);
       setAvatar(parsedUser.avatar || 'https://via.placeholder.com/80');
       
@@ -78,12 +90,18 @@ function App() {
   }, []);
 
   const handleLogin = (userData) => {
-    setUser(userData);
-    setAvatar(userData.avatar || 'https://via.placeholder.com/80');
-    localStorage.setItem('hutvilla_user', JSON.stringify(userData));
+    // Normalize phone before saving
+    const normalizedUser = {
+      ...userData,
+      phone: normalizePhone(userData.phone)
+    };
+    
+    setUser(normalizedUser);
+    setAvatar(normalizedUser.avatar || 'https://via.placeholder.com/80');
+    localStorage.setItem('hutvilla_user', JSON.stringify(normalizedUser));
     localStorage.setItem('isLoggedIn', 'true');
     
-    const huts = localStorage.getItem(`huts_${userData.phone}`);
+    const huts = localStorage.getItem(`huts_${normalizedUser.phone}`);
     setRentedHuts(huts ? JSON.parse(huts) : []);
   };
 
