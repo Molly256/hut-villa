@@ -8,7 +8,8 @@ function Admin() {
   const [message, setMessage] = useState('');
   const [loading, setLoading] = useState(false);
 
-  const API_URL = 'https://hut-villa.vercel.app';
+  // FIXED: Point to backend on Render
+  const API_URL = 'https://hut-villa-site-backend.onrender.com';
 
   const handleResetPassword = async (e) => {
     e.preventDefault();
