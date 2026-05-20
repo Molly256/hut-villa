@@ -6,6 +6,10 @@ function Dashboard() {
   const fileInputRef = useRef(null);
   const [user, setUser] = useState({ phone: '', balance: 0, nickname: '', avatar: '', role: '' });
 
+  // SET YOUR ADMIN DETAILS HERE
+  const ADMIN_PHONE = '2348012345678'; // put your number with country code, no +
+  const ADMIN_PASS = 'yourPassword123'; // change this
+
   useEffect(() => {
     const loadUser = () => {
       const savedUser = localStorage.getItem('hutvilla_user');
@@ -35,6 +39,15 @@ function Dashboard() {
     navigate('/download');
   };
 
+  const handleAdminClick = () => {
+    const pass = prompt("Enter admin password:");
+    if (pass === ADMIN_PASS) {
+      navigate('/admin');
+    } else {
+      alert("Wrong password");
+    }
+  };
+
   const menuItems = [
     { label: 'Deposit', icon: '💳', path: '/deposit' },
     { label: 'Withdraw', icon: '💸', path: '/withdraw' },
@@ -44,8 +57,12 @@ function Dashboard() {
     { label: 'My Team', icon: '👥', path: '/team' },
     { label: 'Manager Contact', icon: '📞', path: '/contact' },
     { label: 'Settings', icon: '⚙️', path: '/settings' },
-    // Admin button only for admins
-   ...(user.role === 'admin'? [{ label: 'Admin', icon: '👑', path: '/admin' }] : []),
+
+    // Admin button only shows for your number
+   ...(user.phone === ADMIN_PHONE
+     ? [{ label: 'Admin', icon: '👑', action: handleAdminClick }]
+      : []),
+
     { label: 'Download App', icon: '📱', action: handleDownloadApp },
   ];
 
@@ -116,6 +133,7 @@ function Dashboard() {
   );
 }
 
+// styles unchanged...
 const styles = {
   wrapper: {
     backgroundImage: 'url(/bg.jpg)',
