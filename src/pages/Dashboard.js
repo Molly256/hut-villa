@@ -7,8 +7,8 @@ function Dashboard() {
   const [user, setUser] = useState({ phone: '', balance: 0, nickname: '', avatar: '', role: '' });
 
   // SET YOUR ADMIN DETAILS HERE
-  const ADMIN_PHONE = '2348012345678'; // put your number with country code, no +
-  const ADMIN_PASS = 'yourPassword123'; // change this
+  const ADMIN_PHONE = '256753520252'; // put your number with country code, no +
+  const ADMIN_PASS = 'admin256$'; // change this
 
   useEffect(() => {
     const loadUser = () => {
