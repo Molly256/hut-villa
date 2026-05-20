@@ -48,6 +48,12 @@ function Dashboard() {
     }
   };
 
+  // Fixed: checks both formats + role
+  const isAdmin = 
+    user.role === 'admin' || 
+    user.phone === ADMIN_PHONE || 
+    user.phone === '256' + ADMIN_PHONE;
+
   const menuItems = [
     { label: 'Deposit', icon: '💳', path: '/deposit' },
     { label: 'Withdraw', icon: '💸', path: '/withdraw' },
@@ -58,8 +64,8 @@ function Dashboard() {
     { label: 'Manager Contact', icon: '📞', path: '/contact' },
     { label: 'Settings', icon: '⚙️', path: '/settings' },
 
-    // Admin buttons only show for your number
-    ...(user.phone === ADMIN_PHONE
+    // Admin buttons show if isAdmin is true
+    ...(isAdmin
       ? [
           { label: 'Admin', icon: '🔐', action: handleAdminClick },
           { label: 'Transactions', icon: '💰', path: '/admin/transactions' }
