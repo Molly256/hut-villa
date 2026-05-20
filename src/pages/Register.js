@@ -26,11 +26,12 @@ function Register({ onRegister }) {
 
     setLoading(true);
     try {
-      // Send only 9 digits. Backend adds 256 automatically
+      const fullPhone = `256${phone}`; // add 256 before sending
+
       const res = await fetch(`${API_URL}/api/register`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ phone: phone, password })
+        body: JSON.stringify({ phone: fullPhone, password })
       });
 
       const data = await res.json();
@@ -41,7 +42,16 @@ function Register({ onRegister }) {
         return;
       }
 
-      const userData = { phoneNumber: phone, balance: 0 };
+      // Use data returned from backend so role gets saved
+      const userData = {
+        phoneNumber: data.user.phoneNumber,
+        phone: data.user.phoneNumber,
+        role: data.user.role || 'user',
+        balance: data.user.balance || 0,
+        nickname: data.user.nickname || 'User',
+        avatar: data.user.avatar || ''
+      };
+      
       localStorage.setItem('hutvilla_user', JSON.stringify(userData));
       localStorage.setItem('isLoggedIn', 'true');
       
