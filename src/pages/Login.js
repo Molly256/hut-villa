@@ -21,10 +21,12 @@ function Login({ onLogin }) {
 
     setLoading(true);
     try {
+      const fullPhone = `256${phone}`; // add 256 before sending
+
       const res = await fetch(`${API_URL}/api/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ phone: phone, password })
+        body: JSON.stringify({ phone: fullPhone, password })
       });
 
       const data = await res.json();
@@ -35,8 +37,16 @@ function Login({ onLogin }) {
         return;
       }
 
-      // Save session only
-      const userData = { phoneNumber: phone, balance: data.user.balance };
+      // Pass full user object to App.js so role gets saved
+      const userData = {
+        phoneNumber: data.user.phoneNumber,
+        phone: data.user.phoneNumber, // App.js will use this
+        role: data.user.role,
+        balance: data.user.balance,
+        nickname: data.user.nickname,
+        avatar: data.user.avatar
+      };
+      
       localStorage.setItem('hutvilla_user', JSON.stringify(userData));
       localStorage.setItem('isLoggedIn', 'true');
       
