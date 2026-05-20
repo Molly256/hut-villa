@@ -48,12 +48,6 @@ function Dashboard() {
     }
   };
 
-  // Fixed: checks both formats + role
-  const isAdmin = 
-    user.role === 'admin' || 
-    user.phone === ADMIN_PHONE || 
-    user.phone === '256' + ADMIN_PHONE;
-
   const menuItems = [
     { label: 'Deposit', icon: '💳', path: '/deposit' },
     { label: 'Withdraw', icon: '💸', path: '/withdraw' },
