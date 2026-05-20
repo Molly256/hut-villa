@@ -6,9 +6,9 @@ function Dashboard() {
   const fileInputRef = useRef(null);
   const [user, setUser] = useState({ phone: '', balance: 0, nickname: '', avatar: '', role: '' });
 
-  // SET YOUR ADMIN DETAILS HERE
-  const ADMIN_PHONE = '256753520252'; // put your number with country code, no +
-  const ADMIN_PASS = 'admin256$'; // change this
+  // SET YOUR ADMIN DETAILS HERE - use 9 digits only
+  const ADMIN_PHONE = '753520252'; 
+  const ADMIN_PASS = 'admin256$'; 
 
   useEffect(() => {
     const loadUser = () => {

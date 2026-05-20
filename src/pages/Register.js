@@ -26,12 +26,11 @@ function Register({ onRegister }) {
 
     setLoading(true);
     try {
-      const fullPhone = '+256' + phone;
-
+      // Send only 9 digits. Backend adds 256 automatically
       const res = await fetch(`${API_URL}/api/register`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ phone: fullPhone, password })
+        body: JSON.stringify({ phone: phone, password })
       });
 
       const data = await res.json();
