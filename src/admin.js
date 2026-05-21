@@ -1,14 +1,11 @@
 import React, { useState } from 'react';
 
 function Admin() {
-  const [adminPhone, setAdminPhone] = useState('256753520252');
-  const [adminPass, setAdminPass] = useState('admin256$');
   const [targetPhone, setTargetPhone] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [message, setMessage] = useState('');
   const [loading, setLoading] = useState(false);
 
-  // FIXED: Point to backend on Render
   const API_URL = 'https://hut-villa-site-backend.onrender.com';
 
   const handleResetPassword = async (e) => {
@@ -17,12 +14,14 @@ function Admin() {
     setMessage('');
 
     try {
+      const token = localStorage.getItem('token');
       const res = await fetch(`${API_URL}/api/admin/reset-password`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
         body: JSON.stringify({
-          phone: adminPhone,
-          password: adminPass,
           targetPhone: targetPhone,
           newPassword: newPassword
         })
@@ -60,31 +59,11 @@ function Admin() {
         borderRadius: '12px',
         width: '100%',
         maxWidth: '400px',
-        boxShadow: '0 0 20px rgba(0,0,0,0.5)'
+        border: '1px solid hotpink'
       }}>
-        <h2 style={{ textAlign: 'center', marginBottom: '20px' }}>Admin Panel</h2>
+        <h2 style={{ textAlign: 'center', marginBottom: '20px', color: 'hotpink' }}>Admin Panel</h2>
         
-        <label style={{ display: 'block', marginBottom: '5px', fontSize: '14px' }}>Admin Phone</label>
-        <input
-          type="text"
-          value={adminPhone}
-          onChange={(e) => setAdminPhone(e.target.value)}
-          required
-          style={inputStyle}
-        />
-
-        <label style={{ display: 'block', marginBottom: '5px', fontSize: '14px' }}>Admin Password</label>
-        <input
-          type="password"
-          value={adminPass}
-          onChange={(e) => setAdminPass(e.target.value)}
-          required
-          style={inputStyle}
-        />
-
-        <hr style={{ margin: '20px 0', borderColor: '#333' }} />
-
-        <label style={{ display: 'block', marginBottom: '5px', fontSize: '14px' }}>User Phone to Reset</label>
+        <label style={{ display: 'block', marginBottom: '5px', fontSize: '14px', color: 'hotpink' }}>User Phone to Reset</label>
         <input
           type="text"
           value={targetPhone}
@@ -94,7 +73,7 @@ function Admin() {
           style={inputStyle}
         />
 
-        <label style={{ display: 'block', marginBottom: '5px', fontSize: '14px' }}>New Password</label>
+        <label style={{ display: 'block', marginBottom: '5px', fontSize: '14px', color: 'hotpink' }}>New Password</label>
         <input
           type="text"
           value={newPassword}
@@ -110,9 +89,9 @@ function Admin() {
           style={{
             width: '100%',
             padding: '12px',
-            background: loading ? '#555' : '#4CAF50',
-            color: '#fff',
-            border: 'none',
+            background: loading ? '#33001a' : 'black',
+            color: 'hotpink',
+            border: '2px solid hotpink',
             borderRadius: '8px',
             fontSize: '16px',
             fontWeight: 'bold',
@@ -145,7 +124,7 @@ const inputStyle = {
   padding: '10px',
   marginBottom: '15px',
   background: '#2a2a2a',
-  border: '1px solid #444',
+  border: '1px solid hotpink',
   borderRadius: '6px',
   color: '#fff',
   fontSize: '15px',
