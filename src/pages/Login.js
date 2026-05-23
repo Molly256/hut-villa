@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 const API_URL = 'https://hut-villa-site-backend.onrender.com';
 
 function Login({ onLogin }) {
-  const [phone, setPhone] = useState(''); // 9 digits starting with 7
+  const [phone, setPhone] = useState(''); // now 10 digits starting with 07
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
@@ -14,19 +14,18 @@ function Login({ onLogin }) {
       alert('Please fill all fields');
       return;
     }
-    if (!/^7\d{8}$/.test(phone)) {
-      alert('Phone must be 9 digits starting with 7. Example: 772123456');
+    if (!/^07\d{8}$/.test(phone)) {
+      alert('Phone must be 10 digits starting with 07. Example: 0752123456');
       return;
     }
 
     setLoading(true);
     try {
-      const fullPhone = `256${phone}`; // add 256 before sending
-
+      // No more 256 prefix. Send phone as-is
       const res = await fetch(`${API_URL}/api/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ phone: fullPhone, password })
+        body: JSON.stringify({ phone: phone, password })
       });
 
       const data = await res.json();
@@ -37,10 +36,9 @@ function Login({ onLogin }) {
         return;
       }
 
-      // Pass full user object to App.js so role gets saved
       const userData = {
         phoneNumber: data.user.phoneNumber,
-        phone: data.user.phoneNumber, // App.js will use this
+        phone: data.user.phoneNumber,
         role: data.user.role,
         balance: data.user.balance,
         nickname: data.user.nickname,
@@ -66,15 +64,18 @@ function Login({ onLogin }) {
       <h2 style={{ textAlign: 'center', marginBottom: '20px' }}>Login</h2>
       
       <div style={styles.phoneWrapper}>
-        <span style={styles.prefix}>+256</span>
+        <span style={styles.prefix}>07</span>
         <input
           type="tel"
-          placeholder="7XXXXXXXX"
-          value={phone}
-          onChange={(e) => setPhone(e.target.value.replace(/\D/g, '').slice(0, 9))}
+          placeholder="52123456"
+          value={phone.slice(2)} // show only last 8 digits
+          onChange={(e) => {
+            const digits = e.target.value.replace(/\D/g, '').slice(0, 8);
+            setPhone('07' + digits);
+          }}
           style={styles.phoneInput}
           inputMode="numeric"
-          maxLength={9}
+          maxLength={8}
         />
       </div>
       
