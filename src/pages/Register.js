@@ -1,10 +1,9 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-
-const API_URL = 'https://hut-villa-site-backend.onrender.com';
+import { supabase } from '../supabaseClient'; // update path to your client
 
 function Register({ onRegister }) {
-  const [phone, setPhone] = useState(''); // now 10 digits, starting with 07
+  const [phone, setPhone] = useState(''); 
   const [password, setPassword] = useState('');
   const [repeatPassword, setRepeatPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -15,10 +14,6 @@ function Register({ onRegister }) {
       alert('Please fill all fields');
       return;
     }
-    if (!/^07\d{8}$/.test(phone)) {
-      alert('Phone must be 10 digits starting with 07. Example: 0752123456');
-      return;
-    }
     if (password !== repeatPassword) {
       alert('Passwords do not match');
       return;
@@ -26,28 +21,39 @@ function Register({ onRegister }) {
 
     setLoading(true);
     try {
-      // No more 256 prefix. Send phone as-is
-      const res = await fetch(`${API_URL}/api/register`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ phone: phone, password })
-      });
+      // Check if phone already exists
+      const { data: existing } = await supabase
+        .from('users') // change to your table name
+        .select('phone')
+        .eq('phone', phone)
+        .single();
 
-      const data = await res.json();
+      if (existing) {
+        alert('Phone number already registered');
+        setLoading(false);
+        return;
+      }
 
-      if (!res.ok) {
-        alert(data.error || 'Registration failed');
+      // Insert new user
+      const { data, error } = await supabase
+        .from('users') // change to your table name
+        .insert([{ phone: phone, password: password }]) // hash passwords in prod
+        .select()
+        .single();
+
+      if (error) {
+        alert(error.message || 'Registration failed');
         setLoading(false);
         return;
       }
 
       const userData = {
-        phoneNumber: data.user.phoneNumber,
-        phone: data.user.phoneNumber,
-        role: data.user.role || 'user',
-        balance: data.user.balance || 0,
-        nickname: data.user.nickname || 'User',
-        avatar: data.user.avatar || ''
+        phoneNumber: data.phone,
+        phone: data.phone,
+        role: data.role || 'user',
+        balance: data.balance || 0,
+        nickname: data.nickname || 'User',
+        avatar: data.avatar || ''
       };
       
       localStorage.setItem('hutvilla_user', JSON.stringify(userData));
@@ -68,21 +74,13 @@ function Register({ onRegister }) {
     <div style={{ padding: '30px', background: '#000', minHeight: '100vh', color: '#fff' }}>
       <h2 style={{ textAlign: 'center', marginBottom: '20px' }}>Register</h2>
       
-      <div style={styles.phoneWrapper}>
-        <span style={styles.prefix}>07</span>
-        <input
-          type="tel"
-          placeholder="52123456"
-          value={phone.slice(2)} // show only last 8 digits in input
-          onChange={(e) => {
-            const digits = e.target.value.replace(/\D/g, '').slice(0, 8);
-            setPhone('07' + digits);
-          }}
-          style={styles.phoneInput}
-          inputMode="numeric"
-          maxLength={8}
-        />
-      </div>
+      <input
+        type="tel"
+        placeholder="Enter phone number"
+        value={phone}
+        onChange={(e) => setPhone(e.target.value)}
+        style={styles.input}
+      />
       
       <input
         type="password"
@@ -118,52 +116,27 @@ function Register({ onRegister }) {
 }
 
 const styles = {
-  phoneWrapper: {
-    display: 'flex',
-    alignItems: 'center',
-    marginBottom: '15px',
-    border: '1px solid #333',
-    borderRadius: '8px',
-    background: '#1a1a1a',
-    overflow: 'hidden'
+  input: { 
+    width: '100%', 
+    padding: '12px', 
+    marginBottom: '15px', 
+    borderRadius: '8px', 
+    border: '1px solid #333', 
+    fontSize: '14px', 
+    background: '#1a1a1a', 
+    color: '#fff', 
+    outline: 'none' 
   },
-  prefix: {
-    padding: '12px',
-    background: '#2a2a2a',
-    color: '#fff',
-    fontWeight: '600',
-    userSelect: 'none'
-  },
-  phoneInput: {
-    flex: 1,
-    padding: '12px',
-    border: 'none',
-    background: 'transparent',
-    color: '#fff',
-    fontSize: '14px',
-    outline: 'none'
-  },
-  input: {
-    width: '100%',
-    padding: '12px',
-    marginBottom: '15px',
-    borderRadius: '8px',
-    border: '1px solid #333',
-    fontSize: '14px',
-    background: '#1a1a1a',
-    color: '#fff',
-    outline: 'none'
-  },
-  button: {
-    width: '100%',
-    padding: '12px',
-    background: '#ff6b35',
-    color: '#fff',
-    border: 'none',
-    borderRadius: '8px',
-    fontSize: '16px',
-    fontWeight: '600',
-    cursor: 'pointer'
+  button: { 
+    width: '100%', 
+    padding: '12px', 
+    background: '#ff6b35', 
+    color: '#fff', 
+    border: 'none', 
+    borderRadius: '8px', 
+    fontSize: '16px', 
+    fontWeight: '600', 
+    cursor: 'pointer' 
   }
 };
 

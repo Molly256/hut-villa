@@ -1,5 +1,6 @@
 import { useNavigate } from 'react-router-dom';
 import { useEffect, useState, useRef } from 'react';
+import { supabase } from '../supabaseClient'; // update path if needed
 
 function Dashboard() {
   const navigate = useNavigate();
@@ -7,24 +8,49 @@ function Dashboard() {
   const [user, setUser] = useState({ phone: '', balance: 0, nickname: '', avatar: '', role: '' });
 
   useEffect(() => {
-    const loadUser = () => {
+    const loadUser = async () => {
       const savedUser = localStorage.getItem('hutvilla_user');
-      if (savedUser) {
-        setUser(JSON.parse(savedUser));
+      if (!savedUser) {
+        navigate('/login');
+        return;
       }
+
+      const localUser = JSON.parse(savedUser);
+
+      const { data, error } = await supabase
+       .from('users') // change if your table name is different
+       .select('*')
+       .eq('phone', localUser.phone)
+       .single();
+
+      if (error ||!data) {
+        setUser(localUser);
+        return;
+      }
+
+      setUser(data);
+      localStorage.setItem('hutvilla_user', JSON.stringify(data));
     };
+
     loadUser();
     window.addEventListener('focus', loadUser);
     return () => window.removeEventListener('focus', loadUser);
-  }, []);
+  }, [navigate]);
 
-  const handleAvatarChange = (e) => {
+  const handleAvatarChange = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
 
     const reader = new FileReader();
-    reader.onloadend = () => {
-      const updatedUser = {...user, avatar: reader.result };
+    reader.onloadend = async () => {
+      const avatarData = reader.result;
+      const updatedUser = {...user, avatar: avatarData };
+
+      await supabase
+       .from('users')
+       .update({ avatar: avatarData })
+       .eq('phone', user.phone);
+
       setUser(updatedUser);
       localStorage.setItem('hutvilla_user', JSON.stringify(updatedUser));
     };
@@ -44,7 +70,6 @@ function Dashboard() {
     }
   };
 
-  // Base menu for all users
   const baseMenuItems = [
     { label: 'Deposit', icon: '💳', path: '/deposit' },
     { label: 'Withdraw', icon: '💸', path: '/withdraw' },
@@ -57,13 +82,11 @@ function Dashboard() {
     { label: 'Download App', icon: '📱', action: handleDownloadApp },
   ];
 
-  // Admin-only items
   const adminMenuItems = [
     { label: 'Admin', icon: '🔐', action: handleAdminClick },
     { label: 'Admin Transactions', icon: '💰', path: '/admin/transactions' },
   ];
 
-  // Show admin items only for your phone
   const menuItems = user.phone === '0753520252'
    ? [...baseMenuItems,...adminMenuItems]
     : baseMenuItems;
@@ -78,7 +101,6 @@ function Dashboard() {
   return (
     <div style={styles.wrapper}>
       <div style={styles.overlay}>
-        {/* Top white card with user info */}
         <div style={styles.topCard}>
           <div style={styles.avatarCircle} onClick={() => fileInputRef.current.click()}>
             {user.avatar? (
@@ -97,17 +119,15 @@ function Dashboard() {
 
           <div style={styles.nickname}>{user.nickname || 'User'}</div>
           <div style={styles.phone}>{user.phone}</div>
-          <div style={styles.balance}>{user.balance? `${user.balance.toLocaleString()} UGX` : '0 UGX'}</div>
+          <div style={styles.balance}>{user.balance? `${Number(user.balance).toLocaleString()} UGX` : '0 UGX'}</div>
         </div>
 
-        {/* Rotating notice */}
         <div style={styles.noticeWrapper}>
           <div style={styles.notice}>
             Welcome to Hut Villa site invest with confidence 🎉🎉🎊
           </div>
         </div>
 
-        {/* Menu icons */}
         <div style={styles.grid}>
           {menuItems.map((item) => (
             <div
@@ -121,7 +141,6 @@ function Dashboard() {
           ))}
         </div>
 
-        {/* Bottom bar */}
         <div style={styles.bottomBar}>
           {bottomNav.map((item) => (
             <div key={item.label} style={styles.navItem} onClick={() => navigate(item.path)}>
