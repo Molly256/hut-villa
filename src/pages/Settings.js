@@ -1,8 +1,26 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 
-function Settings({ user = {}, setUser = () => {}, rentedHuts = [], setAvatar = () => {}, avatar = 'https://via.placeholder.com/80' }) {
+function Settings() {
   const navigate = useNavigate();
+  const [user, setUser] = useState({});
+  const [avatar, setAvatar] = useState('https://via.placeholder.com/80');
+  const [rentedHuts, setRentedHuts] = useState([]);
+
+  useEffect(() => {
+    const savedUser = localStorage.getItem('hutvilla_user');
+    if (!savedUser) {
+      navigate('/login');
+      return;
+    }
+    const parsedUser = JSON.parse(savedUser);
+    setUser(parsedUser);
+    setAvatar(parsedUser.avatar || 'https://via.placeholder.com/80');
+    
+    const huts = JSON.parse(localStorage.getItem(`huts_${parsedUser.phone}`)) || [];
+    setRentedHuts(huts);
+  }, [navigate]);
+
   const isLegitUser = Array.isArray(rentedHuts) && rentedHuts.length > 0;
 
   const handleAvatarUpload = (e) => {
@@ -17,8 +35,8 @@ function Settings({ user = {}, setUser = () => {}, rentedHuts = [], setAvatar = 
         const avatarData = reader.result;
         setAvatar(avatarData);
 
-        // Save to localStorage
         const updatedUser = {...user, avatar: avatarData };
+        setUser(updatedUser);
         localStorage.setItem('hutvilla_user', JSON.stringify(updatedUser));
       };
       reader.readAsDataURL(file);
@@ -42,6 +60,7 @@ function Settings({ user = {}, setUser = () => {}, rentedHuts = [], setAvatar = 
     localStorage.removeItem('isLoggedIn');
     localStorage.removeItem('hutvilla_user');
     localStorage.removeItem(`huts_${user.phone}`);
+    localStorage.removeItem(`team_${user.id}`);
     navigate('/login');
   };
 
@@ -54,7 +73,6 @@ function Settings({ user = {}, setUser = () => {}, rentedHuts = [], setAvatar = 
       </div>
 
       <div style={styles.list}>
-
         {/* Avatar */}
         <div style={styles.item} onClick={() => document.getElementById('avatarUpload')?.click()}>
           <span>Avatar</span>
@@ -117,7 +135,6 @@ function Settings({ user = {}, setUser = () => {}, rentedHuts = [], setAvatar = 
           <span>Version</span>
           <span style={{ color: '#999' }}>11.0.6</span>
         </div>
-
       </div>
 
       <button onClick={handleLogout} style={styles.logoutBtn}>

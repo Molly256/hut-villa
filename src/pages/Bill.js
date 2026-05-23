@@ -1,41 +1,47 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 
+const API_URL = '/api'; // use full URL if backend is separate
+
 export default function Bill() {
   const [filter, setFilter] = useState("All");
   const [transactions, setTransactions] = useState([]);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
-  const phoneNumber = localStorage.getItem('userPhone');
-  const API_URL = process.env.REACT_APP_API_URL;
-
   useEffect(() => {
-    if (!phoneNumber) {
-      setTransactions([]);
-      setLoading(false);
+    const savedUser = localStorage.getItem('hutvilla_user');
+    if (!savedUser) {
+      navigate('/login');
       return;
     }
 
-    fetch(`${API_URL}/api/transactions/${phoneNumber}`)
-     .then(res => res.json())
-     .then(data => {
-        const formatted = data.map((tx, idx) => ({
-          id: idx + 1,
-          type: tx.type || (tx.method ? 'Deposit' : 'Withdrawal'),
-          amount: tx.type === 'Withdrawal' ? -tx.amount : tx.amount,
-          status: tx.status || 'Pending',
-          date: new Date(tx.timestamp).toLocaleString('en-UG')
-        }));
-        setTransactions(formatted);
-        setLoading(false);
-      })
-     .catch(err => {
-        console.error(err);
-        setTransactions([]);
-        setLoading(false);
-      });
-  }, [phoneNumber, API_URL]);
+    const user = JSON.parse(savedUser);
+    const phoneNumber = user.phone;
+
+    fetch(`${API_URL}/transactions`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ phoneNumber })
+    })
+   .then(res => res.json())
+   .then(data => {
+      const formatted = (data.transactions || []).map((tx, idx) => ({
+        id: idx + 1,
+        type: tx.type || (tx.method? 'Deposit' : 'Withdrawal'),
+        amount: tx.type === 'Withdrawal'? -tx.amount : tx.amount,
+        status: tx.status || 'Pending',
+        date: new Date(tx.created_at).toLocaleString('en-UG')
+      }));
+      setTransactions(formatted);
+      setLoading(false);
+    })
+   .catch(err => {
+      console.error(err);
+      setTransactions([]);
+      setLoading(false);
+    });
+  }, [navigate]);
 
   const filteredBills = filter === "All"
    ? transactions
@@ -48,7 +54,7 @@ export default function Bill() {
   };
 
   const getAmountColor = (amount) => {
-    return amount >= 0 ? "#28a745" : "#dc3545";
+    return amount >= 0? "#28a745" : "#dc3545";
   };
 
   return (
@@ -71,8 +77,8 @@ export default function Bill() {
               padding: "8px 16px",
               border: "none",
               borderRadius: "20px",
-              background: filter === f ? "#ff6b35" : "#fff",
-              color: filter === f ? "#fff" : "#333",
+              background: filter === f? "#ff6b35" : "#fff",
+              color: filter === f? "#fff" : "#333",
               fontWeight: "bold",
               whiteSpace: "nowrap",
               cursor: "pointer"
@@ -84,11 +90,11 @@ export default function Bill() {
       </div>
 
       <div>
-        {loading ? (
+        {loading? (
           <div style={{ textAlign: "center", padding: "40px", color: "#666" }}>
             Loading...
           </div>
-        ) : filteredBills.length === 0 ? (
+        ) : filteredBills.length === 0? (
           <div style={{ textAlign: "center", padding: "40px", color: "#666" }}>
             No transactions yet
           </div>
@@ -116,7 +122,7 @@ export default function Bill() {
                     fontWeight: "bold",
                     color: getAmountColor(bill.amount)
                   }}>
-                    {bill.amount >= 0 ? "+" : ""}{Math.abs(bill.amount).toLocaleString()} UGX
+                    {bill.amount >= 0? "+" : ""}{Math.abs(bill.amount).toLocaleString()} UGX
                   </p>
                   <span style={{
                     fontSize: "12px",

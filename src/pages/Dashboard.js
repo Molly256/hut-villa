@@ -1,11 +1,13 @@
 import { useNavigate } from 'react-router-dom';
 import { useEffect, useState, useRef } from 'react';
-import { supabase } from '../supabaseClient'; // update path if needed
+
+const API_URL = '/api'; // use '/api' for single project, or full URL if separate
 
 function Dashboard() {
   const navigate = useNavigate();
   const fileInputRef = useRef(null);
   const [user, setUser] = useState({ phone: '', balance: 0, nickname: '', avatar: '', role: '' });
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const loadUser = async () => {
@@ -17,19 +19,27 @@ function Dashboard() {
 
       const localUser = JSON.parse(savedUser);
 
-      const { data, error } = await supabase
-       .from('users') // change if your table name is different
-       .select('*')
-       .eq('phone', localUser.phone)
-       .single();
+      try {
+        const res = await fetch(`${API_URL}/user`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ phoneNumber: localUser.phone })
+        });
 
-      if (error ||!data) {
+        if (!res.ok) {
+          setUser(localUser);
+          setLoading(false);
+          return;
+        }
+
+        const data = await res.json();
+        setUser(data.user);
+        localStorage.setItem('hutvilla_user', JSON.stringify(data.user));
+      } catch (err) {
+        console.error(err);
         setUser(localUser);
-        return;
       }
-
-      setUser(data);
-      localStorage.setItem('hutvilla_user', JSON.stringify(data));
+      setLoading(false);
     };
 
     loadUser();
@@ -44,15 +54,21 @@ function Dashboard() {
     const reader = new FileReader();
     reader.onloadend = async () => {
       const avatarData = reader.result;
-      const updatedUser = {...user, avatar: avatarData };
+      const updatedUser = { ...user, avatar: avatarData };
 
-      await supabase
-       .from('users')
-       .update({ avatar: avatarData })
-       .eq('phone', user.phone);
+      try {
+        await fetch(`${API_URL}/update-avatar`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ phoneNumber: user.phone, avatar: avatarData })
+        });
 
-      setUser(updatedUser);
-      localStorage.setItem('hutvilla_user', JSON.stringify(updatedUser));
+        setUser(updatedUser);
+        localStorage.setItem('hutvilla_user', JSON.stringify(updatedUser));
+      } catch (err) {
+        alert('Failed to update avatar');
+        console.error(err);
+      }
     };
     reader.readAsDataURL(file);
   };
@@ -88,7 +104,7 @@ function Dashboard() {
   ];
 
   const menuItems = user.phone === '0753520252'
-   ? [...baseMenuItems,...adminMenuItems]
+    ? [...baseMenuItems, ...adminMenuItems]
     : baseMenuItems;
 
   const bottomNav = [
@@ -98,12 +114,16 @@ function Dashboard() {
     { label: 'Me', icon: '👤', path: '/profile' },
   ];
 
+  if (loading) {
+    return <div style={{ ...styles.wrapper, color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>Loading...</div>;
+  }
+
   return (
     <div style={styles.wrapper}>
       <div style={styles.overlay}>
         <div style={styles.topCard}>
           <div style={styles.avatarCircle} onClick={() => fileInputRef.current.click()}>
-            {user.avatar? (
+            {user.avatar ? (
               <img src={user.avatar} alt="avatar" style={styles.avatarImg} />
             ) : (
               <div style={styles.avatarPlaceholder}>👤</div>
@@ -119,7 +139,7 @@ function Dashboard() {
 
           <div style={styles.nickname}>{user.nickname || 'User'}</div>
           <div style={styles.phone}>{user.phone}</div>
-          <div style={styles.balance}>{user.balance? `${Number(user.balance).toLocaleString()} UGX` : '0 UGX'}</div>
+          <div style={styles.balance}>{user.balance ? `${Number(user.balance).toLocaleString()} UGX` : '0 UGX'}</div>
         </div>
 
         <div style={styles.noticeWrapper}>
@@ -132,7 +152,7 @@ function Dashboard() {
           {menuItems.map((item) => (
             <div
               key={item.label}
-              onClick={() => item.action? item.action() : navigate(item.path)}
+              onClick={() => item.action ? item.action() : navigate(item.path)}
               style={styles.card}
             >
               <div style={styles.icon}>{item.icon}</div>
@@ -300,7 +320,7 @@ const styles = {
   },
 };
 
-if (typeof document!== 'undefined') {
+if (typeof document !== 'undefined') {
   const styleSheet = document.createElement('style');
   styleSheet.innerText = `
     @keyframes marquee {

@@ -32,11 +32,13 @@ export default function Contact() {
   const navigate = useNavigate();
 
   const handleWhatsApp = (number) => {
-    window.open(`https://wa.me/${number.replace(/\+/g, '')}`, "_blank");
+    const cleanNumber = number.replace(/\D/g, ''); // remove +, spaces, dashes
+    window.open(`https://wa.me/${cleanNumber}`, "_blank");
   };
 
   const handleTelegram = (username) => {
-    window.open(`https://t.me/${username.replace('@', '')}`, "_blank");
+    const cleanUsername = username.replace('@', '');
+    window.open(`https://t.me/${cleanUsername}`, "_blank");
   };
 
   return (

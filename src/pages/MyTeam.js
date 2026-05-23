@@ -1,28 +1,47 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 
+const API_URL = '/api';
+
 function Team() {
   const navigate = useNavigate();
-  
-  // Get user from localStorage instead of props
-  const user = JSON.parse(localStorage.getItem('user')) || { id: 'guest' };
-  
   const [team, setTeam] = useState({
     levelA: [],
     levelB: [],
     levelC: [],
     totalCommission: 0
   });
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const savedTeam = JSON.parse(localStorage.getItem(`team_${user.id}`)) || {
-      levelA: [],
-      levelB: [],
-      levelC: [],
-      totalCommission: 0
-    };
-    setTeam(savedTeam);
-  }, [user.id]);
+    const savedUser = localStorage.getItem('hutvilla_user');
+    if (!savedUser) {
+      navigate('/login');
+      return;
+    }
+
+    const user = JSON.parse(savedUser);
+
+    fetch(`${API_URL}/team`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ phoneNumber: user.phone })
+    })
+  .then(res => res.json())
+  .then(data => {
+      setTeam(data.team || {
+        levelA: [],
+        levelB: [],
+        levelC: [],
+        totalCommission: 0
+      });
+      setLoading(false);
+    })
+  .catch(err => {
+      console.error(err);
+      setLoading(false);
+    });
+  }, [navigate]);
 
   const TeamMember = ({ member, level }) => (
     <div style={styles.memberCard}>
@@ -36,7 +55,7 @@ function Team() {
       <div style={styles.reward}>
         <div style={styles.rewardLabel}>Reward</div>
         <div style={styles.rewardAmount}>
-          {level === 'A' ? '10%' : level === 'B' ? '3%' : '1%'}
+          {level === 'A'? '10%' : level === 'B'? '3%' : '1%'}
         </div>
       </div>
     </div>
@@ -47,7 +66,7 @@ function Team() {
       <div style={{...styles.sectionTitle, color}}>
         ▶ {title} <span style={styles.count}>({data.length})</span>
       </div>
-      {data.length === 0 ? (
+      {data.length === 0? (
         <div style={styles.emptyState}>
           No {title} members yet.
         </div>
@@ -59,6 +78,10 @@ function Team() {
     </div>
   );
 
+  if (loading) {
+    return <div style={{...styles.container, display: 'flex', alignItems: 'center', justifyContent: 'center'}}>Loading...</div>;
+  }
+
   return (
     <div style={styles.container}>
       <div style={styles.header}>
@@ -67,7 +90,6 @@ function Team() {
         <div style={{ width: '24px' }}></div>
       </div>
 
-      {/* Summary Cards */}
       <div style={styles.summaryRow}>
         <div style={styles.summaryCard}>
           <div style={styles.summaryLabel}>Team A</div>
@@ -91,7 +113,6 @@ function Team() {
         </div>
       </div>
 
-      {/* Team Sections */}
       <TeamSection title="Team A" level="A" data={team.levelA} color="#ff4f7a" />
       <TeamSection title="Team B" level="B" data={team.levelB} color="#ff8aa8" />
       <TeamSection title="Team C" level="C" data={team.levelC} color="#ffb3c7" />

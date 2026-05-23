@@ -1,10 +1,23 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+
+const API_URL = '/api';
 
 function Deposit() {
   const [amount, setAmount] = useState('');
   const [method, setMethod] = useState('');
+  const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
+
+  useEffect(() => {
+    const savedUser = localStorage.getItem('hutvilla_user');
+    if (!savedUser) {
+      navigate('/login');
+      return;
+    }
+    setUser(JSON.parse(savedUser));
+  }, [navigate]);
 
   const handleSubmit = () => {
     const amt = Number(amount);
@@ -19,15 +32,47 @@ function Deposit() {
     alert('Payment info shown. Tap "I have sent the money" after paying');
   };
 
-  const handleConfirm = () => {
-    alert('Deposit submitted for review');
-    navigate('/dashboard');
+  const handleConfirm = async () => {
+    if (!amount ||!method) {
+      alert('Fill all fields first');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const res = await fetch(`${API_URL}/deposit`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          phoneNumber: user.phone,
+          amount: Number(amount),
+          method: method,
+          status: 'pending'
+        })
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        alert(data.error || 'Deposit failed');
+        setLoading(false);
+        return;
+      }
+
+      alert('Deposit submitted for review');
+      navigate('/dashboard');
+    } catch (err) {
+      alert('Network error. Try again.');
+      console.error(err);
+    }
+    setLoading(false);
   };
+
+  if (!user) return null;
 
   return (
     <div style={{ padding: '20px', minHeight: '100vh', background: '#f5f5f5' }}>
-      <button 
-        onClick={() => navigate('/dashboard')} 
+      <button
+        onClick={() => navigate('/dashboard')}
         style={{ marginBottom: '15px', padding: '8px 16px', borderRadius: '8px', border: 'none', background: '#333', color: '#fff', cursor: 'pointer' }}
       >
         ← Back
@@ -48,8 +93,8 @@ function Deposit() {
 
       <h3 style={{ marginTop: '20px', marginBottom: '10px' }}>Select method:</h3>
 
-      <div 
-        style={{ ...styles.method, border: method === 'mtn' ? '2px solid #ff6b35' : '1px solid #ddd' }} 
+      <div
+        style={{...styles.method, border: method === 'mtn'? '2px solid #ff6b35' : '1px solid #ddd' }}
         onClick={() => setMethod('mtn')}
       >
         <div style={{ fontWeight: '600' }}>MTN Mobile Money</div>
@@ -57,8 +102,8 @@ function Deposit() {
         <div>Besigye Benard</div>
       </div>
 
-      <div 
-        style={{ ...styles.method, border: method === 'airtel' ? '2px solid #ff6b35' : '1px solid #ddd' }} 
+      <div
+        style={{...styles.method, border: method === 'airtel'? '2px solid #ff6b35' : '1px solid #ddd' }}
         onClick={() => setMethod('airtel')}
       >
         <div style={{ fontWeight: '600' }}>Airtel Mobile Money</div>
@@ -70,8 +115,12 @@ function Deposit() {
         Go pay and come back tap
       </button>
 
-      <button onClick={handleConfirm} style={{ ...styles.button, background: '#28a745', marginTop: '10px' }}>
-        I have sent the money
+      <button
+        onClick={handleConfirm}
+        disabled={loading}
+        style={{...styles.button, background: '#28a745', marginTop: '10px' }}
+      >
+        {loading? 'Submitting...' : 'I have sent the money'}
       </button>
     </div>
   );

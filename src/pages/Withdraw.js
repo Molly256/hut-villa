@@ -1,13 +1,24 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 
-function Withdraw() {
+const API_URL = '/api'; // change to your backend URL if separate
+
+function Withdrawal() {
   const [amount, setAmount] = useState('');
   const [method, setMethod] = useState('');
   const [number, setNumber] = useState('');
   const [name, setName] = useState('');
+  const [loading, setLoading] = useState(false);
+  const navigate = useNavigate();
 
-  const handleWithdraw = () => {
-    if (!amount || amount < 10000) {
+  useEffect(() => {
+    const savedUser = localStorage.getItem('hutvilla_user');
+    if (!savedUser) navigate('/login');
+  }, [navigate]);
+
+  const handleWithdraw = async () => {
+    const amt = Number(amount);
+    if (!amt || amt < 10000) {
       alert('Minimum withdraw is 10,000 UGX');
       return;
     }
@@ -15,15 +26,51 @@ function Withdraw() {
       alert('Select a method');
       return;
     }
-    if (!number || !name) {
+    if (!number ||!name) {
       alert('Enter number and name');
       return;
     }
-    alert('Withdraw request submitted');
+
+    setLoading(true);
+    try {
+      const user = JSON.parse(localStorage.getItem('hutvilla_user'));
+
+      const res = await fetch(`${API_URL}/withdraw`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          phoneNumber: user.phone,
+          amount: amt,
+          method,
+          accountNumber: number,
+          accountName: name
+        })
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        alert(data.error || 'Withdraw failed');
+        setLoading(false);
+        return;
+      }
+
+      alert('Withdraw request submitted');
+      navigate('/dashboard');
+    } catch (err) {
+      alert('Network error. Try again.');
+    }
+    setLoading(false);
   };
 
   return (
     <div style={{ padding: '20px', minHeight: '100vh', background: '#f5f5f5' }}>
+      <button
+        onClick={() => navigate('/dashboard')}
+        style={{ marginBottom: '15px', padding: '8px 16px', borderRadius: '8px', border: 'none', background: '#333', color: '#fff', cursor: 'pointer' }}
+      >
+        ← Back
+      </button>
+
       <h2 style={{ textAlign: 'center', marginBottom: '10px' }}>Withdraw</h2>
       <p style={{ textAlign: 'center', color: '#666', marginBottom: '20px' }}>
         Minimum withdraw: 10,000 UGX
@@ -39,11 +86,17 @@ function Withdraw() {
 
       <h3 style={{ marginTop: '20px', marginBottom: '10px' }}>Select method:</h3>
 
-      <div style={styles.method} onClick={() => setMethod('MTN')}>
+      <div
+        style={{...styles.method, border: method === 'MTN'? '2px solid #ff6b35' : '1px solid #ddd' }}
+        onClick={() => setMethod('MTN')}
+      >
         <div>MTN Mobile Money</div>
       </div>
 
-      <div style={styles.method} onClick={() => setMethod('Airtel')}>
+      <div
+        style={{...styles.method, border: method === 'Airtel'? '2px solid #ff6b35' : '1px solid #ddd' }}
+        onClick={() => setMethod('Airtel')}
+      >
         <div>Airtel Mobile Money</div>
       </div>
 
@@ -63,8 +116,8 @@ function Withdraw() {
         style={styles.input}
       />
 
-      <button onClick={handleWithdraw} style={styles.button}>
-        Tap withdraw button
+      <button onClick={handleWithdraw} disabled={loading} style={styles.button}>
+        {loading? 'Processing...' : 'Tap withdraw button'}
       </button>
 
       <div style={styles.note}>
@@ -91,7 +144,6 @@ const styles = {
     padding: '12px',
     marginBottom: '10px',
     background: '#fff',
-    border: '1px solid #ddd',
     borderRadius: '8px',
     cursor: 'pointer',
     textAlign: 'center'
@@ -120,4 +172,4 @@ const styles = {
   }
 };
 
-export default Withdraw;
+export default Withdrawal;

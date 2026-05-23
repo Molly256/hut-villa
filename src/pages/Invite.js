@@ -1,12 +1,22 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 
-function Invite({ user, rentedHuts }) {
+function Invite() {
   const navigate = useNavigate();
   const [copied, setCopied] = useState(false);
   const [shared, setShared] = useState(false);
+  const [user, setUser] = useState({});
 
-  const inviteCode = user.phone?.replace('+', '') || user.id || 'USER';
+  useEffect(() => {
+    const savedUser = localStorage.getItem('hutvilla_user');
+    if (!savedUser) {
+      navigate('/login');
+      return;
+    }
+    setUser(JSON.parse(savedUser));
+  }, [navigate]);
+
+  const inviteCode = user.phone?.replace('+', '').replace(/\D/g, '') || user.id || 'USER';
   const inviteLink = `https://hut-villa-site.com/register?code=${inviteCode}`;
   const shareText = `Join Hut Villa! Use my link to register and start earning: ${inviteLink}`;
   const whatsappLink = `https://wa.me/?text=${encodeURIComponent(shareText)}`;
@@ -32,18 +42,15 @@ function Invite({ user, rentedHuts }) {
       </div>
 
       <div style={styles.content}>
-        
-        {/* Hot Pink Invite Button */}
+
         <button style={styles.inviteBtn} onClick={handleCopy}>
-          {copied ? 'LINK COPIED!' : 'Invite Friends'}
+          {copied? 'LINK COPIED!' : 'Invite Friends'}
         </button>
 
-        {/* Hot Pink WhatsApp Share Button */}
         <button style={styles.whatsappBtn} onClick={handleWhatsAppShare}>
-          📱 {shared ? 'Opening WhatsApp...' : 'Share on WhatsApp'}
+          📱 {shared? 'Opening WhatsApp...' : 'Share on WhatsApp'}
         </button>
 
-        {/* How it works */}
         <div style={styles.card}>
           <h3 style={styles.cardTitle}>How it works:</h3>
           <ul style={styles.list}>
@@ -58,18 +65,17 @@ function Invite({ user, rentedHuts }) {
             </li>
           </ul>
           <div style={styles.note}>
-            <strong>Important:</strong> You only get the percentage on the invited user's 
-            <strong> first deposit ONLY</strong>. No daily income commissions from team members. 
+            <strong>Important:</strong> You only get the percentage on the invited user's
+            <strong> first deposit ONLY</strong>. No daily income commissions from team members.
             No reward after the first deposit.
           </div>
         </div>
 
-        {/* Invite Link */}
         <div style={styles.card}>
           <div style={styles.label}>Your Invite Link</div>
           <input type="text" value={inviteLink} readOnly style={styles.input} />
           <button style={styles.copyBtn} onClick={handleCopy}>
-            {copied ? 'Copied' : 'Copy Link'}
+            {copied? 'Copied' : 'Copy Link'}
           </button>
         </div>
 

@@ -3,10 +3,10 @@ import { useNavigate } from 'react-router-dom';
 
 const API_URL = '/api';
 
-export default function ModifyPassword() {
-  const [oldPass, setOldPass] = useState('');
-  const [newPass, setNewPass] = useState('');
-  const [repeatPass, setRepeatPass] = useState('');
+export default function BankInfo() {
+  const [method, setMethod] = useState('MTN Mobile Money');
+  const [number, setNumber] = useState('');
+  const [name, setName] = useState('');
   const [loading, setLoading] = useState(false);
   const [user, setUser] = useState(null);
   const navigate = useNavigate();
@@ -17,43 +17,44 @@ export default function ModifyPassword() {
       navigate('/login');
       return;
     }
-    setUser(JSON.parse(savedUser));
+    const parsedUser = JSON.parse(savedUser);
+    setUser(parsedUser);
+    setMethod(parsedUser.bankMethod || 'MTN Mobile Money');
+    setNumber(parsedUser.bankNumber || '');
+    setName(parsedUser.bankName || '');
   }, [navigate]);
 
-  const handleSubmit = async () => {
-    if (!oldPass ||!newPass ||!repeatPass) {
+  const handleSave = async () => {
+    if (!number ||!name) {
       alert("Fill all fields");
-      return;
-    }
-    if (newPass!== repeatPass) {
-      alert("Passwords don't match");
-      return;
-    }
-    if (newPass.length < 6) {
-      alert("Password must be at least 6 characters");
       return;
     }
 
     setLoading(true);
     try {
-      const res = await fetch(`${API_URL}/modify-password`, {
+      const res = await fetch(`${API_URL}/update-bank`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           phoneNumber: user.phone,
-          oldPassword: oldPass,
-          newPassword: newPass
+          bankMethod: method,
+          bankNumber: number,
+          bankName: name
         })
       });
 
       const data = await res.json();
       if (!res.ok) {
-        alert(data.error || 'Password update failed');
+        alert(data.error || 'Failed to save bank info');
         setLoading(false);
         return;
       }
 
-      alert("Password updated successfully");
+      const updatedUser = {...user, bankMethod: method, bankNumber: number, bankName: name };
+      setUser(updatedUser);
+      localStorage.setItem('hutvilla_user', JSON.stringify(updatedUser));
+
+      alert("Bank info saved");
       navigate("/settings");
     } catch (err) {
       alert("Network error. Try again.");
@@ -72,33 +73,43 @@ export default function ModifyPassword() {
         ← Back
       </button>
 
-      <h3 style={{ textAlign: 'center', marginBottom: '30px' }}>Modify Password</h3>
+      <h3 style={{ textAlign: 'center', marginBottom: '30px' }}>Bank Information</h3>
+
+      <label style={{ fontSize: '14px', color: '#999' }}>Select method</label>
+      <select
+        value={method}
+        onChange={e => setMethod(e.target.value)}
+        style={styles.input}
+      >
+        <option>MTN Mobile Money</option>
+        <option>Airtel Mobile Money</option>
+      </select>
 
       <input
-        type="password"
-        placeholder="Old password"
-        value={oldPass}
-        onChange={e => setOldPass(e.target.value)}
+        type="text"
+        placeholder="Input number..."
+        value={number}
+        onChange={e => setNumber(e.target.value)}
         style={styles.input}
       />
 
       <input
-        type="password"
-        placeholder="New password"
-        value={newPass}
-        onChange={e => setNewPass(e.target.value)}
+        type="text"
+        placeholder="Input names..."
+        value={name}
+        onChange={e => setName(e.target.value)}
         style={styles.input}
       />
 
-      <input
-        type="password"
-        placeholder="Repeat new password"
-        value={repeatPass}
-        onChange={e => setRepeatPass(e.target.value)}
-        style={styles.input}
-      />
+      <p style={{ fontSize: '12px', color: '#aaa', marginTop: '15px' }}>
+        Save the phone number you want the manager to deposit your income on and the names those numbers show.
+      </p>
 
-      <button onClick={handleSubmit} disabled={loading} style={styles.button}>
+      <button
+        onClick={handleSave}
+        disabled={loading}
+        style={styles.button}
+      >
         {loading? 'Saving...' : 'Save'}
       </button>
     </div>
@@ -115,12 +126,13 @@ const styles = {
     background: '#2a2a2a',
     color: 'white',
     fontSize: '14px',
-    outline: 'none'
+    outline: 'none',
+    boxSizing: 'border-box'
   },
   button: {
     width: '100%',
     padding: '15px',
-    background: '#ff6b35',
+    background: '#007bff',
     color: 'white',
     border: 'none',
     borderRadius: '8px',

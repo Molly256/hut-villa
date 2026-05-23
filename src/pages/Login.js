@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { supabase } from '../supabaseClient'; // adjust path to your client
+
+const API_URL = '/api'; // works if frontend + backend are in same Vercel project
 
 function Login({ onLogin }) {
   const [phone, setPhone] = useState(''); 
@@ -16,27 +17,27 @@ function Login({ onLogin }) {
 
     setLoading(true);
     try {
-      // Query Supabase directly. Adjust table/column names to match yours
-      const { data, error } = await supabase
-        .from('users') // your table name
-        .select('*')
-        .eq('phone', phone)
-        .eq('password', password) // better to use hashed passwords + auth
-        .single();
+      const res = await fetch(`${API_URL}/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phoneNumber: phone, password })
+      });
 
-      if (error || !data) {
-        alert(error?.message || 'No account found');
+      const data = await res.json();
+
+      if (!res.ok) {
+        alert(data.error || 'Login failed');
         setLoading(false);
         return;
       }
 
       const userData = {
-        phoneNumber: data.phone,
-        phone: data.phone,
-        role: data.role,
-        balance: data.balance,
-        nickname: data.nickname,
-        avatar: data.avatar
+        phoneNumber: data.user.phoneNumber,
+        phone: data.user.phoneNumber,
+        role: data.user.role,
+        balance: data.user.balance,
+        nickname: data.user.nickname,
+        avatar: data.user.avatar
       };
       
       localStorage.setItem('hutvilla_user', JSON.stringify(userData));
