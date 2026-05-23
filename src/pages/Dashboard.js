@@ -44,7 +44,8 @@ function Dashboard() {
     }
   };
 
-  const menuItems = [
+  // Base menu for all users
+  const baseMenuItems = [
     { label: 'Deposit', icon: '💳', path: '/deposit' },
     { label: 'Withdraw', icon: '💸', path: '/withdraw' },
     { label: 'VIP Task', icon: '🏠', path: '/vip-task' },
@@ -53,13 +54,19 @@ function Dashboard() {
     { label: 'My Team', icon: '👥', path: '/team' },
     { label: 'Manager Contact', icon: '📞', path: '/contact' },
     { label: 'Settings', icon: '⚙️', path: '/settings' },
-
-    // TEMP: Always visible for testing display
-    { label: 'Admin', icon: '🔐', action: handleAdminClick },
-    { label: 'Admin Transactions', icon: '💰', path: '/admin/transactions' },
-
     { label: 'Download App', icon: '📱', action: handleDownloadApp },
   ];
+
+  // Admin-only items
+  const adminMenuItems = [
+    { label: 'Admin', icon: '🔐', action: handleAdminClick },
+    { label: 'Admin Transactions', icon: '💰', path: '/admin/transactions' },
+  ];
+
+  // Show admin items only for your phone
+  const menuItems = user.phone === '0753520252'
+   ? [...baseMenuItems,...adminMenuItems]
+    : baseMenuItems;
 
   const bottomNav = [
     { label: 'Home', icon: '🏠', path: '/dashboard' },
@@ -100,7 +107,7 @@ function Dashboard() {
           </div>
         </div>
 
-        {/* 9+ menu icons */}
+        {/* Menu icons */}
         <div style={styles.grid}>
           {menuItems.map((item) => (
             <div
