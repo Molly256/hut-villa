@@ -18,5 +18,34 @@
   "theme_color": "#d63384",
   "background_color": "#ffffff",
   "scope": "/",
-  "orientation": "portrait-primary"
+  "orientation": "portrait-primary",
+  "shortcuts": [
+    {
+      "name": "Pending Deposits",
+      "short_name": "Deposits",
+      "description": "View pending deposits",
+      "url": "/admin.html?tab=deposits",
+      "icons": [
+        { "src": "/icon-192.png", "sizes": "192x192" }
+      ]
+    },
+    {
+      "name": "Pending Withdrawals",
+      "short_name": "Withdrawals", 
+      "description": "View pending withdrawals",
+      "url": "/admin.html?tab=withdrawals",
+      "icons": [
+        { "src": "/icon-192.png", "sizes": "192x192" }
+      ]
+    },
+    {
+      "name": "Reset Password",
+      "short_name": "Reset Pass",
+      "description": "Reset user passwords",
+      "url": "/admin.html?tab=reset",
+      "icons": [
+        { "src": "/icon-192.png", "sizes": "192x192" }
+      ]
+    }
+  ]
 }
