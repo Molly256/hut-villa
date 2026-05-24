@@ -21,7 +21,7 @@ import AdminTransactions from './adminTransactions';
 
 function DashboardWrapper(props) {
   const navigate = useNavigate();
-  return <Dashboard {...props} onNavigate={navigate} />;
+  return React.createElement(Dashboard, { ...props, onNavigate: navigate });
 }
 
 function AppContent({ user, handleLogin, handleLogout, setUser, rentedHuts, setRentedHuts, avatar, setAvatar }) {
@@ -30,35 +30,70 @@ function AppContent({ user, handleLogin, handleLogout, setUser, rentedHuts, setR
   // hide bottom bar on auth + admin pages
   const hideBottomBar = !user || ['/', '/login', '/register', '/admin', '/admin/transactions'].includes(location.pathname);
 
-  return (
-    <div style={{ paddingBottom: hideBottomBar ? 0 : '70px' }}>
-      <Routes>
-        <Route path="/" element={!user ? <Login onLogin={handleLogin} /> : <Navigate to="/dashboard" />} />
-        <Route path="/login" element={!user ? <Login onLogin={handleLogin} /> : <Navigate to="/dashboard" />} />
-        <Route path="/register" element={!user ? <Register onRegister={handleLogin} /> : <Navigate to="/dashboard" />} />
-        
-        <Route path="/dashboard" element={user ? <DashboardWrapper user={user} handleLogout={handleLogout} /> : <Navigate to="/login" />} />
-        <Route path="/team" element={user ? <MyTeam user={user} /> : <Navigate to="/login" />} />
-        <Route path="/contact" element={user ? <ManagerContact /> : <Navigate to="/login" />} />
-        <Route path="/invite" element={user ? <Invite user={user} /> : <Navigate to="/login" />} />
-        <Route path="/download" element={user ? <Downloadapp /> : <Navigate to="/login" />} />
-        
-        <Route path="/deposit" element={user ? <Deposit user={user} setUser={setUser} /> : <Navigate to="/login" />} />
-        <Route path="/withdraw" element={user ? <Withdraw user={user} setUser={setUser} /> : <Navigate to="/login" />} />
-        <Route path="/vip-task" element={user ? <VipTask user={user} setUser={setUser} rentedHuts={rentedHuts} setRentedHuts={setRentedHuts} /> : <Navigate to="/login" />} />
-        <Route path="/bill" element={user ? <Bill /> : <Navigate to="/login" />} />
-        <Route path="/settings" element={user ? <Settings user={user} setUser={setUser} rentedHuts={rentedHuts} setAvatar={setAvatar} avatar={avatar} /> : <Navigate to="/login" />} />
-        <Route path="/modifypassword" element={user ? <ModifyPassword user={user} setUser={setUser} /> : <Navigate to="/login" />} />
-        
-        {/* Admin routes */}
-        <Route path="/admin" element={<Admin />} />
-        <Route path="/admin/transactions" element={<AdminTransactions />} />
-        
-        <Route path="*" element={<Navigate to="/" />} />
-      </Routes>
-
-      {!hideBottomBar && <BottomBar />}
-    </div>
+  return React.createElement('div', 
+    { style: { paddingBottom: hideBottomBar ? 0 : '70px' } },
+    React.createElement(Routes, null,
+      React.createElement(Route, { 
+        path: "/", 
+        element: !user ? React.createElement(Login, { onLogin: handleLogin }) : React.createElement(Navigate, { to: "/dashboard" })
+      }),
+      React.createElement(Route, { 
+        path: "/login", 
+        element: !user ? React.createElement(Login, { onLogin: handleLogin }) : React.createElement(Navigate, { to: "/dashboard" })
+      }),
+      React.createElement(Route, { 
+        path: "/register", 
+        element: !user ? React.createElement(Register, { onRegister: handleLogin }) : React.createElement(Navigate, { to: "/dashboard" })
+      }),
+      React.createElement(Route, { 
+        path: "/dashboard", 
+        element: user ? React.createElement(DashboardWrapper, { user, handleLogout }) : React.createElement(Navigate, { to: "/login" })
+      }),
+      React.createElement(Route, { 
+        path: "/team", 
+        element: user ? React.createElement(MyTeam, { user }) : React.createElement(Navigate, { to: "/login" })
+      }),
+      React.createElement(Route, { 
+        path: "/contact", 
+        element: user ? React.createElement(ManagerContact, null) : React.createElement(Navigate, { to: "/login" })
+      }),
+      React.createElement(Route, { 
+        path: "/invite", 
+        element: user ? React.createElement(Invite, { user }) : React.createElement(Navigate, { to: "/login" })
+      }),
+      React.createElement(Route, { 
+        path: "/download", 
+        element: user ? React.createElement(Downloadapp, null) : React.createElement(Navigate, { to: "/login" })
+      }),
+      React.createElement(Route, { 
+        path: "/deposit", 
+        element: user ? React.createElement(Deposit, { user, setUser }) : React.createElement(Navigate, { to: "/login" })
+      }),
+      React.createElement(Route, { 
+        path: "/withdraw", 
+        element: user ? React.createElement(Withdraw, { user, setUser }) : React.createElement(Navigate, { to: "/login" })
+      }),
+      React.createElement(Route, { 
+        path: "/vip-task", 
+        element: user ? React.createElement(VipTask, { user, setUser, rentedHuts, setRentedHuts }) : React.createElement(Navigate, { to: "/login" })
+      }),
+      React.createElement(Route, { 
+        path: "/bill", 
+        element: user ? React.createElement(Bill, null) : React.createElement(Navigate, { to: "/login" })
+      }),
+      React.createElement(Route, { 
+        path: "/settings", 
+        element: user ? React.createElement(Settings, { user, setUser, rentedHuts, setAvatar, avatar }) : React.createElement(Navigate, { to: "/login" })
+      }),
+      React.createElement(Route, { 
+        path: "/modifypassword", 
+        element: user ? React.createElement(ModifyPassword, { user, setUser }) : React.createElement(Navigate, { to: "/login" })
+      }),
+      React.createElement(Route, { path: "/admin", element: React.createElement(Admin, null) }),
+      React.createElement(Route, { path: "/admin/transactions", element: React.createElement(AdminTransactions, null) }),
+      React.createElement(Route, { path: "*", element: React.createElement(Navigate, { to: "/" }) })
+    ),
+    !hideBottomBar && React.createElement(BottomBar, null)
   );
 }
 
@@ -68,7 +103,6 @@ function App() {
   const [avatar, setAvatar] = useState('https://via.placeholder.com/80');
   const [rentedHuts, setRentedHuts] = useState([]);
 
-  // FIXED: Keep full phone number, don't strip 256
   const normalizePhone = (phone) => {
     if (!phone) return '';
     return phone.replace(/\D/g, '');
@@ -91,7 +125,6 @@ function App() {
   }, []);
 
   const handleLogin = (userData) => {
-    // FIXED: Map phoneNumber from DB to phone for frontend
     const normalizedUser = {
       ...userData,
       phone: normalizePhone(userData.phoneNumber || userData.phone),
@@ -117,22 +150,23 @@ function App() {
   };
 
   if (loading) {
-    return <div style={{ background: '#000', color: '#fff', height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>Loading...</div>;
+    return React.createElement('div', 
+      { style: { background: '#000', color: '#fff', height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' } },
+      'Loading...'
+    );
   }
 
-  return (
-    <Router>
-      <AppContent 
-        user={user} 
-        handleLogin={handleLogin}
-        handleLogout={handleLogout} 
-        setUser={setUser}
-        rentedHuts={rentedHuts}
-        setRentedHuts={setRentedHuts}
-        avatar={avatar}
-        setAvatar={setAvatar}
-      />
-    </Router>
+  return React.createElement(Router, null,
+    React.createElement(AppContent, { 
+      user, 
+      handleLogin,
+      handleLogout, 
+      setUser,
+      rentedHuts,
+      setRentedHuts,
+      avatar,
+      setAvatar
+    })
   );
 }
 
