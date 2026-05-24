@@ -63,45 +63,42 @@ export default function ModifyPassword() {
 
   if (!user) return null;
 
-  return (
-    <div style={{ background: '#1a1a1a', minHeight: '100vh', color: 'white', padding: '20px' }}>
-      <button
-        onClick={() => navigate(-1)}
-        style={{ background: 'none', border: 'none', color: 'white', fontSize: '20px', marginBottom: '20px', cursor: 'pointer' }}
-      >
-        ← Back
-      </button>
-
-      <h3 style={{ textAlign: 'center', marginBottom: '30px' }}>Modify Password</h3>
-
-      <input
-        type="password"
-        placeholder="Old password"
-        value={oldPass}
-        onChange={e => setOldPass(e.target.value)}
-        style={styles.input}
-      />
-
-      <input
-        type="password"
-        placeholder="New password"
-        value={newPass}
-        onChange={e => setNewPass(e.target.value)}
-        style={styles.input}
-      />
-
-      <input
-        type="password"
-        placeholder="Repeat new password"
-        value={repeatPass}
-        onChange={e => setRepeatPass(e.target.value)}
-        style={styles.input}
-      />
-
-      <button onClick={handleSubmit} disabled={loading} style={styles.button}>
-        {loading? 'Saving...' : 'Save'}
-      </button>
-    </div>
+  return React.createElement('div', {
+    style: { background: '#1a1a1a', minHeight: '100vh', color: 'white', padding: '20px' }
+  },
+    React.createElement('button', {
+      onClick: () => navigate(-1),
+      style: { background: 'none', border: 'none', color: 'white', fontSize: '20px', marginBottom: '20px', cursor: 'pointer' }
+    }, '← Back'),
+    React.createElement('h3', {
+      style: { textAlign: 'center', marginBottom: '30px' }
+    }, 'Modify Password'),
+    React.createElement('input', {
+      type: 'password',
+      placeholder: 'Old password',
+      value: oldPass,
+      onChange: e => setOldPass(e.target.value),
+      style: styles.input
+    }),
+    React.createElement('input', {
+      type: 'password',
+      placeholder: 'New password',
+      value: newPass,
+      onChange: e => setNewPass(e.target.value),
+      style: styles.input
+    }),
+    React.createElement('input', {
+      type: 'password',
+      placeholder: 'Repeat new password',
+      value: repeatPass,
+      onChange: e => setRepeatPass(e.target.value),
+      style: styles.input
+    }),
+    React.createElement('button', {
+      onClick: handleSubmit,
+      disabled: loading,
+      style: styles.button
+    }, loading? 'Saving...' : 'Save')
   );
 }
 

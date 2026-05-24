@@ -64,55 +64,43 @@ export default function BankInfo() {
 
   if (!user) return null;
 
-  return (
-    <div style={{ background: '#1a1a1a', minHeight: '100vh', color: 'white', padding: '20px' }}>
-      <button
-        onClick={() => navigate(-1)}
-        style={{ background: 'none', border: 'none', color: 'white', fontSize: '20px', marginBottom: '20px', cursor: 'pointer' }}
-      >
-        ← Back
-      </button>
-
-      <h3 style={{ textAlign: 'center', marginBottom: '30px' }}>Bank Information</h3>
-
-      <label style={{ fontSize: '14px', color: '#999' }}>Select method</label>
-      <select
-        value={method}
-        onChange={e => setMethod(e.target.value)}
-        style={styles.input}
-      >
-        <option>MTN Mobile Money</option>
-        <option>Airtel Mobile Money</option>
-      </select>
-
-      <input
-        type="text"
-        placeholder="Input number..."
-        value={number}
-        onChange={e => setNumber(e.target.value)}
-        style={styles.input}
-      />
-
-      <input
-        type="text"
-        placeholder="Input names..."
-        value={name}
-        onChange={e => setName(e.target.value)}
-        style={styles.input}
-      />
-
-      <p style={{ fontSize: '12px', color: '#aaa', marginTop: '15px' }}>
-        Save the phone number you want the manager to deposit your income on and the names those numbers show.
-      </p>
-
-      <button
-        onClick={handleSave}
-        disabled={loading}
-        style={styles.button}
-      >
-        {loading? 'Saving...' : 'Save'}
-      </button>
-    </div>
+  return React.createElement('div', { style: { background: '#1a1a1a', minHeight: '100vh', color: 'white', padding: '20px' } },
+    React.createElement('button', {
+      onClick: () => navigate(-1),
+      style: { background: 'none', border: 'none', color: 'white', fontSize: '20px', marginBottom: '20px', cursor: 'pointer' }
+    }, '← Back'),
+    React.createElement('h3', { style: { textAlign: 'center', marginBottom: '30px' } }, 'Bank Information'),
+    React.createElement('label', { style: { fontSize: '14px', color: '#999' } }, 'Select method'),
+    React.createElement('select', {
+      value: method,
+      onChange: e => setMethod(e.target.value),
+      style: styles.input
+    },
+      React.createElement('option', null, 'MTN Mobile Money'),
+      React.createElement('option', null, 'Airtel Mobile Money')
+    ),
+    React.createElement('input', {
+      type: 'text',
+      placeholder: 'Input number...',
+      value: number,
+      onChange: e => setNumber(e.target.value),
+      style: styles.input
+    }),
+    React.createElement('input', {
+      type: 'text',
+      placeholder: 'Input names...',
+      value: name,
+      onChange: e => setName(e.target.value),
+      style: styles.input
+    }),
+    React.createElement('p', { style: { fontSize: '12px', color: '#aaa', marginTop: '15px' } },
+      'Save the phone number you want the manager to deposit your income on and the names those numbers show.'
+    ),
+    React.createElement('button', {
+      onClick: handleSave,
+      disabled: loading,
+      style: styles.button
+    }, loading? 'Saving...' : 'Save')
   );
 }
 

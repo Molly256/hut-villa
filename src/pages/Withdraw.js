@@ -63,72 +63,71 @@ function Withdrawal() {
     setLoading(false);
   };
 
-  return (
-    <div style={{ padding: '20px', minHeight: '100vh', background: '#f5f5f5' }}>
-      <button
-        onClick={() => navigate('/dashboard')}
-        style={{ marginBottom: '15px', padding: '8px 16px', borderRadius: '8px', border: 'none', background: '#333', color: '#fff', cursor: 'pointer' }}
-      >
-        ← Back
-      </button>
-
-      <h2 style={{ textAlign: 'center', marginBottom: '10px' }}>Withdraw</h2>
-      <p style={{ textAlign: 'center', color: '#666', marginBottom: '20px' }}>
-        Minimum withdraw: 10,000 UGX
-      </p>
-
-      <input
-        type="number"
-        placeholder="Input amount......"
-        value={amount}
-        onChange={(e) => setAmount(e.target.value)}
-        style={styles.input}
-      />
-
-      <h3 style={{ marginTop: '20px', marginBottom: '10px' }}>Select method:</h3>
-
-      <div
-        style={{...styles.method, border: method === 'MTN'? '2px solid #ff6b35' : '1px solid #ddd' }}
-        onClick={() => setMethod('MTN')}
-      >
-        <div>MTN Mobile Money</div>
-      </div>
-
-      <div
-        style={{...styles.method, border: method === 'Airtel'? '2px solid #ff6b35' : '1px solid #ddd' }}
-        onClick={() => setMethod('Airtel')}
-      >
-        <div>Airtel Mobile Money</div>
-      </div>
-
-      <input
-        type="tel"
-        placeholder="Input number...."
-        value={number}
-        onChange={(e) => setNumber(e.target.value)}
-        style={styles.input}
-      />
-
-      <input
-        type="text"
-        placeholder="Input names it brings........"
-        value={name}
-        onChange={(e) => setName(e.target.value)}
-        style={styles.input}
-      />
-
-      <button onClick={handleWithdraw} disabled={loading} style={styles.button}>
-        {loading? 'Processing...' : 'Tap withdraw button'}
-      </button>
-
-      <div style={styles.note}>
-        <strong>Note:</strong><br />
-        Minimum withdraw: 10,000 UGX.<br />
-        Withdraw time: 9:00am - 5:00pm<br />
-        Monday - Friday.<br />
-        Money will arrive in your mobile money wallet within 30mins to 24hrs max.
-      </div>
-    </div>
+  return React.createElement('div', {
+    style: { padding: '20px', minHeight: '100vh', background: '#f5f5f5' }
+  },
+    React.createElement('button', {
+      onClick: () => navigate('/dashboard'),
+      style: { marginBottom: '15px', padding: '8px 16px', borderRadius: '8px', border: 'none', background: '#333', color: '#fff', cursor: 'pointer' }
+    }, '← Back'),
+    React.createElement('h2', {
+      style: { textAlign: 'center', marginBottom: '10px' }
+    }, 'Withdraw'),
+    React.createElement('p', {
+      style: { textAlign: 'center', color: '#666', marginBottom: '20px' }
+    }, 'Minimum withdraw: 10,000 UGX'),
+    React.createElement('input', {
+      type: 'number',
+      placeholder: 'Input amount......',
+      value: amount,
+      onChange: (e) => setAmount(e.target.value),
+      style: styles.input
+    }),
+    React.createElement('h3', {
+      style: { marginTop: '20px', marginBottom: '10px' }
+    }, 'Select method:'),
+    React.createElement('div', {
+      style: {...styles.method, border: method === 'MTN'? '2px solid #ff6b35' : '1px solid #ddd' },
+      onClick: () => setMethod('MTN')
+    },
+      React.createElement('div', null, 'MTN Mobile Money')
+    ),
+    React.createElement('div', {
+      style: {...styles.method, border: method === 'Airtel'? '2px solid #ff6b35' : '1px solid #ddd' },
+      onClick: () => setMethod('Airtel')
+    },
+      React.createElement('div', null, 'Airtel Mobile Money')
+    ),
+    React.createElement('input', {
+      type: 'tel',
+      placeholder: 'Input number....',
+      value: number,
+      onChange: (e) => setNumber(e.target.value),
+      style: styles.input
+    }),
+    React.createElement('input', {
+      type: 'text',
+      placeholder: 'Input names it brings........',
+      value: name,
+      onChange: (e) => setName(e.target.value),
+      style: styles.input
+    }),
+    React.createElement('button', {
+      onClick: handleWithdraw,
+      disabled: loading,
+      style: styles.button
+    }, loading? 'Processing...' : 'Tap withdraw button'),
+    React.createElement('div', { style: styles.note },
+      React.createElement('strong', null, 'Note:'),
+      React.createElement('br', null),
+      'Minimum withdraw: 10,000 UGX.',
+      React.createElement('br', null),
+      'Withdraw time: 9:00am - 5:00pm',
+      React.createElement('br', null),
+      'Monday - Friday.',
+      React.createElement('br', null),
+      'Money will arrive in your mobile money wallet within 30mins to 24hrs max.'
+    )
   );
 }
 

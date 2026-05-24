@@ -33,54 +33,61 @@ function Invite() {
     setTimeout(() => setShared(false), 2000);
   };
 
-  return (
-    <div style={styles.container}>
-      <div style={styles.header}>
-        <button onClick={() => navigate(-1)} style={styles.backBtn}>‹</button>
-        <h2 style={styles.title}>Invite Friends</h2>
-        <div style={{ width: '24px' }}></div>
-      </div>
-
-      <div style={styles.content}>
-
-        <button style={styles.inviteBtn} onClick={handleCopy}>
-          {copied? 'LINK COPIED!' : 'Invite Friends'}
-        </button>
-
-        <button style={styles.whatsappBtn} onClick={handleWhatsAppShare}>
-          📱 {shared? 'Opening WhatsApp...' : 'Share on WhatsApp'}
-        </button>
-
-        <div style={styles.card}>
-          <h3 style={styles.cardTitle}>How it works:</h3>
-          <ul style={styles.list}>
-            <li style={styles.listItem}>
-              <span style={styles.percent}>Get 10%</span> on your Team A first deposit
-            </li>
-            <li style={styles.listItem}>
-              <span style={styles.percent}>Get 3%</span> on your Team B first deposit
-            </li>
-            <li style={styles.listItem}>
-              <span style={styles.percent}>Get 1%</span> on your Team C first deposit
-            </li>
-          </ul>
-          <div style={styles.note}>
-            <strong>Important:</strong> You only get the percentage on the invited user's
-            <strong> first deposit ONLY</strong>. No daily income commissions from team members.
-            No reward after the first deposit.
-          </div>
-        </div>
-
-        <div style={styles.card}>
-          <div style={styles.label}>Your Invite Link</div>
-          <input type="text" value={inviteLink} readOnly style={styles.input} />
-          <button style={styles.copyBtn} onClick={handleCopy}>
-            {copied? 'Copied' : 'Copy Link'}
-          </button>
-        </div>
-
-      </div>
-    </div>
+  return React.createElement('div', { style: styles.container },
+    React.createElement('div', { style: styles.header },
+      React.createElement('button', {
+        onClick: () => navigate(-1),
+        style: styles.backBtn
+      }, '‹'),
+      React.createElement('h2', { style: styles.title }, 'Invite Friends'),
+      React.createElement('div', { style: { width: '24px' } })
+    ),
+    React.createElement('div', { style: styles.content },
+      React.createElement('button', {
+        style: styles.inviteBtn,
+        onClick: handleCopy
+      }, copied? 'LINK COPIED!' : 'Invite Friends'),
+      React.createElement('button', {
+        style: styles.whatsappBtn,
+        onClick: handleWhatsAppShare
+      }, `📱 ${shared? 'Opening WhatsApp...' : 'Share on WhatsApp'}`),
+      React.createElement('div', { style: styles.card },
+        React.createElement('h3', { style: styles.cardTitle }, 'How it works:'),
+        React.createElement('ul', { style: styles.list },
+          React.createElement('li', { style: styles.listItem },
+            React.createElement('span', { style: styles.percent }, 'Get 10%'),
+            ' on your Team A first deposit'
+          ),
+          React.createElement('li', { style: styles.listItem },
+            React.createElement('span', { style: styles.percent }, 'Get 3%'),
+            ' on your Team B first deposit'
+          ),
+          React.createElement('li', { style: styles.listItem },
+            React.createElement('span', { style: styles.percent }, 'Get 1%'),
+            ' on your Team C first deposit'
+          )
+        ),
+        React.createElement('div', { style: styles.note },
+          React.createElement('strong', null, 'Important:'),
+          ' You only get the percentage on the invited user\'s ',
+          React.createElement('strong', null, ' first deposit ONLY'),
+          '. No daily income commissions from team members. No reward after the first deposit.'
+        )
+      ),
+      React.createElement('div', { style: styles.card },
+        React.createElement('div', { style: styles.label }, 'Your Invite Link'),
+        React.createElement('input', {
+          type: 'text',
+          value: inviteLink,
+          readOnly: true,
+          style: styles.input
+        }),
+        React.createElement('button', {
+          style: styles.copyBtn,
+          onClick: handleCopy
+        }, copied? 'Copied' : 'Copy Link')
+      )
+    )
   );
 }
 

@@ -35,7 +35,7 @@ function Settings() {
         const avatarData = reader.result;
         setAvatar(avatarData);
 
-        const updatedUser = {...user, avatar: avatarData };
+        const updatedUser = { ...user, avatar: avatarData };
         setUser(updatedUser);
         localStorage.setItem('hutvilla_user', JSON.stringify(updatedUser));
       };
@@ -50,7 +50,7 @@ function Settings() {
     }
     const newName = prompt('Enter new nickname:', user.nickname || '');
     if (newName && newName.trim()) {
-      const updatedUser = {...user, nickname: newName.trim() };
+      const updatedUser = { ...user, nickname: newName.trim() };
       setUser(updatedUser);
       localStorage.setItem('hutvilla_user', JSON.stringify(updatedUser));
     }
@@ -64,85 +64,82 @@ function Settings() {
     navigate('/login');
   };
 
-  return (
-    <div style={styles.container}>
-      <div style={styles.header}>
-        <button onClick={() => navigate(-1)} style={styles.backBtn}>‹</button>
-        <h2 style={styles.title}>Settings</h2>
-        <div style={{ width: '24px' }}></div>
-      </div>
-
-      <div style={styles.list}>
-        {/* Avatar */}
-        <div style={styles.item} onClick={() => document.getElementById('avatarUpload')?.click()}>
-          <span>Avatar</span>
-          <div style={styles.right}>
-            <img
-              src={avatar}
-              alt="avatar"
-              style={{
-               ...styles.avatar,
-                opacity: isLegitUser? 1 : 0.6
-              }}
-            />
-            <span style={styles.arrow}>›</span>
-          </div>
-          <input
-            type="file"
-            id="avatarUpload"
-            accept="image/*"
-            style={{ display: 'none' }}
-            onChange={handleAvatarUpload}
-            disabled={!isLegitUser}
-          />
-        </div>
-
-        {/* Nickname */}
-        <div style={styles.item} onClick={handleNicknameChange}>
-          <span>Nick name</span>
-          <div style={styles.right}>
-            <span style={{ color: '#999' }}>{user.nickname || 'Anon'}</span>
-            <span style={styles.arrow}>›</span>
-          </div>
-        </div>
-
-        {/* Phone Number */}
-        <div style={styles.item}>
-          <span>Phone Number</span>
-          <span style={{ color: '#999' }}>{user.phone || '---'}</span>
-        </div>
-
-        {/* Modify Password */}
-        <div
-          style={{...styles.item, opacity: isLegitUser? 1 : 0.5 }}
-          onClick={() => isLegitUser? navigate('/modifypassword') : alert('Rent a hut first')}
-        >
-          <span>Modify login password</span>
-          <span style={styles.arrow}>›</span>
-        </div>
-
-        {/* Bank Information */}
-        <div
-          style={{...styles.item, opacity: isLegitUser? 1 : 0.5 }}
-          onClick={() => isLegitUser? navigate('/bankinfo') : alert('Rent a hut first')}
-        >
-          <span>Bank information</span>
-          <span style={styles.arrow}>›</span>
-        </div>
-
-        {/* Version */}
-        <div style={{...styles.item, background: '#1a1a1a' }}>
-          <span>Version</span>
-          <span style={{ color: '#999' }}>11.0.6</span>
-        </div>
-      </div>
-
-      <button onClick={handleLogout} style={styles.logoutBtn}>
-        Sign out of account
-      </button>
-
-      <div style={{ height: '80px' }}></div>
-    </div>
+  return React.createElement('div', { style: styles.container },
+    React.createElement('div', { style: styles.header },
+      React.createElement('button', { 
+        onClick: () => navigate(-1), 
+        style: styles.backBtn 
+      }, '‹'),
+      React.createElement('h2', { style: styles.title }, 'Settings'),
+      React.createElement('div', { style: { width: '24px' } })
+    ),
+    React.createElement('div', { style: styles.list },
+      // Avatar
+      React.createElement('div', { 
+        style: styles.item, 
+        onClick: () => document.getElementById('avatarUpload')?.click() 
+      },
+        React.createElement('span', null, 'Avatar'),
+        React.createElement('div', { style: styles.right },
+          React.createElement('img', {
+            src: avatar,
+            alt: 'avatar',
+            style: {
+              ...styles.avatar,
+              opacity: isLegitUser ? 1 : 0.6
+            }
+          }),
+          React.createElement('span', { style: styles.arrow }, '›')
+        ),
+        React.createElement('input', {
+          type: 'file',
+          id: 'avatarUpload',
+          accept: 'image/*',
+          style: { display: 'none' },
+          onChange: handleAvatarUpload,
+          disabled: !isLegitUser
+        })
+      ),
+      // Nickname
+      React.createElement('div', { style: styles.item, onClick: handleNicknameChange },
+        React.createElement('span', null, 'Nick name'),
+        React.createElement('div', { style: styles.right },
+          React.createElement('span', { style: { color: '#999' } }, user.nickname || 'Anon'),
+          React.createElement('span', { style: styles.arrow }, '›')
+        )
+      ),
+      // Phone Number
+      React.createElement('div', { style: styles.item },
+        React.createElement('span', null, 'Phone Number'),
+        React.createElement('span', { style: { color: '#999' } }, user.phone || '---')
+      ),
+      // Modify Password
+      React.createElement('div', {
+        style: { ...styles.item, opacity: isLegitUser ? 1 : 0.5 },
+        onClick: () => isLegitUser ? navigate('/modifypassword') : alert('Rent a hut first')
+      },
+        React.createElement('span', null, 'Modify login password'),
+        React.createElement('span', { style: styles.arrow }, '›')
+      ),
+      // Bank Information
+      React.createElement('div', {
+        style: { ...styles.item, opacity: isLegitUser ? 1 : 0.5 },
+        onClick: () => isLegitUser ? navigate('/bankinfo') : alert('Rent a hut first')
+      },
+        React.createElement('span', null, 'Bank information'),
+        React.createElement('span', { style: styles.arrow }, '›')
+      ),
+      // Version
+      React.createElement('div', { style: { ...styles.item, background: '#1a1a1a' } },
+        React.createElement('span', null, 'Version'),
+        React.createElement('span', { style: { color: '#999' } }, '11.0.6')
+      )
+    ),
+    React.createElement('button', { 
+      onClick: handleLogout, 
+      style: styles.logoutBtn 
+    }, 'Sign out of account'),
+    React.createElement('div', { style: { height: '80px' } })
   );
 }
 

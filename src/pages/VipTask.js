@@ -144,129 +144,87 @@ function VipTask() {
     };
   };
 
-  const HutItem = ({ hut, isRented, maturity, onRent, onCollect }) => (
-    <div style={styles.listItem}>
-      <img
-        src={hut.img}
-        alt={hut.name}
-        style={styles.hutImage}
-        onError={(e) => e.target.style.display = 'none'}
-      />
-      <div style={styles.hutInfo}>
-        <h3 style={styles.hutName}>{hut.name}</h3>
-        <p style={styles.detail}>Price: {hut.rent.toLocaleString()} UGX</p>
-        <p style={styles.detail}>Lock: {hut.days} Days</p>
-        <p style={styles.detail}>Total income: {hut.income.toLocaleString()} UGX</p>
-        {onRent &&!isRented && (
-          <button onClick={() => onRent(hut)} style={styles.rentButton}>
-            Rent Now
-          </button>
-        )}
-        {onCollect && maturity?.matured &&!maturity?.collected && (
-          <button onClick={() => onCollect(hut.id)} style={styles.collectButton}>
-            Collect Income
-          </button>
-        )}
-        {isRented && maturity &&!maturity.matured &&!maturity.collected && (
-          <p style={styles.statusText}>{maturity.timeLeft}</p>
-        )}
-        {maturity?.collected && (
-          <p style={styles.doneLabel}>✓ Income Collected</p>
-        )}
-      </div>
-    </div>
-  );
+  const renderHutItem = (hut, isRented, maturity, onRent, onCollect) =>
+    React.createElement('div', { style: styles.listItem },
+      React.createElement('img', {
+        src: hut.img,
+        alt: hut.name,
+        style: styles.hutImage,
+        onError: (e) => e.target.style.display = 'none'
+      }),
+      React.createElement('div', { style: styles.hutInfo },
+        React.createElement('h3', { style: styles.hutName }, hut.name),
+        React.createElement('p', { style: styles.detail }, `Price: ${hut.rent.toLocaleString()} UGX`),
+        React.createElement('p', { style: styles.detail }, `Lock: ${hut.days} Days`),
+        React.createElement('p', { style: styles.detail }, `Total income: ${hut.income.toLocaleString()} UGX`),
+        onRent &&!isRented && React.createElement('button', {
+          onClick: () => onRent(hut),
+          style: styles.rentButton
+        }, 'Rent Now'),
+        onCollect && maturity?.matured &&!maturity?.collected && React.createElement('button', {
+          onClick: () => onCollect(hut.id),
+          style: styles.collectButton
+        }, 'Collect Income'),
+        isRented && maturity &&!maturity.matured &&!maturity.collected && React.createElement('p', {
+          style: styles.statusText
+        }, maturity.timeLeft),
+        maturity?.collected && React.createElement('p', {
+          style: styles.doneLabel
+        }, '✓ Income Collected')
+      )
+    );
 
   if (loading ||!user) {
-    return <div style={{...styles.page, display: 'flex', alignItems: 'center', justifyContent: 'center'}}>Loading...</div>;
+    return React.createElement('div', {
+      style: {...styles.page, display: 'flex', alignItems: 'center', justifyContent: 'center' }
+    }, 'Loading...');
   }
 
-  return (
-    <div style={styles.page}>
-      <button
-        onClick={() => navigate('/dashboard')}
-        style={styles.backBtn}
-      >
-        ← Back
-      </button>
-
-      <h2 style={styles.title}>VIP Tasks</h2>
-      <h4 style={styles.balance}>
-        Balance: {user.balance.toLocaleString()} UGX
-      </h4>
-
-      <div style={styles.tabWrapper}>
-        <button
-          onClick={() => setActiveTab('VIP LITE')}
-          style={activeTab === 'VIP LITE'? styles.activeTab : styles.inactiveTab}
-        >
-          VIP LITE
-        </button>
-        <button
-          onClick={() => setActiveTab('VIP PRO')}
-          style={activeTab === 'VIP PRO'? styles.activeTab : styles.inactiveTab}
-        >
-          VIP PRO
-        </button>
-      </div>
-
-      <div style={styles.list}>
-        {hutsToShow.map((hut) => {
-          const rentedHut = rentedHuts.find(h => h.hut_id === hut.id &&!h.collected);
-          return (
-            <HutItem
-              key={hut.id}
-              hut={hut}
-              isRented={!!rentedHut}
-              onRent={handleRent}
-            />
-          );
-        })}
-      </div>
-
-      <div style={styles.section}>
-        <h3 style={styles.sectionTitle}>Active Rented Huts</h3>
-        {activeHuts.length === 0? (
-          <p style={{ textAlign: 'center', color: '#666' }}>No active rented huts</p>
-        ) : (
-          <div style={styles.list}>
-            {activeHuts.map(hut => {
+  return React.createElement('div', { style: styles.page },
+    React.createElement('button', {
+      onClick: () => navigate('/dashboard'),
+      style: styles.backBtn
+    }, '← Back'),
+    React.createElement('h2', { style: styles.title }, 'VIP Tasks'),
+    React.createElement('h4', { style: styles.balance }, `Balance: ${user.balance.toLocaleString()} UGX`),
+    React.createElement('div', { style: styles.tabWrapper },
+      React.createElement('button', {
+        onClick: () => setActiveTab('VIP LITE'),
+        style: activeTab === 'VIP LITE'? styles.activeTab : styles.inactiveTab
+      }, 'VIP LITE'),
+      React.createElement('button', {
+        onClick: () => setActiveTab('VIP PRO'),
+        style: activeTab === 'VIP PRO'? styles.activeTab : styles.inactiveTab
+      }, 'VIP PRO')
+    ),
+    React.createElement('div', { style: styles.list },
+      hutsToShow.map((hut) => {
+        const rentedHut = rentedHuts.find(h => h.hut_id === hut.id &&!h.collected);
+        return renderHutItem(hut,!!rentedHut, null, handleRent, null);
+      })
+    ),
+    React.createElement('div', { style: styles.section },
+      React.createElement('h3', { style: styles.sectionTitle }, 'Active Rented Huts'),
+      activeHuts.length === 0
+       ? React.createElement('p', { style: { textAlign: 'center', color: '#666' } }, 'No active rented huts')
+        : React.createElement('div', { style: styles.list },
+            activeHuts.map(hut => {
               const maturity = getMaturityInfo(hut.rented_at, hut.days);
-              return (
-                <HutItem
-                  key={`active-${hut.id}`}
-                  hut={hut}
-                  isRented={true}
-                  maturity={maturity}
-                  onCollect={handleCollect}
-                />
-              );
-            })}
-          </div>
-        )}
-      </div>
-
-      <div style={styles.section}>
-        <h3 style={styles.sectionTitle}>Expired Rented Huts</h3>
-        {expiredHuts.length === 0? (
-          <p style={{ textAlign: 'center', color: '#666' }}>No expired huts yet</p>
-        ) : (
-          <div style={styles.list}>
-            {expiredHuts.map(hut => {
+              return renderHutItem(hut, true, maturity, null, handleCollect);
+            })
+          )
+    ),
+    React.createElement('div', { style: styles.section },
+      React.createElement('h3', { style: styles.sectionTitle }, 'Expired Rented Huts'),
+      expiredHuts.length === 0
+       ? React.createElement('p', { style: { textAlign: 'center', color: '#666' } }, 'No expired huts yet')
+        : React.createElement('div', { style: styles.list },
+            expiredHuts.map(hut => {
               const maturity = { collected: true };
-              return (
-                <HutItem
-                  key={`expired-${hut.id}`}
-                  hut={hut}
-                  isRented={true}
-                  maturity={maturity}
-                />
-              );
-            })}
-          </div>
-        )}
-      </div>
-    </div>
+              return renderHutItem(hut, true, maturity, null, null);
+            })
+          )
+    )
   );
 }
 

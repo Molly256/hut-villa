@@ -2,7 +2,7 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useEffect, useState, useRef } from 'react';
 
-const API_URL = '/api'; // use '/api' for single project, or full URL if separate
+const API_URL = '/api';
 
 function Dashboard() {
   const navigate = useNavigate();
@@ -116,62 +116,65 @@ function Dashboard() {
   ];
 
   if (loading) {
-    return <div style={{ ...styles.wrapper, color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>Loading...</div>;
+    return React.createElement('div', { 
+      style: { ...styles.wrapper, color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center' } 
+    }, 'Loading...');
   }
 
-  return (
-    <div style={styles.wrapper}>
-      <div style={styles.overlay}>
-        <div style={styles.topCard}>
-          <div style={styles.avatarCircle} onClick={() => fileInputRef.current.click()}>
-            {user.avatar ? (
-              <img src={user.avatar} alt="avatar" style={styles.avatarImg} />
-            ) : (
-              <div style={styles.avatarPlaceholder}>👤</div>
-            )}
-          </div>
-          <input
-            type="file"
-            ref={fileInputRef}
-            style={{ display: 'none' }}
-            accept="image/*"
-            onChange={handleAvatarChange}
-          />
-
-          <div style={styles.nickname}>{user.nickname || 'User'}</div>
-          <div style={styles.phone}>{user.phone}</div>
-          <div style={styles.balance}>{user.balance ? `${Number(user.balance).toLocaleString()} UGX` : '0 UGX'}</div>
-        </div>
-
-        <div style={styles.noticeWrapper}>
-          <div style={styles.notice}>
-            Welcome to Hut Villa site invest with confidence 🎉🎉🎊
-          </div>
-        </div>
-
-        <div style={styles.grid}>
-          {menuItems.map((item) => (
-            <div
-              key={item.label}
-              onClick={() => item.action ? item.action() : navigate(item.path)}
-              style={styles.card}
-            >
-              <div style={styles.icon}>{item.icon}</div>
-              <div style={styles.label}>{item.label}</div>
-            </div>
-          ))}
-        </div>
-
-        <div style={styles.bottomBar}>
-          {bottomNav.map((item) => (
-            <div key={item.label} style={styles.navItem} onClick={() => navigate(item.path)}>
-              <div style={styles.navIcon}>{item.icon}</div>
-              <div style={styles.navLabel}>{item.label}</div>
-            </div>
-          ))}
-        </div>
-      </div>
-    </div>
+  return React.createElement('div', { style: styles.wrapper },
+    React.createElement('div', { style: styles.overlay },
+      React.createElement('div', { style: styles.topCard },
+        React.createElement('div', { 
+          style: styles.avatarCircle, 
+          onClick: () => fileInputRef.current.click() 
+        },
+          user.avatar
+            ? React.createElement('img', { src: user.avatar, alt: 'avatar', style: styles.avatarImg })
+            : React.createElement('div', { style: styles.avatarPlaceholder }, '👤')
+        ),
+        React.createElement('input', {
+          type: 'file',
+          ref: fileInputRef,
+          style: { display: 'none' },
+          accept: 'image/*',
+          onChange: handleAvatarChange
+        }),
+        React.createElement('div', { style: styles.nickname }, user.nickname || 'User'),
+        React.createElement('div', { style: styles.phone }, user.phone),
+        React.createElement('div', { style: styles.balance }, 
+          user.balance ? `${Number(user.balance).toLocaleString()} UGX` : '0 UGX'
+        )
+      ),
+      React.createElement('div', { style: styles.noticeWrapper },
+        React.createElement('div', { style: styles.notice }, 
+          'Welcome to Hut Villa site invest with confidence 🎉🎉🎊'
+        )
+      ),
+      React.createElement('div', { style: styles.grid },
+        menuItems.map((item) =>
+          React.createElement('div', {
+            key: item.label,
+            onClick: () => item.action ? item.action() : navigate(item.path),
+            style: styles.card
+          },
+            React.createElement('div', { style: styles.icon }, item.icon),
+            React.createElement('div', { style: styles.label }, item.label)
+          )
+        )
+      ),
+      React.createElement('div', { style: styles.bottomBar },
+        bottomNav.map((item) =>
+          React.createElement('div', {
+            key: item.label,
+            style: styles.navItem,
+            onClick: () => navigate(item.path)
+          },
+            React.createElement('div', { style: styles.navIcon }, item.icon),
+            React.createElement('div', { style: styles.navLabel }, item.label)
+          )
+        )
+      )
+    )
   );
 }
 

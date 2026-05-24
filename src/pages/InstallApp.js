@@ -9,22 +9,18 @@ function InstallApp() {
   const [isIOS, setIsIOS] = useState(false);
 
   useEffect(() => {
-    // Check if already installed
     if (window.matchMedia('(display-mode: standalone)').matches) {
       setIsInstalled(true);
     }
 
-    // Check if iOS
     setIsIOS(/iPad|iPhone|iPod/.test(navigator.userAgent));
 
-    // Listen for install prompt
     const handler = (e) => {
       e.preventDefault();
       setDeferredPrompt(e);
     };
 
     window.addEventListener('beforeinstallprompt', handler);
-
     return () => window.removeEventListener('beforeinstallprompt', handler);
   }, []);
 
@@ -39,56 +35,56 @@ function InstallApp() {
     }
   };
 
-  return (
-    <div style={styles.page}>
-      <button onClick={() => navigate('/dashboard')} style={styles.backBtn}>
-        ← Back
-      </button>
-
-      <div style={styles.card}>
-        <div style={styles.icon}>📱</div>
-        <h2 style={styles.title}>Install Hut Villa App</h2>
-        <p style={styles.subtitle}>Get faster access and work offline</p>
-
-        {isInstalled && (
-          <div style={styles.successBox}>
-            ✅ App is already installed on your device
-          </div>
-        )}
-
-        {!isInstalled && deferredPrompt && (
-          <>
-            <button onClick={handleInstallClick} style={styles.installBtn}>
-              Install Now
-            </button>
-            <p style={styles.note}>Tap "Install" and confirm to add to your home screen</p>
-          </>
-        )}
-
-        {!isInstalled && !deferredPrompt && !isIOS && (
-          <div style={styles.instructions}>
-            <h3>How to Install:</h3>
-            <ol>
-              <li>Open Chrome browser menu ⋮</li>
-              <li>Tap <strong>"Install App"</strong> or <strong>"Add to Home Screen"</strong></li>
-              <li>Confirm and the app will appear on your home screen</li>
-            </ol>
-          </div>
-        )}
-
-        {isIOS && (
-          <div style={styles.instructions}>
-            <h3>How to Install on iPhone/iPad:</h3>
-            <ol>
-              <li>Tap the <span style={styles.shareIcon}>⎋</span> Share button</li>
-              <li>Scroll and tap <strong>"Add to Home Screen"</strong></li>
-              <li>Tap <strong>"Add"</strong> to confirm</li>
-            </ol>
-            <p style={styles.note}>Safari only. Chrome on iOS doesn’t support PWA install.</p>
-          </div>
-        )}
-      </div>
-    </div>
+  return React.createElement('div', { style: styles.page },
+    React.createElement('button', { 
+      onClick: () => navigate('/dashboard'), 
+      style: styles.backBtn 
+    }, '← Back'),
+    React.createElement('div', { style: styles.card },
+      React.createElement('div', { style: styles.icon }, '📱'),
+      React.createElement('h2', { style: styles.title }, 'Install Hut Villa App'),
+      React.createElement('p', { style: styles.subtitle }, 'Get faster access and work offline'),
+      isInstalled && React.createElement('div', { style: styles.successBox },
+        '✅ App is already installed on your device'
+      ),
+      !isInstalled && deferredPrompt && React.createElement(React.Fragment, null,
+        React.createElement('button', { 
+          onClick: handleInstallClick, 
+          style: styles.installBtn 
+        }, 'Install Now'),
+        React.createElement('p', { style: styles.note },
+          'Tap "Install" and confirm to add to your home screen'
+        )
+      ),
+      !isInstalled && !deferredPrompt && !isIOS && React.createElement('div', { style: styles.instructions },
+        React.createElement('h3', { style: { marginTop: 0, fontSize: '16px', marginBottom: '10px' } }, 'How to Install:'),
+        React.createElement('ol', null,
+          React.createElement('li', null, 'Open Chrome browser menu ⋮'),
+          React.createElement('li', null, 
+            'Tap ', React.createElement('strong', null, '"Install App"'), ' or ', 
+            React.createElement('strong', null, '"Add to Home Screen"')
+          ),
+          React.createElement('li', null, 'Confirm and the app will appear on your home screen')
+        )
+      ),
+      isIOS && React.createElement('div', { style: styles.instructions },
+        React.createElement('h3', { style: { marginTop: 0, fontSize: '16px', marginBottom: '10px' } }, 
+          'How to Install on iPhone/iPad:'
+        ),
+        React.createElement('ol', null,
+          React.createElement('li', null, 
+            'Tap the ', React.createElement('span', { style: styles.shareIcon }, '⎋'), ' Share button'
+          ),
+          React.createElement('li', null, 
+            'Scroll and tap ', React.createElement('strong', null, '"Add to Home Screen"')
+          ),
+          React.createElement('li', null, 'Tap ', React.createElement('strong', null, '"Add"'), ' to confirm')
+        ),
+        React.createElement('p', { style: styles.note },
+          'Safari only. Chrome on iOS doesn’t support PWA install.'
+        )
+      )
+    )
   );
 }
 
@@ -157,11 +153,6 @@ const styles = {
     background: '#f9f9f9',
     padding: '16px',
     borderRadius: '12px',
-  },
-  instructionsH3: {
-    marginTop: 0,
-    fontSize: '16px',
-    marginBottom: '10px',
   },
   note: {
     fontSize: '13px',

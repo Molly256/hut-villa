@@ -70,60 +70,47 @@ function Deposit() {
 
   if (!user) return null;
 
-  return (
-    <div style={{ padding: '20px', minHeight: '100vh', background: '#f5f5f5' }}>
-      <button
-        onClick={() => navigate('/dashboard')}
-        style={{ marginBottom: '15px', padding: '8px 16px', borderRadius: '8px', border: 'none', background: '#333', color: '#fff', cursor: 'pointer' }}
-      >
-        ← Back
-      </button>
-
-      <h2 style={{ textAlign: 'center', marginBottom: '20px' }}>Deposit</h2>
-      <p style={{ textAlign: 'center', color: '#666', marginBottom: '20px' }}>
-        Minimum deposit is 10,000 UGX
-      </p>
-
-      <input
-        type="number"
-        placeholder="Input amount......."
-        value={amount}
-        onChange={(e) => setAmount(e.target.value)}
-        style={styles.input}
-      />
-
-      <h3 style={{ marginTop: '20px', marginBottom: '10px' }}>Select method:</h3>
-
-      <div
-        style={{...styles.method, border: method === 'mtn'? '2px solid #ff6b35' : '1px solid #ddd' }}
-        onClick={() => setMethod('mtn')}
-      >
-        <div style={{ fontWeight: '600' }}>MTN Mobile Money</div>
-        <div>0773242118</div>
-        <div>Besigye Benard</div>
-      </div>
-
-      <div
-        style={{...styles.method, border: method === 'airtel'? '2px solid #ff6b35' : '1px solid #ddd' }}
-        onClick={() => setMethod('airtel')}
-      >
-        <div style={{ fontWeight: '600' }}>Airtel Mobile Money</div>
-        <div>0753520252</div>
-        <div>Nakiyngi Maureen</div>
-      </div>
-
-      <button onClick={handleSubmit} style={styles.button}>
-        Go pay and come back tap
-      </button>
-
-      <button
-        onClick={handleConfirm}
-        disabled={loading}
-        style={{...styles.button, background: '#28a745', marginTop: '10px' }}
-      >
-        {loading? 'Submitting...' : 'I have sent the money'}
-      </button>
-    </div>
+  return React.createElement('div', { style: { padding: '20px', minHeight: '100vh', background: '#f5f5f5' } },
+    React.createElement('button', {
+      onClick: () => navigate('/dashboard'),
+      style: { marginBottom: '15px', padding: '8px 16px', borderRadius: '8px', border: 'none', background: '#333', color: '#fff', cursor: 'pointer' }
+    }, '← Back'),
+    React.createElement('h2', { style: { textAlign: 'center', marginBottom: '20px' } }, 'Deposit'),
+    React.createElement('p', { style: { textAlign: 'center', color: '#666', marginBottom: '20px' } },
+      'Minimum deposit is 10,000 UGX'
+    ),
+    React.createElement('input', {
+      type: 'number',
+      placeholder: 'Input amount.......',
+      value: amount,
+      onChange: (e) => setAmount(e.target.value),
+      style: styles.input
+    }),
+    React.createElement('h3', { style: { marginTop: '20px', marginBottom: '10px' } }, 'Select method:'),
+    React.createElement('div', {
+      style: {...styles.method, border: method === 'mtn'? '2px solid #ff6b35' : '1px solid #ddd' },
+      onClick: () => setMethod('mtn')
+    },
+      React.createElement('div', { style: { fontWeight: '600' } }, 'MTN Mobile Money'),
+      React.createElement('div', null, '0773242118'),
+      React.createElement('div', null, 'Besigye Benard')
+    ),
+    React.createElement('div', {
+      style: {...styles.method, border: method === 'airtel'? '2px solid #ff6b35' : '1px solid #ddd' },
+      onClick: () => setMethod('airtel')
+    },
+      React.createElement('div', { style: { fontWeight: '600' } }, 'Airtel Mobile Money'),
+      React.createElement('div', null, '0753520252'),
+      React.createElement('div', null, 'Nakiyngi Maureen')
+    ),
+    React.createElement('button', { onClick: handleSubmit, style: styles.button },
+      'Go pay and come back tap'
+    ),
+    React.createElement('button', {
+      onClick: handleConfirm,
+      disabled: loading,
+      style: {...styles.button, background: '#28a745', marginTop: '10px' }
+    }, loading? 'Submitting...' : 'I have sent the money')
   );
 }
 

@@ -27,8 +27,8 @@ function Team() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ phoneNumber: user.phone })
     })
-  .then(res => res.json())
-  .then(data => {
+    .then(res => res.json())
+    .then(data => {
       setTeam(data.team || {
         levelA: [],
         levelB: [],
@@ -37,88 +37,80 @@ function Team() {
       });
       setLoading(false);
     })
-  .catch(err => {
+    .catch(err => {
       console.error(err);
       setLoading(false);
     });
   }, [navigate]);
 
-  const TeamMember = ({ member, level }) => (
-    <div style={styles.memberCard}>
-      <div style={styles.memberInfo}>
-        <div style={styles.avatar}>{member.phone?.slice(-4) || '****'}</div>
-        <div>
-          <div style={styles.phone}>{member.phone || 'Unknown'}</div>
-          <div style={styles.date}>Joined: {member.date || 'N/A'}</div>
-        </div>
-      </div>
-      <div style={styles.reward}>
-        <div style={styles.rewardLabel}>Reward</div>
-        <div style={styles.rewardAmount}>
-          {level === 'A'? '10%' : level === 'B'? '3%' : '1%'}
-        </div>
-      </div>
-    </div>
-  );
+  const renderTeamMember = (member, level) => 
+    React.createElement('div', { style: styles.memberCard },
+      React.createElement('div', { style: styles.memberInfo },
+        React.createElement('div', { style: styles.avatar }, 
+          member.phone?.slice(-4) || '****'
+        ),
+        React.createElement('div', null,
+          React.createElement('div', { style: styles.phone }, member.phone || 'Unknown'),
+          React.createElement('div', { style: styles.date }, `Joined: ${member.date || 'N/A'}`)
+        )
+      ),
+      React.createElement('div', { style: styles.reward },
+        React.createElement('div', { style: styles.rewardLabel }, 'Reward'),
+        React.createElement('div', { style: styles.rewardAmount },
+          level === 'A'? '10%' : level === 'B'? '3%' : '1%'
+        )
+      )
+    );
 
-  const TeamSection = ({ title, level, data, color }) => (
-    <div style={styles.section}>
-      <div style={{...styles.sectionTitle, color}}>
-        ▶ {title} <span style={styles.count}>({data.length})</span>
-      </div>
-      {data.length === 0? (
-        <div style={styles.emptyState}>
-          No {title} members yet.
-        </div>
-      ) : (
-        data.map((member, idx) => (
-          <TeamMember key={idx} member={member} level={level} />
-        ))
-      )}
-    </div>
-  );
+  const renderTeamSection = (title, level, data, color) =>
+    React.createElement('div', { style: styles.section },
+      React.createElement('div', { style: { ...styles.sectionTitle, color } },
+        `▶ ${title} `,
+        React.createElement('span', { style: styles.count }, `(${data.length})`)
+      ),
+      data.length === 0
+        ? React.createElement('div', { style: styles.emptyState }, `No ${title} members yet.`)
+        : data.map((member, idx) => renderTeamMember(member, level))
+    );
 
   if (loading) {
-    return <div style={{...styles.container, display: 'flex', alignItems: 'center', justifyContent: 'center'}}>Loading...</div>;
+    return React.createElement('div', {
+      style: { ...styles.container, display: 'flex', alignItems: 'center', justifyContent: 'center' }
+    }, 'Loading...');
   }
 
-  return (
-    <div style={styles.container}>
-      <div style={styles.header}>
-        <button onClick={() => navigate(-1)} style={styles.backBtn}>‹</button>
-        <h2 style={styles.title}>My Team</h2>
-        <div style={{ width: '24px' }}></div>
-      </div>
-
-      <div style={styles.summaryRow}>
-        <div style={styles.summaryCard}>
-          <div style={styles.summaryLabel}>Team A</div>
-          <div style={styles.summaryValue}>{team.levelA.length}</div>
-          <div style={styles.summarySub}>Direct invites</div>
-        </div>
-        <div style={styles.summaryCard}>
-          <div style={styles.summaryLabel}>Team B</div>
-          <div style={styles.summaryValue}>{team.levelB.length}</div>
-          <div style={styles.summarySub}>Level 2</div>
-        </div>
-        <div style={styles.summaryCard}>
-          <div style={styles.summaryLabel}>Team C</div>
-          <div style={styles.summaryValue}>{team.levelC.length}</div>
-          <div style={styles.summarySub}>Level 3</div>
-        </div>
-        <div style={styles.summaryCard}>
-          <div style={styles.summaryLabel}>Total Earned</div>
-          <div style={styles.summaryValue}>{team.totalCommission.toLocaleString()}</div>
-          <div style={styles.summarySub}>UGX</div>
-        </div>
-      </div>
-
-      <TeamSection title="Team A" level="A" data={team.levelA} color="#ff4f7a" />
-      <TeamSection title="Team B" level="B" data={team.levelB} color="#ff8aa8" />
-      <TeamSection title="Team C" level="C" data={team.levelC} color="#ffb3c7" />
-
-      <div style={{ height: '80px' }}></div>
-    </div>
+  return React.createElement('div', { style: styles.container },
+    React.createElement('div', { style: styles.header },
+      React.createElement('button', { onClick: () => navigate(-1), style: styles.backBtn }, '‹'),
+      React.createElement('h2', { style: styles.title }, 'My Team'),
+      React.createElement('div', { style: { width: '24px' } })
+    ),
+    React.createElement('div', { style: styles.summaryRow },
+      React.createElement('div', { style: styles.summaryCard },
+        React.createElement('div', { style: styles.summaryLabel }, 'Team A'),
+        React.createElement('div', { style: styles.summaryValue }, team.levelA.length),
+        React.createElement('div', { style: styles.summarySub }, 'Direct invites')
+      ),
+      React.createElement('div', { style: styles.summaryCard },
+        React.createElement('div', { style: styles.summaryLabel }, 'Team B'),
+        React.createElement('div', { style: styles.summaryValue }, team.levelB.length),
+        React.createElement('div', { style: styles.summarySub }, 'Level 2')
+      ),
+      React.createElement('div', { style: styles.summaryCard },
+        React.createElement('div', { style: styles.summaryLabel }, 'Team C'),
+        React.createElement('div', { style: styles.summaryValue }, team.levelC.length),
+        React.createElement('div', { style: styles.summarySub }, 'Level 3')
+      ),
+      React.createElement('div', { style: styles.summaryCard },
+        React.createElement('div', { style: styles.summaryLabel }, 'Total Earned'),
+        React.createElement('div', { style: styles.summaryValue }, team.totalCommission.toLocaleString()),
+        React.createElement('div', { style: styles.summarySub }, 'UGX')
+      )
+    ),
+    renderTeamSection('Team A', 'A', team.levelA, '#ff4f7a'),
+    renderTeamSection('Team B', 'B', team.levelB, '#ff8aa8'),
+    renderTeamSection('Team C', 'C', team.levelC, '#ffb3c7'),
+    React.createElement('div', { style: { height: '80px' } })
   );
 }
 
