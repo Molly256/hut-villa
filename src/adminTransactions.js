@@ -23,10 +23,10 @@ function AdminTransactions() {
       }
 
       const { data: userData } = await supabase
-       .from('users')
-       .select('*')
-       .eq('id', authUser.id)
-       .single();
+      .from('users')
+      .select('*')
+      .eq('id', authUser.id)
+      .single();
 
       setUser(userData);
     };
@@ -75,9 +75,9 @@ function AdminTransactions() {
 
     const newStatus = action === 'approve'? 'approved' : 'rejected';
     const { error } = await supabase
-     .from(table)
-     .update({ status: newStatus, updated_at: new Date().toISOString() })
-     .eq('id', id);
+    .from(table)
+    .update({ status: newStatus, updated_at: new Date().toISOString() })
+    .eq('id', id);
 
     if (error) {
       setMessage('Error: ' + error.message);
@@ -105,7 +105,7 @@ function AdminTransactions() {
     textAlign: 'left'
   };
   const thStyle = {
-   ...thTdStyle,
+  ...thTdStyle,
     background: '#2a2a2a',
     fontWeight: '600'
   };
@@ -158,7 +158,7 @@ function AdminTransactions() {
 
     React.createElement('h3', null, 'Pending Deposits'),
     deposits.length === 0
-     ? React.createElement('p', { style: { color: '#888' } }, 'No pending deposits')
+    ? React.createElement('p', { style: { color: '#888' } }, 'No pending deposits')
       : React.createElement('div', { style: { overflowX: 'auto' } },
           React.createElement('table', { style: tableStyle },
             React.createElement('thead', null,
@@ -193,7 +193,7 @@ function AdminTransactions() {
 
     React.createElement('h3', { style: { marginTop: '40px' } }, 'Pending Withdrawals'),
     withdrawals.length === 0
-     ? React.createElement('p', { style: { color: '#888' } }, 'No pending withdrawals')
+    ? React.createElement('p', { style: { color: '#888' } }, 'No pending withdrawals')
       : React.createElement('div', { style: { overflowX: 'auto' } },
           React.createElement('table', { style: tableStyle },
             React.createElement('thead', null,

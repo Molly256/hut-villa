@@ -16,7 +16,7 @@ function Admin() {
 
   useEffect(() => {
     const checkAuth = async () => {
-      const { data: { user: authUser } = await supabase.auth.getUser();
+      const { data: { user: authUser } } = await supabase.auth.getUser();
       
       if (!authUser) {
         setUser(null);
@@ -30,7 +30,7 @@ function Admin() {
        .eq('id', authUser.id)
        .single();
 
-      if (error || !userData || userData.role!== 'admin') {
+      if (error || !userData || userData.role !== 'admin') {
         setUser(null);
       } else {
         setUser(userData);
@@ -43,7 +43,7 @@ function Admin() {
   const handleResetPassword = async (e) => {
     e.preventDefault();
     
-    if (!user || user.role!== 'admin') {
+    if (!user || user.role !== 'admin') {
       setMessage('❌ Unauthorized: Admin access only');
       return;
     }
