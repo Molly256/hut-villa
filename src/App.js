@@ -16,7 +16,7 @@ import VipTask from './pages/VipTask';
 import Bill from './pages/Bill';
 import Settings from './pages/Settings';
 import ModifyPassword from './pages/ModifyPassword';
-import Admin from './admin';
+import Admin from './Admin';
 import AdminTransactions from './AdminTransactions';
 
 function DashboardWrapper(props) {
