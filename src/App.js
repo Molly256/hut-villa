@@ -16,8 +16,6 @@ import VipTask from './pages/VipTask';
 import Bill from './pages/Bill';
 import Settings from './pages/Settings';
 import ModifyPassword from './pages/ModifyPassword';
-import Admin from './Admin';
-import AdminTransactions from './AdminTransactions';
 
 function DashboardWrapper(props) {
   const navigate = useNavigate();
@@ -27,7 +25,7 @@ function DashboardWrapper(props) {
 function AppContent({ user, handleLogin, handleLogout, setUser, rentedHuts, setRentedHuts, avatar, setAvatar }) {
   const location = useLocation();
   
-  const hideBottomBar = !user || ['/', '/login', '/register', '/admin', '/admin/transactions'].includes(location.pathname);
+  const hideBottomBar = !user || ['/', '/login', '/register'].includes(location.pathname);
 
   return (
     <div style={{ paddingBottom: hideBottomBar ? 0 : '70px' }}>
@@ -46,8 +44,6 @@ function AppContent({ user, handleLogin, handleLogout, setUser, rentedHuts, setR
         <Route path="/bill" element={user ? <Bill /> : <Navigate to="/login" />} />
         <Route path="/settings" element={user ? <Settings user={user} setUser={setUser} rentedHuts={rentedHuts} setAvatar={setAvatar} avatar={avatar} /> : <Navigate to="/login" />} />
         <Route path="/modifypassword" element={user ? <ModifyPassword user={user} setUser={setUser} /> : <Navigate to="/login" />} />
-        <Route path="/admin" element={<Admin />} />
-        <Route path="/admin/transactions" element={<AdminTransactions />} />
         <Route path="*" element={<Navigate to="/" />} />
       </Routes>
       {!hideBottomBar && <BottomBar />}
