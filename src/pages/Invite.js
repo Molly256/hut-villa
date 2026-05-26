@@ -19,10 +19,10 @@ function Invite() {
   if (!user) return null;
 
   const phoneClean = (user.phone || user.phoneNumber || '')
-   .replace('+', '')
-   .replace(/\D/g, '');
+  .replace('+', '')
+  .replace(/\D/g, '');
   const inviteCode = phoneClean || user.id || 'USER';
-  const inviteLink = `https://hut-villa-site.com/register?code=${inviteCode}`;
+  const inviteLink = `https://hut-villa.vercel.app/register?code=${inviteCode}`;
   const shareText = `Join Hut Villa! Use my link to register and start earning: ${inviteLink}`;
   const whatsappLink = `https://wa.me/?text=${encodeURIComponent(shareText)}`;
 
