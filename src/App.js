@@ -25,14 +25,13 @@ function DashboardWrapper(props) {
 function AppContent({ user, handleLogin, handleLogout, setUser, rentedHuts, setRentedHuts, avatar, setAvatar }) {
   const location = useLocation();
   
-  // Clear stale login if user lands on register
+  // Clear stale login when landing on register
   useEffect(() => {
-    if (location.pathname === '/register' && user) {
+    if (location.pathname === '/register') {
       localStorage.removeItem('hutvilla_user');
       localStorage.removeItem('isLoggedIn');
-      window.location.reload();
     }
-  }, [location.pathname, user]);
+  }, [location.pathname]);
 
   const hideBottomBar = !user || ['/', '/login', '/register'].includes(location.pathname);
 
@@ -41,7 +40,7 @@ function AppContent({ user, handleLogin, handleLogout, setUser, rentedHuts, setR
       <Routes>
         <Route path="/" element={!user ? <Login onLogin={handleLogin} /> : <Navigate to="/dashboard" />} />
         <Route path="/login" element={!user ? <Login onLogin={handleLogin} /> : <Navigate to="/dashboard" />} />
-        <Route path="/register" element={!user ? <Register onRegister={handleLogin} /> : <Navigate to="/dashboard" />} />
+        <Route path="/register" element={<Register onRegister={handleLogin} />} />
         <Route path="/dashboard" element={user ? <DashboardWrapper user={user} handleLogout={handleLogout} /> : <Navigate to="/login" />} />
         <Route path="/team" element={user ? <MyTeam user={user} /> : <Navigate to="/login" />} />
         <Route path="/contact" element={user ? <ManagerContact /> : <Navigate to="/login" />} />
