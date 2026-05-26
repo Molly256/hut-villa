@@ -1,10 +1,4 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { createClient } from '@supabase/supabase-js';
-
-const supabase = createClient(
-  process.env.REACT_APP_SUPABASE_URL,
-  process.env.REACT_APP_SUPABASE_ANON_KEY
-);
 
 function AdminTransactions() {
   const [user, setUser] = useState(null);
@@ -13,24 +7,14 @@ function AdminTransactions() {
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
 
-  // Get logged in user and check role
+  // Get logged in user from localStorage
   useEffect(() => {
-    const getUser = async () => {
-      const { data: { user: authUser } = await supabase.auth.getUser();
-      if (!authUser) {
-        setUser(null);
-        return;
-      }
-
-      const { data: userData } = await supabase
-      .from('users')
-      .select('*')
-      .eq('id', authUser.id)
-      .single();
-
-      setUser(userData);
-    };
-    getUser();
+    const storedUser = localStorage.getItem('hutvilla_user');
+    if (!storedUser) {
+      setUser(null);
+      return;
+    }
+    setUser(JSON.parse(storedUser));
   }, []);
 
   const fetchTransactions = useCallback(async () => {
@@ -43,18 +27,21 @@ function AdminTransactions() {
     setMessage('');
     try {
       const [depRes, witRes] = await Promise.all([
-        supabase.from('deposits').select('*').eq('status', 'pending').order('created_at', { ascending: false }),
-        supabase.from('withdrawals').select('*').eq('status', 'pending').order('created_at', { ascending: false })
+        fetch('/api/deposits?status=pending'),
+        fetch('/api/withdrawals?status=pending')
       ]);
 
-      if (depRes.error) {
-        setMessage('Deposits error: ' + depRes.error.message);
-      } else if (witRes.error) {
-        setMessage('Withdrawals error: ' + witRes.error.message);
+      const depData = await depRes.json();
+      const witData = await witRes.json();
+
+      if (!depRes.ok) {
+        setMessage('Deposits error: ' + depData.error);
+      } else if (!witRes.ok) {
+        setMessage('Withdrawals error: ' + witData.error);
       } else {
-        setDeposits(depRes.data || []);
-        setWithdrawals(witRes.data || []);
-        if ((depRes.data || []).length === 0 && (witRes.data || []).length === 0) {
+        setDeposits(depData.deposits || []);
+        setWithdrawals(witData.withdrawals || []);
+        if ((depData.deposits || []).length === 0 && (witData.withdrawals || []).length === 0) {
           setMessage('No pending transactions');
         }
       }
@@ -64,25 +51,26 @@ function AdminTransactions() {
     setLoading(false);
   }, [user]);
 
-  const handleAction = async (table, id, action) => {
+  const handleAction = async (type, id, action) => {
     if (!user || user.role!== 'admin') {
       setMessage('Unauthorized');
       return;
     }
-    if (!window.confirm(`Are you sure you want to ${action} this ${table.slice(0, -1)}?`)) {
+    if (!window.confirm(`Are you sure you want to ${action} this ${type.slice(0, -1)}?`)) {
       return;
     }
 
-    const newStatus = action === 'approve'? 'approved' : 'rejected';
-    const { error } = await supabase
-    .from(table)
-    .update({ status: newStatus, updated_at: new Date().toISOString() })
-    .eq('id', id);
+    const res = await fetch(`/api/${type}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id, status: action === 'approve'? 'approved' : 'rejected' })
+    });
 
-    if (error) {
-      setMessage('Error: ' + error.message);
+    const data = await res.json();
+    if (!res.ok) {
+      setMessage('Error: ' + data.error);
     } else {
-      setMessage(`✅ ${table.slice(0, -1)} ${action}d successfully`);
+      setMessage(`✅ ${type.slice(0, -1)} ${action}d successfully`);
       fetchTransactions();
     }
   };
@@ -93,138 +81,96 @@ function AdminTransactions() {
     }
   }, [user, fetchTransactions]);
 
-  const tableStyle = {
-    width: '100%',
-    borderCollapse: 'collapse',
-    marginTop: '10px',
-    background: '#1a1a1a'
-  };
-  const thTdStyle = {
-    border: '1px solid #333',
-    padding: '12px',
-    textAlign: 'left'
-  };
-  const thStyle = {
-  ...thTdStyle,
-    background: '#2a2a2a',
-    fontWeight: '600'
-  };
-  const buttonBase = {
-    border: 'none',
-    padding: '6px 12px',
-    color: '#fff',
-    borderRadius: '4px',
-    cursor: 'pointer',
-    fontWeight: '600'
-  };
+  const tableStyle = { width: '100%', borderCollapse: 'collapse', marginTop: '10px', background: '#1a1a1a' };
+  const thTdStyle = { border: '1px solid #333', padding: '12px', textAlign: 'left' };
+  const thStyle = {...thTdStyle, background: '#2a2a2a', fontWeight: '600' };
+  const buttonBase = { border: 'none', padding: '6px 12px', color: '#fff', borderRadius: '4px', cursor: 'pointer', fontWeight: '600' };
 
-  // Loading state
   if (!user) {
-    return React.createElement('div', {
-      style: { minHeight: '100vh', background: '#0f0f0f', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center' }
-    }, 'Loading...');
+    return <div style={{ minHeight: '100vh', background: '#0f0f0f', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>Loading...</div>;
   }
 
-  // Unauthorized state
   if (user.role!== 'admin') {
-    return React.createElement('div', {
-      style: { minHeight: '100vh', background: '#0f0f0f', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center' }
-    }, 'Unauthorized: Admin access only');
+    return <div style={{ minHeight: '100vh', background: '#0f0f0f', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>Unauthorized: Admin access only</div>;
   }
 
-  // Main UI
-  return React.createElement('div', {
-    style: { minHeight: '100vh', background: '#0f0f0f', color: '#fff', padding: '20px' }
-  },
-    React.createElement('div', {
-      style: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }
-    },
-      React.createElement('h2', { style: { margin: 0 } }, 'Pending Transactions'),
-      React.createElement('button', {
-        onClick: fetchTransactions,
-        style: { padding: '8px 16px', background: '#4CAF50', border: 'none', color: '#fff', borderRadius: '6px', cursor: 'pointer' },
-        disabled: loading
-      }, loading? 'Refreshing...' : 'Refresh')
-    ),
+  return (
+    <div style={{ minHeight: '100vh', background: '#0f0f0f', color: '#fff', padding: '20px' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+        <h2 style={{ margin: 0 }}>Pending Transactions</h2>
+        <button onClick={fetchTransactions} style={{ padding: '8px 16px', background: '#4CAF50', border: 'none', color: '#fff', borderRadius: '6px', cursor: 'pointer' }} disabled={loading}>
+          {loading? 'Refreshing...' : 'Refresh'}
+        </button>
+      </div>
 
-    message && React.createElement('div', {
-      style: {
-        padding: '12px',
-        background: message.includes('error') || message.includes('Failed') || message.includes('Unauthorized')? '#f44336' : '#4CAF50',
-        borderRadius: '6px',
-        marginBottom: '20px'
-      }
-    }, message),
+      {message && (
+        <div style={{ padding: '12px', background: message.includes('error') || message.includes('Unauthorized')? '#f44336' : '#4CAF50', borderRadius: '6px', marginBottom: '20px' }}>
+          {message}
+        </div>
+      )}
 
-    React.createElement('h3', null, 'Pending Deposits'),
-    deposits.length === 0
-    ? React.createElement('p', { style: { color: '#888' } }, 'No pending deposits')
-      : React.createElement('div', { style: { overflowX: 'auto' } },
-          React.createElement('table', { style: tableStyle },
-            React.createElement('thead', null,
-              React.createElement('tr', null,
-                React.createElement('th', { style: thStyle }, 'Phone'),
-                React.createElement('th', { style: thStyle }, 'Amount'),
-                React.createElement('th', { style: thStyle }, 'Date'),
-                React.createElement('th', { style: thStyle }, 'Action')
-              )
-            ),
-            React.createElement('tbody', null,
-              deposits.map(d =>
-                React.createElement('tr', { key: d.id },
-                  React.createElement('td', { style: thTdStyle }, d.phone_number),
-                  React.createElement('td', { style: thTdStyle }, d.amount + ' UGX'),
-                  React.createElement('td', { style: thTdStyle }, new Date(d.created_at).toLocaleString()),
-                  React.createElement('td', { style: thTdStyle },
-                    React.createElement('button', {
-                      onClick: () => handleAction('deposits', d.id, 'approve'),
-                      style: {...buttonBase, background: '#4CAF50', marginRight: '8px' }
-                    }, 'Approve'),
-                    React.createElement('button', {
-                      onClick: () => handleAction('deposits', d.id, 'reject'),
-                      style: {...buttonBase, background: '#f44336' }
-                    }, 'Reject')
-                  )
-                )
-              )
-            )
-          )
-        ),
+      <h3>Pending Deposits</h3>
+      {deposits.length === 0? (
+        <p style={{ color: '#888' }}>No pending deposits</p>
+      ) : (
+        <div style={{ overflowX: 'auto' }}>
+          <table style={tableStyle}>
+            <thead>
+              <tr>
+                <th style={thStyle}>Phone</th>
+                <th style={thStyle}>Amount</th>
+                <th style={thStyle}>Date</th>
+                <th style={thStyle}>Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              {deposits.map(d => (
+                <tr key={d.id}>
+                  <td style={thTdStyle}>{d.phone_number}</td>
+                  <td style={thTdStyle}>{d.amount} UGX</td>
+                  <td style={thTdStyle}>{new Date(d.created_at).toLocaleString()}</td>
+                  <td style={thTdStyle}>
+                    <button onClick={() => handleAction('deposits', d.id, 'approve')} style={{...buttonBase, background: '#4CAF50', marginRight: '8px' }}>Approve</button>
+                    <button onClick={() => handleAction('deposits', d.id, 'reject')} style={{...buttonBase, background: '#f44336' }}>Reject</button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
 
-    React.createElement('h3', { style: { marginTop: '40px' } }, 'Pending Withdrawals'),
-    withdrawals.length === 0
-    ? React.createElement('p', { style: { color: '#888' } }, 'No pending withdrawals')
-      : React.createElement('div', { style: { overflowX: 'auto' } },
-          React.createElement('table', { style: tableStyle },
-            React.createElement('thead', null,
-              React.createElement('tr', null,
-                React.createElement('th', { style: thStyle }, 'Phone'),
-                React.createElement('th', { style: thStyle }, 'Amount'),
-                React.createElement('th', { style: thStyle }, 'Date'),
-                React.createElement('th', { style: thStyle }, 'Action')
-              )
-            ),
-            React.createElement('tbody', null,
-              withdrawals.map(w =>
-                React.createElement('tr', { key: w.id },
-                  React.createElement('td', { style: thTdStyle }, w.phone_number),
-                  React.createElement('td', { style: thTdStyle }, w.amount + ' UGX'),
-                  React.createElement('td', { style: thTdStyle }, new Date(w.created_at).toLocaleString()),
-                  React.createElement('td', { style: thTdStyle },
-                    React.createElement('button', {
-                      onClick: () => handleAction('withdrawals', w.id, 'approve'),
-                      style: {...buttonBase, background: '#4CAF50', marginRight: '8px' }
-                    }, 'Approve'),
-                    React.createElement('button', {
-                      onClick: () => handleAction('withdrawals', w.id, 'reject'),
-                      style: {...buttonBase, background: '#f44336' }
-                    }, 'Reject')
-                  )
-                )
-              )
-            )
-          )
-        )
+      <h3 style={{ marginTop: '40px' }}>Pending Withdrawals</h3>
+      {withdrawals.length === 0? (
+        <p style={{ color: '#888' }}>No pending withdrawals</p>
+      ) : (
+        <div style={{ overflowX: 'auto' }}>
+          <table style={tableStyle}>
+            <thead>
+              <tr>
+                <th style={thStyle}>Phone</th>
+                <th style={thStyle}>Amount</th>
+                <th style={thStyle}>Date</th>
+                <th style={thStyle}>Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              {withdrawals.map(w => (
+                <tr key={w.id}>
+                  <td style={thTdStyle}>{w.phone_number}</td>
+                  <td style={thTdStyle}>{w.amount} UGX</td>
+                  <td style={thTdStyle}>{new Date(w.created_at).toLocaleString()}</td>
+                  <td style={thTdStyle}>
+                    <button onClick={() => handleAction('withdrawals', w.id, 'approve')} style={{...buttonBase, background: '#4CAF50', marginRight: '8px' }}>Approve</button>
+                    <button onClick={() => handleAction('withdrawals', w.id, 'reject')} style={{...buttonBase, background: '#f44336' }}>Reject</button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </div>
   );
 }
 
