@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 
 const styles = {
   downloadSection: {
@@ -38,6 +39,14 @@ const styles = {
     cursor: 'pointer',
     transition: 'transform 0.2s, background 0.2s'
   },
+  installedBox: {
+    background: '#e8f5e9',
+    color: '#2e7d32',
+    padding: '14px 32px',
+    fontSize: '16px',
+    fontWeight: '600',
+    borderRadius: '12px'
+  },
   installSteps: {
     marginTop: '25px',
     paddingTop: '20px',
@@ -47,30 +56,51 @@ const styles = {
   },
   installStepsP: {
     margin: '5px 0'
+  },
+  backBtn: {
+    marginBottom: '15px',
+    padding: '8px 16px',
+    borderRadius: '8px',
+    border: 'none',
+    background: '#333',
+    color: '#fff',
+    cursor: 'pointer'
   }
 };
 
 const Downloadapp = () => {
-  const [showInstall, setShowInstall] = useState(false);
+  const navigate = useNavigate();
+  const [isInstalled, setIsInstalled] = useState(false);
   const [deferredPrompt, setDeferredPrompt] = useState(null);
+  const [isIOS, setIsIOS] = useState(false);
 
   useEffect(() => {
-    const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
-    if (!isMobile) return;
+    if (typeof window === 'undefined') return;
+
+    const installed = window.matchMedia('(display-mode: standalone)').matches 
+      || window.navigator.standalone === true;
+    setIsInstalled(installed);
+
+    const ios = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+    setIsIOS(ios);
 
     const handleBeforeInstallPrompt = (e) => {
       e.preventDefault();
       setDeferredPrompt(e);
-      setShowInstall(true);
     };
 
     window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
 
-    if (window.matchMedia('(display-mode: standalone)').matches) {
-      setShowInstall(false);
-    }
+    const handleAppInstalled = () => {
+      setIsInstalled(true);
+      setDeferredPrompt(null);
+    };
+    window.addEventListener('appinstalled', handleAppInstalled);
 
-    return () => window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+    return () => {
+      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+      window.removeEventListener('appinstalled', handleAppInstalled);
+    };
   }, []);
 
   const handleInstallClick = async () => {
@@ -78,31 +108,39 @@ const Downloadapp = () => {
     deferredPrompt.prompt();
     const { outcome } = await deferredPrompt.userChoice;
     if (outcome === 'accepted') {
-      setShowInstall(false);
+      setDeferredPrompt(null);
     }
-    setDeferredPrompt(null);
   };
-
-  if (!showInstall) return null;
 
   return React.createElement('div', { style: styles.downloadSection },
     React.createElement('div', { style: styles.downloadContent },
+      React.createElement('button', {
+        onClick: () => navigate('/dashboard'),
+        style: styles.backBtn
+      }, '← Back'),
+      
       React.createElement('h2', { style: styles.h2 }, 'Get the Hut Villa App'),
       React.createElement('p', { style: styles.p }, 
         'Install our app for faster access, offline browsing, and a better experience.'
       ),
-      React.createElement('button', {
-        style: styles.installBtn,
-        onClick: handleInstallClick,
-        onMouseOver: (e) => {
-          e.target.style.background = '#b0256a';
-          e.target.style.transform = 'translateY(-2px)';
-        },
-        onMouseOut: (e) => {
-          e.target.style.background = '#d63384';
-          e.target.style.transform = 'translateY(0)';
-        }
-      }, 'Install App'),
+      
+      isInstalled 
+        ? React.createElement('div', { style: styles.installedBox }, '✅ Already installed')
+        : deferredPrompt 
+          ? React.createElement('button', {
+              style: styles.installBtn,
+              onClick: handleInstallClick,
+              onMouseOver: (e) => {
+                e.target.style.background = '#b0256a';
+                e.target.style.transform = 'translateY(-2px)';
+              },
+              onMouseOut: (e) => {
+                e.target.style.background = '#d63384';
+                e.target.style.transform = 'translateY(0)';
+              }
+            }, 'Install App')
+          : null,
+      
       React.createElement('div', { style: styles.installSteps },
         React.createElement('p', { style: styles.installStepsP },
           React.createElement('strong', null, 'Manual install:')

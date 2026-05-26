@@ -12,8 +12,8 @@ root.render(
   )
 );
 
-// Change this from unregister() to register()
-serviceWorkerRegistration.register();
+// Disable service worker since you don't need offline
+serviceWorkerRegistration.unregister();
 
 // If you want to start measuring performance in your app, pass a function
 // to log results (for example: reportWebVitals(console.log))

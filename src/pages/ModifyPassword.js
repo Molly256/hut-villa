@@ -40,7 +40,7 @@ export default function ModifyPassword() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          phoneNumber: user.phone,
+          phoneNumber: user.phone || user.phoneNumber,
           oldPassword: oldPass,
           newPassword: newPass
         })
@@ -49,7 +49,6 @@ export default function ModifyPassword() {
       const data = await res.json();
       if (!res.ok) {
         alert(data.error || 'Password update failed');
-        setLoading(false);
         return;
       }
 
@@ -57,8 +56,10 @@ export default function ModifyPassword() {
       navigate("/settings");
     } catch (err) {
       alert("Network error. Try again.");
+      console.error(err);
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   if (!user) return null;
@@ -97,7 +98,7 @@ export default function ModifyPassword() {
     React.createElement('button', {
       onClick: handleSubmit,
       disabled: loading,
-      style: styles.button
+      style: {...styles.button, background: loading? '#555' : '#ff6b35' }
     }, loading? 'Saving...' : 'Save')
   );
 }
@@ -117,7 +118,6 @@ const styles = {
   button: {
     width: '100%',
     padding: '15px',
-    background: '#ff6b35',
     color: 'white',
     border: 'none',
     borderRadius: '8px',

@@ -1,11 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 
+const API_URL = '/api';
+
 function Settings() {
   const navigate = useNavigate();
   const [user, setUser] = useState({});
   const [avatar, setAvatar] = useState('https://via.placeholder.com/80');
   const [rentedHuts, setRentedHuts] = useState([]);
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     const savedUser = localStorage.getItem('hutvilla_user');
@@ -16,12 +19,40 @@ function Settings() {
     const parsedUser = JSON.parse(savedUser);
     setUser(parsedUser);
     setAvatar(parsedUser.avatar || 'https://via.placeholder.com/80');
-    
+
     const huts = JSON.parse(localStorage.getItem(`huts_${parsedUser.phone}`)) || [];
     setRentedHuts(huts);
   }, [navigate]);
 
   const isLegitUser = Array.isArray(rentedHuts) && rentedHuts.length > 0;
+
+  const updateProfile = async (data) => {
+    setLoading(true);
+    try {
+      const res = await fetch(`${API_URL}/update-profile`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phoneNumber: user.phone,...data })
+      });
+
+      const resData = await res.json();
+      if (!res.ok) {
+        alert(resData.error || 'Update failed');
+        return false;
+      }
+
+      const updatedUser = {...user,...data };
+      setUser(updatedUser);
+      localStorage.setItem('hutvilla_user', JSON.stringify(updatedUser));
+      return true;
+    } catch (err) {
+      alert('Network error. Try again.');
+      console.error(err);
+      return false;
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleAvatarUpload = (e) => {
     if (!isLegitUser) {
@@ -29,18 +60,21 @@ function Settings() {
       return;
     }
     const file = e.target.files[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onload = () => {
-        const avatarData = reader.result;
-        setAvatar(avatarData);
+    if (!file) return;
 
-        const updatedUser = { ...user, avatar: avatarData };
-        setUser(updatedUser);
-        localStorage.setItem('hutvilla_user', JSON.stringify(updatedUser));
-      };
-      reader.readAsDataURL(file);
+    // Limit to 100KB to avoid KV size issues
+    if (file.size > 100 * 1024) {
+      alert('Image too large. Max 100KB');
+      return;
     }
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      const avatarData = reader.result;
+      setAvatar(avatarData);
+      updateProfile({ avatar: avatarData });
+    };
+    reader.readAsDataURL(file);
   };
 
   const handleNicknameChange = () => {
@@ -50,9 +84,7 @@ function Settings() {
     }
     const newName = prompt('Enter new nickname:', user.nickname || '');
     if (newName && newName.trim()) {
-      const updatedUser = { ...user, nickname: newName.trim() };
-      setUser(updatedUser);
-      localStorage.setItem('hutvilla_user', JSON.stringify(updatedUser));
+      updateProfile({ nickname: newName.trim() });
     }
   };
 
@@ -66,18 +98,18 @@ function Settings() {
 
   return React.createElement('div', { style: styles.container },
     React.createElement('div', { style: styles.header },
-      React.createElement('button', { 
-        onClick: () => navigate(-1), 
-        style: styles.backBtn 
+      React.createElement('button', {
+        onClick: () => navigate(-1),
+        style: styles.backBtn
       }, '‹'),
       React.createElement('h2', { style: styles.title }, 'Settings'),
       React.createElement('div', { style: { width: '24px' } })
     ),
     React.createElement('div', { style: styles.list },
       // Avatar
-      React.createElement('div', { 
-        style: styles.item, 
-        onClick: () => document.getElementById('avatarUpload')?.click() 
+      React.createElement('div', {
+        style: {...styles.item, opacity: loading? 0.6 : 1 },
+        onClick: () =>!loading && document.getElementById('avatarUpload')?.click()
       },
         React.createElement('span', null, 'Avatar'),
         React.createElement('div', { style: styles.right },
@@ -85,8 +117,8 @@ function Settings() {
             src: avatar,
             alt: 'avatar',
             style: {
-              ...styles.avatar,
-              opacity: isLegitUser ? 1 : 0.6
+             ...styles.avatar,
+              opacity: isLegitUser? 1 : 0.6
             }
           }),
           React.createElement('span', { style: styles.arrow }, '›')
@@ -97,11 +129,14 @@ function Settings() {
           accept: 'image/*',
           style: { display: 'none' },
           onChange: handleAvatarUpload,
-          disabled: !isLegitUser
+          disabled:!isLegitUser || loading
         })
       ),
       // Nickname
-      React.createElement('div', { style: styles.item, onClick: handleNicknameChange },
+      React.createElement('div', {
+        style: {...styles.item, opacity: loading? 0.6 : 1 },
+        onClick: () =>!loading && handleNicknameChange()
+      },
         React.createElement('span', null, 'Nick name'),
         React.createElement('div', { style: styles.right },
           React.createElement('span', { style: { color: '#999' } }, user.nickname || 'Anon'),
@@ -115,29 +150,30 @@ function Settings() {
       ),
       // Modify Password
       React.createElement('div', {
-        style: { ...styles.item, opacity: isLegitUser ? 1 : 0.5 },
-        onClick: () => isLegitUser ? navigate('/modifypassword') : alert('Rent a hut first')
+        style: {...styles.item, opacity: isLegitUser? 1 : 0.5 },
+        onClick: () => isLegitUser? navigate('/modifypassword') : alert('Rent a hut first')
       },
         React.createElement('span', null, 'Modify login password'),
         React.createElement('span', { style: styles.arrow }, '›')
       ),
       // Bank Information
       React.createElement('div', {
-        style: { ...styles.item, opacity: isLegitUser ? 1 : 0.5 },
-        onClick: () => isLegitUser ? navigate('/bankinfo') : alert('Rent a hut first')
+        style: {...styles.item, opacity: isLegitUser? 1 : 0.5 },
+        onClick: () => isLegitUser? navigate('/bankinfo') : alert('Rent a hut first')
       },
         React.createElement('span', null, 'Bank information'),
         React.createElement('span', { style: styles.arrow }, '›')
       ),
       // Version
-      React.createElement('div', { style: { ...styles.item, background: '#1a1a1a' } },
+      React.createElement('div', { style: {...styles.item, background: '#1a1a1a', cursor: 'default' } },
         React.createElement('span', null, 'Version'),
         React.createElement('span', { style: { color: '#999' } }, '11.0.6')
       )
     ),
-    React.createElement('button', { 
-      onClick: handleLogout, 
-      style: styles.logoutBtn 
+    React.createElement('button', {
+      onClick: handleLogout,
+      style: styles.logoutBtn,
+      disabled: loading
     }, 'Sign out of account'),
     React.createElement('div', { style: { height: '80px' } })
   );

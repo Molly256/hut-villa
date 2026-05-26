@@ -1,10 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { createClient } from '@supabase/supabase-js';
-
-const supabase = createClient(
-  process.env.REACT_APP_SUPABASE_URL,
-  process.env.REACT_APP_SUPABASE_ANON_KEY
-);
 
 function Admin() {
   const [user, setUser] = useState(null);
@@ -14,27 +8,35 @@ function Admin() {
   const [message, setMessage] = useState('');
   const [loading, setLoading] = useState(false);
 
+  const ADMIN_TOKEN = process.env.REACT_APP_ADMIN_TOKEN;
+
   useEffect(() => {
     const checkAuth = async () => {
-      const { data: { user: authUser } } = await supabase.auth.getUser();
-      
-      if (!authUser) {
+      const phoneNumber = localStorage.getItem('phoneNumber');
+
+      if (!phoneNumber) {
         setUser(null);
         setCheckingAuth(false);
         return;
       }
 
-      const { data: userData, error } = await supabase
-       .from('users')
-       .select('*')
-       .eq('id', authUser.id)
-       .single();
+      try {
+        const res = await fetch('/api/user/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ phoneNumber })
+        });
 
-      if (error || !userData || userData.role !== 'admin') {
+        const data = await res.json();
+        if (res.ok && data.user?.role === 'admin') {
+          setUser(data.user);
+        } else {
+          setUser(null);
+        }
+      } catch (err) {
         setUser(null);
-      } else {
-        setUser(userData);
       }
+
       setCheckingAuth(false);
     };
     checkAuth();
@@ -42,7 +44,7 @@ function Admin() {
 
   const handleResetPassword = async (e) => {
     e.preventDefault();
-    
+
     if (!user || user.role !== 'admin') {
       setMessage('❌ Unauthorized: Admin access only');
       return;
@@ -52,12 +54,19 @@ function Admin() {
     setMessage('');
 
     try {
-      const { data, error } = await supabase.functions.invoke('admin-reset-password', {
-        body: { targetPhone, newPassword }
+      const res = await fetch('/api/admin/reset-password', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-admin-token': ADMIN_TOKEN
+        },
+        body: JSON.stringify({ targetPhone, newPassword })
       });
 
-      if (error) {
-        setMessage(`❌ Error: ${error.message}`);
+      const data = await res.json();
+
+      if (!res.ok) {
+        setMessage(`❌ Error: ${data.error}`);
       } else {
         setMessage(`✅ Success: Password updated`);
         setTargetPhone('');
@@ -66,7 +75,7 @@ function Admin() {
     } catch (err) {
       setMessage(`❌ Network error: ${err.message}`);
     }
-    
+
     setLoading(false);
   };
 
@@ -121,7 +130,7 @@ function Admin() {
     },
       React.createElement('h2', { 
         style: { textAlign: 'center', marginBottom: '20px', color: 'hotpink' } 
-      }, `Admin Panel - ${user.phonenumber}`),
+      }, `Admin Panel - ${user.phoneNumber || user.phone}`),
       
       React.createElement('label', { 
         style: { display: 'block', marginBottom: '5px', fontSize: '14px', color: 'hotpink' } 

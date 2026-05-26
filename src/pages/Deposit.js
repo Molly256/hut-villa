@@ -2,8 +2,6 @@ import React from 'react';
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 
-const API_URL = '/api';
-
 function Deposit() {
   const [amount, setAmount] = useState('');
   const [method, setMethod] = useState('');
@@ -20,8 +18,9 @@ function Deposit() {
     setUser(JSON.parse(savedUser));
   }, [navigate]);
 
-  const handleSubmit = () => {
+  const handleConfirm = async () => {
     const amt = Number(amount);
+
     if (!amt || amt < 10000) {
       alert('Minimum deposit is 10,000 UGX');
       return;
@@ -30,23 +29,20 @@ function Deposit() {
       alert('Select a payment method');
       return;
     }
-    alert('Payment info shown. Tap "I have sent the money" after paying');
-  };
-
-  const handleConfirm = async () => {
-    if (!amount ||!method) {
-      alert('Fill all fields first');
+    if (!user) {
+      alert('User not found. Login again');
       return;
     }
 
     setLoading(true);
     try {
-      const res = await fetch(`${API_URL}/deposit`, {
+      const res = await fetch('/api/transactions', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          phoneNumber: user.phone,
-          amount: Number(amount),
+          action: 'deposit',
+          phoneNumber: user.phone || user.phoneNumber,
+          amount: amt,
           method: method,
           status: 'pending'
         })
@@ -64,8 +60,9 @@ function Deposit() {
     } catch (err) {
       alert('Network error. Try again.');
       console.error(err);
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   if (!user) return null;
@@ -88,28 +85,25 @@ function Deposit() {
     }),
     React.createElement('h3', { style: { marginTop: '20px', marginBottom: '10px' } }, 'Select method:'),
     React.createElement('div', {
-      style: {...styles.method, border: method === 'mtn'? '2px solid #ff6b35' : '1px solid #ddd' },
-      onClick: () => setMethod('mtn')
+      style: {...styles.method, border: method === 'MTN'? '2px solid #ff6b35' : '1px solid #ddd' },
+      onClick: () => setMethod('MTN')
     },
       React.createElement('div', { style: { fontWeight: '600' } }, 'MTN Mobile Money'),
       React.createElement('div', null, '0773242118'),
       React.createElement('div', null, 'Besigye Benard')
     ),
     React.createElement('div', {
-      style: {...styles.method, border: method === 'airtel'? '2px solid #ff6b35' : '1px solid #ddd' },
-      onClick: () => setMethod('airtel')
+      style: {...styles.method, border: method === 'Airtel'? '2px solid #ff6b35' : '1px solid #ddd' },
+      onClick: () => setMethod('Airtel')
     },
       React.createElement('div', { style: { fontWeight: '600' } }, 'Airtel Mobile Money'),
       React.createElement('div', null, '0753520252'),
       React.createElement('div', null, 'Nakiyngi Maureen')
     ),
-    React.createElement('button', { onClick: handleSubmit, style: styles.button },
-      'Go pay and come back tap'
-    ),
     React.createElement('button', {
       onClick: handleConfirm,
       disabled: loading,
-      style: {...styles.button, background: '#28a745', marginTop: '10px' }
+      style: {...styles.button, background: loading? '#ccc' : '#28a745' }
     }, loading? 'Submitting...' : 'I have sent the money')
   );
 }
@@ -133,7 +127,6 @@ const styles = {
   button: {
     width: '100%',
     padding: '12px',
-    background: '#ff6b35',
     color: '#fff',
     border: 'none',
     borderRadius: '8px',

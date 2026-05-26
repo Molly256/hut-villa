@@ -1,8 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
-const API_URL = 'https://hut-villa-site-backend.vercel.app';
-
 function Register({ onRegister }) {
   const [phone, setPhone] = useState(''); 
   const [password, setPassword] = useState('');
@@ -10,8 +8,13 @@ function Register({ onRegister }) {
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
+  const urlParams = new URLSearchParams(window.location.search);
+  const inviteCode = urlParams.get('code');
+
   const handleRegister = async () => {
-    if (!phone || !password || !repeatPassword) {
+    const cleanPhone = phone.replace(/\D/g, '');
+    
+    if (!cleanPhone || !password || !repeatPassword) {
       alert('Please fill all fields');
       return;
     }
@@ -19,30 +22,40 @@ function Register({ onRegister }) {
       alert('Passwords do not match');
       return;
     }
+    if (password.length < 6) {
+      alert('Password must be at least 6 characters');
+      return;
+    }
 
     setLoading(true);
     try {
-      const res = await fetch(`${API_URL}/api/register`, {
+      const res = await fetch('/api/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ phoneNumber: phone, password })
+        body: JSON.stringify({ 
+          phoneNumber: cleanPhone, 
+          password,
+          inviteCode: inviteCode || null
+        })
       });
 
       const data = await res.json();
 
       if (!res.ok) {
         alert(data.error || 'Registration failed');
-        setLoading(false);
         return;
       }
 
       const userData = {
-        phoneNumber: data.user.phoneNumber,
-        phone: data.user.phoneNumber,
+        phoneNumber: data.user.phone,
+        phone: data.user.phone,
         role: data.user.role || 'user',
         balance: data.user.balance || 0,
         nickname: data.user.nickname || 'User',
-        avatar: data.user.avatar || ''
+        avatar: data.user.avatar || '',
+        bankMethod: data.user.bankMethod || '',
+        bankNumber: data.user.bankNumber || '',
+        bankName: data.user.bankName || ''
       };
       
       localStorage.setItem('hutvilla_user', JSON.stringify(userData));
@@ -55,13 +68,18 @@ function Register({ onRegister }) {
     } catch (err) {
       alert('Network error. Try again.');
       console.error(err);
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   return React.createElement('div', 
     { style: { padding: '30px', background: '#000', minHeight: '100vh', color: '#fff' } },
     React.createElement('h2', { style: { textAlign: 'center', marginBottom: '20px' } }, 'Register'),
+    
+    inviteCode && React.createElement('p', {
+      style: { textAlign: 'center', color: '#ff6b35', marginBottom: '15px', fontSize: '14px' }
+    }, `Invited by: ${inviteCode}`),
     
     React.createElement('input', {
       type: 'tel',
@@ -88,7 +106,7 @@ function Register({ onRegister }) {
     }),
     
     React.createElement('button', 
-      { onClick: handleRegister, style: styles.button, disabled: loading },
+      { onClick: handleRegister, style: { ...styles.button, background: loading ? '#555' : '#ff6b35' }, disabled: loading },
       loading ? 'Registering...' : 'Register'
     ),
 
@@ -121,7 +139,6 @@ const styles = {
   button: { 
     width: '100%', 
     padding: '12px', 
-    background: '#ff6b35', 
     color: '#fff', 
     border: 'none', 
     borderRadius: '8px', 

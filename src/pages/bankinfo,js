@@ -36,7 +36,7 @@ export default function BankInfo() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          phoneNumber: user.phone,
+          phoneNumber: user.phone || user.phoneNumber,
           bankMethod: method,
           bankNumber: number,
           bankName: name

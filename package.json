@@ -2,12 +2,8 @@
   "name": "hut-villa-site",
   "version": "0.1.0",
   "private": true,
-  "proxy": "http://localhost:3001",
   "dependencies": {
-    "@testing-library/dom": "^10.4.1",
-    "@testing-library/jest-dom": "^6.9.1",
-    "@testing-library/react": "^16.3.2",
-    "@testing-library/user-event": "^13.5.0",
+    "@vercel/kv": "^2.0.0",
     "axios": "^1.7.2",
     "react": "^19.2.6",
     "react-dom": "^19.2.6",
@@ -21,11 +17,10 @@
   },
   "scripts": {
     "start": "react-scripts start",
-    "server": "node server.js",
-    "dev": "concurrently \"npm run server\" \"npm run start\"",
     "build": "react-scripts build",
     "test": "react-scripts test",
-    "eject": "react-scripts eject"
+    "eject": "react-scripts eject",
+    "dev": "concurrently \"vercel dev\" \"react-scripts start\""
   },
   "eslintConfig": {
     "extends": [

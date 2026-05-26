@@ -2,7 +2,7 @@ import React from 'react';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
-const API_URL = '/api'; // works if frontend + backend are in same Vercel project
+const API_URL = '/api';
 
 function Login({ onLogin }) {
   const [phone, setPhone] = useState(''); 
@@ -28,7 +28,6 @@ function Login({ onLogin }) {
 
       if (!res.ok) {
         alert(data.error || 'Login failed');
-        setLoading(false);
         return;
       }
 
@@ -51,8 +50,9 @@ function Login({ onLogin }) {
     } catch (err) {
       alert('Network error. Try again.');
       console.error(err);
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   return React.createElement('div', { 
@@ -77,7 +77,7 @@ function Login({ onLogin }) {
     }),
     React.createElement('button', {
       onClick: handleLogin,
-      style: styles.button,
+      style: { ...styles.button, background: loading ? '#555' : '#ff6b35' },
       disabled: loading
     }, loading ? 'Logging in...' : 'Login')
   );
@@ -98,7 +98,6 @@ const styles = {
   button: { 
     width: '100%', 
     padding: '12px', 
-    background: '#ff6b35', 
     color: '#fff', 
     border: 'none', 
     borderRadius: '8px', 

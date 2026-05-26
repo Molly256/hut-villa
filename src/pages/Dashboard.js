@@ -24,7 +24,7 @@ function Dashboard() {
         const res = await fetch(`${API_URL}/user`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ phoneNumber: localUser.phone })
+          body: JSON.stringify({ phoneNumber: localUser.phone || localUser.phoneNumber })
         });
 
         if (!res.ok) {
@@ -61,7 +61,7 @@ function Dashboard() {
         await fetch(`${API_URL}/update-avatar`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ phoneNumber: user.phone, avatar: avatarData })
+          body: JSON.stringify({ phoneNumber: user.phone || user.phoneNumber, avatar: avatarData })
         });
 
         setUser(updatedUser);
@@ -140,7 +140,7 @@ function Dashboard() {
           onChange: handleAvatarChange
         }),
         React.createElement('div', { style: styles.nickname }, user.nickname || 'User'),
-        React.createElement('div', { style: styles.phone }, user.phone),
+        React.createElement('div', { style: styles.phone }, user.phone || user.phoneNumber),
         React.createElement('div', { style: styles.balance }, 
           user.balance ? `${Number(user.balance).toLocaleString()} UGX` : '0 UGX'
         )

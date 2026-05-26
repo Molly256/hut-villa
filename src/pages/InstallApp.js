@@ -1,5 +1,4 @@
-import React from 'react';
-import { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 function InstallApp() {
@@ -9,19 +8,32 @@ function InstallApp() {
   const [isIOS, setIsIOS] = useState(false);
 
   useEffect(() => {
-    if (window.matchMedia('(display-mode: standalone)').matches) {
-      setIsInstalled(true);
-    }
+    // Check if running as PWA
+    const isStandalone = window.matchMedia('(display-mode: standalone)').matches 
+      || window.navigator.standalone === true;
+    setIsInstalled(isStandalone);
 
-    setIsIOS(/iPad|iPhone|iPod/.test(navigator.userAgent));
+    // Detect iOS
+    const ios = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+    setIsIOS(ios);
 
+    // Capture install prompt for Android/Chrome
     const handler = (e) => {
       e.preventDefault();
       setDeferredPrompt(e);
     };
 
     window.addEventListener('beforeinstallprompt', handler);
-    return () => window.removeEventListener('beforeinstallprompt', handler);
+
+    // Clear prompt after install
+    window.addEventListener('appinstalled', () => {
+      setIsInstalled(true);
+      setDeferredPrompt(null);
+    });
+
+    return () => {
+      window.removeEventListener('beforeinstallprompt', handler);
+    };
   }, []);
 
   const handleInstallClick = async () => {
@@ -44,9 +56,11 @@ function InstallApp() {
       React.createElement('div', { style: styles.icon }, '📱'),
       React.createElement('h2', { style: styles.title }, 'Install Hut Villa App'),
       React.createElement('p', { style: styles.subtitle }, 'Get faster access and work offline'),
+      
       isInstalled && React.createElement('div', { style: styles.successBox },
         '✅ App is already installed on your device'
       ),
+      
       !isInstalled && deferredPrompt && React.createElement(React.Fragment, null,
         React.createElement('button', { 
           onClick: handleInstallClick, 
@@ -56,22 +70,28 @@ function InstallApp() {
           'Tap "Install" and confirm to add to your home screen'
         )
       ),
+      
       !isInstalled && !deferredPrompt && !isIOS && React.createElement('div', { style: styles.instructions },
         React.createElement('h3', { style: { marginTop: 0, fontSize: '16px', marginBottom: '10px' } }, 'How to Install:'),
-        React.createElement('ol', null,
-          React.createElement('li', null, 'Open Chrome browser menu ⋮'),
+        React.createElement('ol', { style: { paddingLeft: '20px', margin: 0 } },
+          React.createElement('li', null, 'Open this page in Chrome'),
           React.createElement('li', null, 
-            'Tap ', React.createElement('strong', null, '"Install App"'), ' or ', 
+            'Tap menu ⋮ and select ', 
+            React.createElement('strong', null, '"Install App"'), ' or ', 
             React.createElement('strong', null, '"Add to Home Screen"')
           ),
           React.createElement('li', null, 'Confirm and the app will appear on your home screen')
         )
       ),
+      
       isIOS && React.createElement('div', { style: styles.instructions },
         React.createElement('h3', { style: { marginTop: 0, fontSize: '16px', marginBottom: '10px' } }, 
           'How to Install on iPhone/iPad:'
         ),
-        React.createElement('ol', null,
+        React.createElement('ol', { style: { paddingLeft: '20px', margin: 0 } },
+          React.createElement('li', null, 
+            'Open this page in Safari'
+          ),
           React.createElement('li', null, 
             'Tap the ', React.createElement('span', { style: styles.shareIcon }, '⎋'), ' Share button'
           ),

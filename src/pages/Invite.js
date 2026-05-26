@@ -5,7 +5,7 @@ function Invite() {
   const navigate = useNavigate();
   const [copied, setCopied] = useState(false);
   const [shared, setShared] = useState(false);
-  const [user, setUser] = useState({});
+  const [user, setUser] = useState(null);
 
   useEffect(() => {
     const savedUser = localStorage.getItem('hutvilla_user');
@@ -16,20 +16,41 @@ function Invite() {
     setUser(JSON.parse(savedUser));
   }, [navigate]);
 
-  const inviteCode = user.phone?.replace('+', '').replace(/\D/g, '') || user.id || 'USER';
+  if (!user) return null;
+
+  const phoneClean = (user.phone || user.phoneNumber || '')
+   .replace('+', '')
+   .replace(/\D/g, '');
+  const inviteCode = phoneClean || user.id || 'USER';
   const inviteLink = `https://hut-villa-site.com/register?code=${inviteCode}`;
   const shareText = `Join Hut Villa! Use my link to register and start earning: ${inviteLink}`;
   const whatsappLink = `https://wa.me/?text=${encodeURIComponent(shareText)}`;
 
+  const trackInvite = async () => {
+    const phone = user.phone || user.phoneNumber;
+    if (!phone) return;
+    try {
+      await fetch('/api/invite', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phoneNumber: phone })
+      });
+    } catch (err) {
+      console.error('Invite tracking failed:', err);
+    }
+  };
+
   const handleCopy = () => {
     navigator.clipboard.writeText(inviteLink);
     setCopied(true);
+    trackInvite();
     setTimeout(() => setCopied(false), 2000);
   };
 
   const handleWhatsAppShare = () => {
     window.open(whatsappLink, '_blank');
     setShared(true);
+    trackInvite();
     setTimeout(() => setShared(false), 2000);
   };
 

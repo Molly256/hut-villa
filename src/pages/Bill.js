@@ -17,26 +17,29 @@ export default function Bill() {
     }
 
     const user = JSON.parse(savedUser);
-    const phoneNumber = user.phone;
+    const phoneNumber = user.phone || user.phoneNumber;
 
-    fetch(`${API_URL}/transactions`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ phoneNumber })
-    })
-    .then(res => res.json())
-    .then(data => {
-      const formatted = (data.transactions || []).map((tx, idx) => ({
-        id: idx + 1,
-        type: tx.type || (tx.method ? 'Deposit' : 'Withdrawal'),
-        amount: tx.type === 'Withdrawal' ? -tx.amount : tx.amount,
+    fetch(`${API_URL}/transactions?phoneNumber=${encodeURIComponent(phoneNumber)}`)
+   .then(res => res.json())
+   .then(data => {
+      if (!data.transactions) {
+        setTransactions([]);
+        setLoading(false);
+        return;
+      }
+
+      const formatted = data.transactions.map((tx, idx) => ({
+        id: tx.id || idx + 1,
+        type: tx.type || (tx.method? 'Deposit' : 'Withdrawal'),
+        amount: tx.type === 'Withdrawal'? -tx.amount : tx.amount,
         status: tx.status || 'Pending',
-        date: new Date(tx.created_at).toLocaleString('en-UG')
+        date: new Date(tx.createdAt || tx.created_at).toLocaleString('en-UG')
       }));
+
       setTransactions(formatted);
       setLoading(false);
     })
-    .catch(err => {
+   .catch(err => {
       console.error(err);
       setTransactions([]);
       setLoading(false);
@@ -44,7 +47,7 @@ export default function Bill() {
   }, [navigate]);
 
   const filteredBills = filter === "All"
-    ? transactions
+   ? transactions
     : transactions.filter(b => b.type === filter);
 
   const getStatusColor = (status) => {
@@ -54,7 +57,7 @@ export default function Bill() {
   };
 
   const getAmountColor = (amount) => {
-    return amount >= 0 ? "#28a745" : "#dc3545";
+    return amount >= 0? "#28a745" : "#dc3545";
   };
 
   return React.createElement('div', { style: { padding: "20px", background: "#f5f5f5", minHeight: "100vh" } },
@@ -72,8 +75,8 @@ export default function Bill() {
             padding: "8px 16px",
             border: "none",
             borderRadius: "20px",
-            background: filter === f ? "#ff6b35" : "#fff",
-            color: filter === f ? "#fff" : "#333",
+            background: filter === f? "#ff6b35" : "#fff",
+            color: filter === f? "#fff" : "#333",
             fontWeight: "bold",
             whiteSpace: "nowrap",
             cursor: "pointer"
@@ -82,9 +85,9 @@ export default function Bill() {
       )
     ),
     React.createElement('div', null,
-      loading ?
+      loading?
         React.createElement('div', { style: { textAlign: "center", padding: "40px", color: "#666" } }, 'Loading...')
-      : filteredBills.length === 0 ?
+      : filteredBills.length === 0?
         React.createElement('div', { style: { textAlign: "center", padding: "40px", color: "#666" } }, 'No transactions yet')
       : filteredBills.map(bill =>
           React.createElement('div', {
@@ -110,7 +113,7 @@ export default function Bill() {
                     fontWeight: "bold",
                     color: getAmountColor(bill.amount)
                   }
-                }, `${bill.amount >= 0 ? "+" : ""}${Math.abs(bill.amount).toLocaleString()} UGX`),
+                }, `${bill.amount >= 0? "+" : ""}${Math.abs(bill.amount).toLocaleString()} UGX`),
                 React.createElement('span', {
                   style: {
                     fontSize: "12px",
