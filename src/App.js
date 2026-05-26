@@ -25,6 +25,15 @@ function DashboardWrapper(props) {
 function AppContent({ user, handleLogin, handleLogout, setUser, rentedHuts, setRentedHuts, avatar, setAvatar }) {
   const location = useLocation();
   
+  // Clear stale login if user lands on register
+  useEffect(() => {
+    if (location.pathname === '/register' && user) {
+      localStorage.removeItem('hutvilla_user');
+      localStorage.removeItem('isLoggedIn');
+      window.location.reload();
+    }
+  }, [location.pathname, user]);
+
   const hideBottomBar = !user || ['/', '/login', '/register'].includes(location.pathname);
 
   return (
@@ -87,7 +96,6 @@ function App() {
       parsedUser.phone = normalizePhone(parsedUser.phone);
       setUser(parsedUser);
       setAvatar(parsedUser.avatar || 'https://via.placeholder.com/80');
-      
       fetchHuts(parsedUser.phone);
     }
     setLoading(false);
