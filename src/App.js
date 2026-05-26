@@ -17,7 +17,7 @@ import Bill from './pages/Bill';
 import Settings from './pages/Settings';
 import ModifyPassword from './pages/ModifyPassword';
 import Admin from './admin';
-import AdminTransactions from './adminTransactions';
+import AdminTransactions from './AdminTransactions';
 
 function DashboardWrapper(props) {
   const navigate = useNavigate();
@@ -92,7 +92,6 @@ function App() {
       setUser(parsedUser);
       setAvatar(parsedUser.avatar || 'https://via.placeholder.com/80');
       
-      // Fetch huts from API instead of localStorage
       fetchHuts(parsedUser.phone);
     }
     setLoading(false);
@@ -111,7 +110,6 @@ function App() {
     localStorage.setItem('hutvilla_user', JSON.stringify(normalizedUser));
     localStorage.setItem('isLoggedIn', 'true');
     
-    // Fetch huts from API after login
     await fetchHuts(normalizedUser.phone);
   };
 
