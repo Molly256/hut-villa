@@ -72,7 +72,6 @@ const Downloadapp = () => {
   const navigate = useNavigate();
   const [isInstalled, setIsInstalled] = useState(false);
   const [deferredPrompt, setDeferredPrompt] = useState(null);
-  const [isIOS, setIsIOS] = useState(false);
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -80,9 +79,6 @@ const Downloadapp = () => {
     const installed = window.matchMedia('(display-mode: standalone)').matches 
       || window.navigator.standalone === true;
     setIsInstalled(installed);
-
-    const ios = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
-    setIsIOS(ios);
 
     const handleBeforeInstallPrompt = (e) => {
       e.preventDefault();
