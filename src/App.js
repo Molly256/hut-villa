@@ -5,7 +5,7 @@ import BottomBar from './components/BottomBar';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import Dashboard from './pages/Dashboard';
-import MyTeam from './pages/MyTeam';
+import { MyTeam } from './pages/MyTeam';
 import ManagerContact from './pages/ManagerContact';
 import Invite from './pages/Invite';
 import Downloadapp from './pages/Downloadapp';
