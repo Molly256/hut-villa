@@ -10,7 +10,9 @@ function Login({ onLogin }) {
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
-  const handleLogin = async () => {
+  const handleLogin = async (e) => {
+    e.preventDefault(); // stops page refresh
+
     if (!phone || !password) {
       alert('Please fill all fields');
       return;
@@ -28,6 +30,7 @@ function Login({ onLogin }) {
 
       if (!res.ok) {
         alert(data.error || 'Login failed');
+        setLoading(false);
         return;
       }
 
@@ -58,28 +61,33 @@ function Login({ onLogin }) {
   return React.createElement('div', { 
     style: { padding: '30px', background: '#000', minHeight: '100vh', color: '#fff' } 
   },
-    React.createElement('h2', { 
-      style: { textAlign: 'center', marginBottom: '20px' } 
-    }, 'Login'),
-    React.createElement('input', {
-      type: 'tel',
-      placeholder: 'Enter phone number',
-      value: phone,
-      onChange: (e) => setPhone(e.target.value),
-      style: styles.input
-    }),
-    React.createElement('input', {
-      type: 'password',
-      placeholder: 'Password',
-      value: password,
-      onChange: (e) => setPassword(e.target.value),
-      style: styles.input
-    }),
-    React.createElement('button', {
-      onClick: handleLogin,
-      style: { ...styles.button, background: loading ? '#555' : '#ff6b35' },
-      disabled: loading
-    }, loading ? 'Logging in...' : 'Login')
+    React.createElement('form', { 
+      onSubmit: handleLogin,
+      style: { maxWidth: '400px', margin: '0 auto' }
+    },
+      React.createElement('h2', { 
+        style: { textAlign: 'center', marginBottom: '20px' } 
+      }, 'Login'),
+      React.createElement('input', {
+        type: 'tel',
+        placeholder: 'Enter phone number',
+        value: phone,
+        onChange: (e) => setPhone(e.target.value),
+        style: styles.input
+      }),
+      React.createElement('input', {
+        type: 'password',
+        placeholder: 'Password',
+        value: password,
+        onChange: (e) => setPassword(e.target.value),
+        style: styles.input
+      }),
+      React.createElement('button', {
+        type: 'submit',
+        style: { ...styles.button, background: loading ? '#555' : '#ff6b35', opacity: loading ? 0.7 : 1 },
+        disabled: loading
+      }, loading ? 'Logging in...' : 'Login')
+    )
   );
 }
 
