@@ -1,4 +1,4 @@
-import kv from './_db.js';
+import { redis } from './redis';
 
 const KEYS = ['users', 'rentedHuts', 'deposits', 'withdrawals', 'hutsIncome'];
 

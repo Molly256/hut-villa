@@ -1,4 +1,4 @@
-import { redis } from './_db.js';
+import { redis } from './redis';
 import bcrypt from 'bcryptjs';
 
 export const config = {

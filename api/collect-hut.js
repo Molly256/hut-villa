@@ -1,4 +1,4 @@
-import kv from './_db.js';
+import { redis } from './redis';
 
 export default async function handler(req, res) {
   if (req.method!== 'POST') {

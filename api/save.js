@@ -1,4 +1,4 @@
-import kv from './_db.js';
+import { redis } from './redis';
 
 const ALLOWED_KEYS = ['inviteStats', 'appSettings', 'announcements'];
 
