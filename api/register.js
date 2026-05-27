@@ -1,13 +1,21 @@
 import { kv } from './_db.js';
 import bcrypt from 'bcryptjs';
 
+export const config = {
+  api: {
+    bodyParser: true,
+  },
+}
+
 export default async function handler(req, res) {
+  // Only allow POST
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
   const { phoneNumber, password, inviteCode } = req.body;
 
+  // Validate input
   if (!phoneNumber || !password) {
     return res.status(400).json({ error: 'Phone and password required' });
   }
@@ -19,24 +27,23 @@ export default async function handler(req, res) {
   try {
     console.log("Register attempt:", phoneNumber);
 
-    // Check if user exists - use individual key
+    // Check if user exists
     const existing = await kv.get(`user:${phoneNumber}`);
     if (existing) {
       return res.status(400).json({ error: 'User already exists' });
     }
 
-    // Find referrer if invite code exists
+    // Handle invite code if provided
     let referrer = null;
     if (inviteCode) {
-      // Search by scanning users if needed, or store referrer code separately
-      // For now, skip this or implement with scan if you have few users
       console.log("Invite code:", inviteCode);
+      // You can implement referrer lookup here later
     }
 
     // Hash password
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // Create new user
+    // Create new user object
     const newUser = {
       id: Date.now().toString(),
       phone: phoneNumber,
@@ -53,7 +60,7 @@ export default async function handler(req, res) {
       createdAt: Date.now()
     };
 
-    // Save as individual key - this is the fix
+    // Save to KV
     await kv.set(`user:${phoneNumber}`, newUser);
     
     // Verify it saved
