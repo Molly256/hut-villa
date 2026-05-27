@@ -3,6 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "dependencies": {
+    "@upstash/redis": "^1.38.0",
     "@vercel/kv": "^2.0.0",
     "axios": "^1.7.2",
     "bcryptjs": "^3.0.3",
