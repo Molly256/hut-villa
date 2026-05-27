@@ -1,4 +1,4 @@
-import { kv } from './_db.js';
+import { redis } from './_db.js';
 import bcrypt from 'bcryptjs';
 
 export const config = {
@@ -28,7 +28,7 @@ export default async function handler(req, res) {
     console.log("Register attempt:", phoneNumber);
 
     // Check if user exists
-    const existing = await kv.get(`user:${phoneNumber}`);
+    const existing = await redis.get(`user:${phoneNumber}`);
     if (existing) {
       return res.status(400).json({ error: 'User already exists' });
     }
@@ -60,11 +60,11 @@ export default async function handler(req, res) {
       createdAt: Date.now()
     };
 
-    // Save to KV
-    await kv.set(`user:${phoneNumber}`, newUser);
+    // Save to Redis
+    await redis.set(`user:${phoneNumber}`, newUser);
     
     // Verify it saved
-    const verify = await kv.get(`user:${phoneNumber}`);
+    const verify = await redis.get(`user:${phoneNumber}`);
     console.log("Verify save:", verify ? "OK" : "FAILED");
 
     // Return user without password

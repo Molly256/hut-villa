@@ -1,2 +1,3 @@
-import { kv } from '@vercel/kv';
-export { kv };
+import { Redis } from '@upstash/redis';
+
+export const redis = Redis.fromEnv();
