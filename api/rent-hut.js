@@ -12,7 +12,7 @@ export default async function handler(req, res) {
 
   try {
     const userKey = `user:${phoneNumber}`;
-    const user = await kv.get(userKey);
+    const user = await redis.get(userKey);
 
     if (!user) {
       return res.status(404).json({ error: 'User not found' });
@@ -25,14 +25,14 @@ export default async function handler(req, res) {
 
     // Check if already rented
     const rentalKey = `rental:${phoneNumber}:${hutId}`;
-    const existingRental = await kv.get(rentalKey);
+    const existingRental = await redis.get(rentalKey);
     if (existingRental &&!existingRental.collected) {
       return res.status(400).json({ error: 'Hut already rented' });
     }
 
     // Deduct rent and save user
     user.balance -= rent;
-    await kv.set(userKey, user);
+    await redis.set(userKey, user);
 
     // Create rental record
     const rental = {
@@ -46,25 +46,25 @@ export default async function handler(req, res) {
       rentedAt: Date.now(),
       collected: false
     };
-    await kv.set(rentalKey, rental);
+    await redis.set(rentalKey, rental);
 
     // Track rental keys for this user
     const userRentalsKey = `rentals:${phoneNumber}`;
-    const userRentals = await kv.get(userRentalsKey) || [];
+    const userRentals = await redis.get(userRentalsKey) || [];
     if (!userRentals.includes(rentalKey)) {
       userRentals.push(rentalKey);
-      await kv.set(userRentalsKey, userRentals);
+      await redis.set(userRentalsKey, userRentals);
     }
 
     // Keep users array in sync for team lookups
-    const users = await kv.get('users') || [];
+    const users = await redis.get('users') || [];
     const idx = users.findIndex(u => u.phone === phoneNumber);
     if (idx!== -1) {
       users[idx] = user;
     } else {
       users.push(user);
     }
-    await kv.set('users', users);
+    await redis.set('users', users);
 
     const { password,...safeUser } = user;
 
@@ -79,3 +79,5 @@ export default async function handler(req, res) {
     return res.status(500).json({ error: 'Server error' });
   }
 }
+
+

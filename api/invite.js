@@ -10,9 +10,11 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: 'Phone number required' });
   }
 
-  const inviteStats = await kv.get('inviteStats') || {};
+  const inviteStats = await redis.get('inviteStats') || {};
   inviteStats[phoneNumber] = (inviteStats[phoneNumber] || 0) + 1;
-  await kv.set('inviteStats', inviteStats);
+  await redis.set('inviteStats', inviteStats);
 
   return res.status(200).json({ success: true });
 }
+
+

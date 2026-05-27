@@ -12,7 +12,7 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: 'Phone number required' });
     }
 
-    const users = await kv.get('users') || [];
+    const users = await redis.get('users') || [];
 
     // Find user by either phone or phoneNumber field
     let user = users.find(u => u.phoneNumber === phoneNumber || u.phone === phoneNumber);
@@ -36,7 +36,7 @@ export default async function handler(req, res) {
       };
 
       users.push(user);
-      await kv.set('users', users);
+      await redis.set('users', users);
     } else {
       // Sync phone fields for older users
       if (!user.phone) user.phone = user.phoneNumber;
@@ -47,7 +47,7 @@ export default async function handler(req, res) {
       if (user.bankNumber === undefined) user.bankNumber = '';
       if (user.bankName === undefined) user.bankName = '';
       
-      await kv.set('users', users);
+      await redis.set('users', users);
     }
 
     // Remove password before sending to frontend
@@ -59,3 +59,5 @@ export default async function handler(req, res) {
     return res.status(500).json({ error: 'Server error' });
   }
 }
+
+

@@ -11,11 +11,11 @@ export default async function handler(req, res) {
   }
 
   try {
-    const rentalKeys = await kv.get(`rentals:${phoneNumber}`) || [];
+    const rentalKeys = await redis.get(`rentals:${phoneNumber}`) || [];
     const huts = [];
 
     for (const key of rentalKeys) {
-      const hut = await kv.get(key);
+      const hut = await redis.get(key);
       if (hut) huts.push(hut);
     }
 
@@ -25,3 +25,5 @@ export default async function handler(req, res) {
     return res.status(500).json({ error: 'Server error' });
   }
 }
+
+

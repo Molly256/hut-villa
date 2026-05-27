@@ -11,8 +11,8 @@ export default async function handler(req, res) {
   }
 
   try {
-    const users = await kv.get('users') || [];
-    const hutsIncome = await kv.get('hutsIncome') || [];
+    const users = await redis.get('users') || [];
+    const hutsIncome = await redis.get('hutsIncome') || [];
 
     // Build maps for fast lookup
     const userMap = new Map();
@@ -68,3 +68,5 @@ export default async function handler(req, res) {
     return res.status(500).json({ error: 'Server error' });
   }
 }
+
+

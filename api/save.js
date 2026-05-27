@@ -11,14 +11,16 @@ export default async function handler(req, res) {
 
   if (req.method === 'POST') {
     const { value } = req.body;
-    await kv.set(key, value);
+    await redis.set(key, value);
     return res.json({ ok: true });
   }
   
   if (req.method === 'GET') {
-    const value = await kv.get(key);
+    const value = await redis.get(key);
     return res.json({ value });
   }
 
   return res.status(405).json({ error: 'Method not allowed' });
 }
+
+

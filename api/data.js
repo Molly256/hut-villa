@@ -12,7 +12,7 @@ export default async function handler(req, res) {
   try {
     // GET all data
     if (req.method === 'GET') {
-      const data = await kv.mget(...KEYS);
+      const data = await redis.mget(...KEYS);
       return res.status(200).json({
         users: data[0] || [],
         rentedHuts: data[1] || [],
@@ -34,7 +34,7 @@ export default async function handler(req, res) {
         return res.status(400).json({ error: 'Value must be an array' });
       }
 
-      await kv.set(key, value);
+      await redis.set(key, value);
       return res.status(200).json({ ok: true, key });
     }
 
@@ -45,3 +45,5 @@ export default async function handler(req, res) {
     return res.status(500).json({ error: 'Server error' });
   }
 }
+
+

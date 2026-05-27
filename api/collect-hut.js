@@ -12,8 +12,8 @@ export default async function handler(req, res) {
 
   try {
     // Load data from KV
-    const users = await kv.get('users') || [];
-    const rentedHuts = await kv.get('rentedHuts') || [];
+    const users = await redis.get('users') || [];
+    const rentedHuts = await redis.get('rentedHuts') || [];
 
     // Find user
     const userIndex = users.findIndex(u => u.phone === phoneNumber);
@@ -47,8 +47,8 @@ export default async function handler(req, res) {
     users[userIndex].balance += hut.income;
 
     // Save back to KV
-    await kv.set('rentedHuts', rentedHuts);
-    await kv.set('users', users);
+    await redis.set('rentedHuts', rentedHuts);
+    await redis.set('users', users);
 
     return res.status(200).json({
       success: true,
@@ -62,3 +62,6 @@ export default async function handler(req, res) {
     return res.status(500).json({ error: 'Server error' });
   }
 }
+
+
+

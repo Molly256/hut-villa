@@ -12,15 +12,14 @@ export default async function handler(req, res) {
   }
 
   try {
-    const users = await kv.get('users') || [];
-
-    const user = users.find(u => u.phoneNumber === phoneNumber || u.phone === phoneNumber);
+    // Get user directly by phone key
+    const user = await redis.get(`user:${phoneNumber}`);
 
     if (!user) {
       return res.status(401).json({ error: 'Invalid phone or password' });
     }
 
-    // Check password - hash this in production
+    // Check password
     if (user.password !== password) {
       return res.status(401).json({ error: 'Invalid phone or password' });
     }
