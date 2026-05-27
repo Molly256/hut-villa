@@ -25,9 +25,10 @@ function DashboardWrapper(props) {
 function AppContent({ user, handleLogin, handleLogout, setUser, rentedHuts, setRentedHuts, avatar, setAvatar }) {
   const location = useLocation();
   
-  // Clear stale login when landing on register
+  // Clear stale login when landing on register or home
   useEffect(() => {
-    if (location.pathname === '/register') {
+    const path = location.pathname;
+    if (path === '/register' || path === '/') {
       localStorage.removeItem('hutvilla_user');
       localStorage.removeItem('isLoggedIn');
     }
@@ -38,9 +39,12 @@ function AppContent({ user, handleLogin, handleLogout, setUser, rentedHuts, setR
   return (
     <div style={{ paddingBottom: hideBottomBar ? 0 : '70px' }}>
       <Routes>
-        <Route path="/" element={!user ? <Login onLogin={handleLogin} /> : <Navigate to="/dashboard" />} />
-        <Route path="/login" element={!user ? <Login onLogin={handleLogin} /> : <Navigate to="/dashboard" />} />
+        {/* Default route is Register */}
+        <Route path="/" element={<Register onRegister={handleLogin} />} />
         <Route path="/register" element={<Register onRegister={handleLogin} />} />
+        <Route path="/login" element={<Login onLogin={handleLogin} />} />
+        
+        {/* Protected routes */}
         <Route path="/dashboard" element={user ? <DashboardWrapper user={user} handleLogout={handleLogout} /> : <Navigate to="/login" />} />
         <Route path="/team" element={user ? <MyTeam user={user} /> : <Navigate to="/login" />} />
         <Route path="/contact" element={user ? <ManagerContact /> : <Navigate to="/login" />} />
@@ -52,6 +56,8 @@ function AppContent({ user, handleLogin, handleLogout, setUser, rentedHuts, setR
         <Route path="/bill" element={user ? <Bill /> : <Navigate to="/login" />} />
         <Route path="/settings" element={user ? <Settings user={user} setUser={setUser} rentedHuts={rentedHuts} setAvatar={setAvatar} avatar={avatar} /> : <Navigate to="/login" />} />
         <Route path="/modifypassword" element={user ? <ModifyPassword user={user} setUser={setUser} /> : <Navigate to="/login" />} />
+        
+        {/* Fallback */}
         <Route path="*" element={<Navigate to="/" />} />
       </Routes>
       {!hideBottomBar && <BottomBar />}
