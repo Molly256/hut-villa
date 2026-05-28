@@ -16,28 +16,38 @@ export default async function handler(req, res) {
     const key = `user:${phoneNumber}`;
     const type = await redis.type(key);
 
+    console.log(`Login attempt for ${phoneNumber}, key type: ${type}`);
+
     let user = null;
 
     if (type === 'hash') {
       user = await redis.hgetall(key);
+      if (!user || Object.keys(user).length === 0) {
+        console.log('Hash exists but is empty');
+        return res.status(401).json({ error: 'Invalid phone or password' });
+      }
     } else if (type === 'string') {
       const raw = await redis.get(key);
-      user = raw ? JSON.parse(raw) : null;
+      user = typeof raw === 'string' ? JSON.parse(raw) : raw;
     } else {
+      console.log('Key does not exist');
       return res.status(401).json({ error: 'Invalid phone or password' });
     }
 
     if (!user || !user.password) {
+      console.log('User or password missing', user);
       return res.status(401).json({ error: 'Invalid phone or password' });
     }
 
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
+      console.log('Password mismatch');
       return res.status(401).json({ error: 'Invalid phone or password' });
     }
 
     const { password: _, ...safeUser } = user;
 
+    console.log('Login success for', phoneNumber);
     return res.status(200).json({
       success: true,
       user: safeUser
@@ -45,6 +55,6 @@ export default async function handler(req, res) {
     
   } catch (err) {
     console.error('Login error:', err);
-    return res.status(500).json({ error: 'Server error' });
+    return res.status(500).json({ error: 'Server error', detail: err.message });
   }
 }
