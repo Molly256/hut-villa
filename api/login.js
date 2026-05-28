@@ -1,4 +1,5 @@
 import { redis } from './redis';
+import bcrypt from 'bcryptjs'; // make sure you have this
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
@@ -12,15 +13,17 @@ export default async function handler(req, res) {
   }
 
   try {
-    // Get user directly by phone key
-    const user = await redis.get(`user:${phoneNumber}`);
+    // Get user hash
+    const user = await redis.hgetall(`user:${phoneNumber}`);
 
-    if (!user) {
+    // hgetall returns {} if key doesn't exist
+    if (!user || !user.password) {
       return res.status(401).json({ error: 'Invalid phone or password' });
     }
 
-    // Check password
-    if (user.password !== password) {
+    // Compare with bcrypt
+    const isMatch = await bcrypt.compare(password, user.password);
+    if (!isMatch) {
       return res.status(401).json({ error: 'Invalid phone or password' });
     }
 
