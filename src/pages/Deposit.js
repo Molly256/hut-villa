@@ -43,19 +43,17 @@ function Deposit() {
           action: 'deposit',
           phoneNumber: user.phone || user.phoneNumber,
           amount: amt,
-          method: method,
-          status: 'pending'
+          method: method
         })
       });
 
       const data = await res.json();
       if (!res.ok) {
         alert(data.error || 'Deposit failed');
-        setLoading(false);
         return;
       }
 
-      alert('Deposit submitted for review');
+      alert('Deposit submitted for review. It will be confirmed within a few minutes.');
       navigate('/dashboard');
     } catch (err) {
       alert('Network error. Try again.');

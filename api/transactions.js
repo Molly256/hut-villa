@@ -3,52 +3,75 @@ import { redis } from './redis';
 export default async function handler(req, res) {
   try {
     if (req.method === 'GET') {
-      const { phoneNumber } = req.query;
-      if (!phoneNumber) {
-        return res.status(400).json({ error: 'Phone number required' });
+      const { phoneNumber, action } = req.query;
+
+      if (action === 'list-pending-deposits') {
+        if (!phoneNumber) return res.status(400).json({ error: 'Phone number required' });
+
+        const rawKeys = await redis.get(`deposits:${phoneNumber}`);
+        const depositKeys = rawKeys ? JSON.parse(rawKeys) : [];
+
+        const deposits = [];
+        for (const k of depositKeys) {
+          const raw = await redis.get(k);
+          if (!raw) continue;
+          const d = typeof raw === 'string' ? JSON.parse(raw) : raw;
+          if (d.status === 'pending') deposits.push(d);
+        }
+
+        return res.status(200).json({ deposits });
       }
 
-      const [depositKeys, withdrawalKeys, incomeKeys] = await Promise.all([
-        redis.get(`deposits:${phoneNumber}`) || [],
-        redis.get(`withdrawals:${phoneNumber}`) || [],
-        redis.get(`income:${phoneNumber}`) || []
-      ]);
+      if (action === 'history') {
+        if (!phoneNumber) return res.status(400).json({ error: 'Phone number required' });
 
-      const [deposits, withdrawals, incomes] = await Promise.all([
-        Promise.all(depositKeys.map(k => redis.get(k))),
-        Promise.all(withdrawalKeys.map(k => redis.get(k))),
-        Promise.all(incomeKeys.map(k => redis.get(k)))
-      ]);
+        const [depositKeys, withdrawalKeys, incomeKeys] = await Promise.all([
+          redis.get(`deposits:${phoneNumber}`).then(r => r ? JSON.parse(r) : []),
+          redis.get(`withdrawals:${phoneNumber}`).then(r => r ? JSON.parse(r) : []),
+          redis.get(`income:${phoneNumber}`).then(r => r ? JSON.parse(r) : [])
+        ]);
 
-      const userDeposits = deposits
-       .filter(Boolean)
-       .map(d => ({ type: 'Deposit', amount: d.amount, status: d.status, created_at: d.createdAt }));
+        const [deposits, withdrawals, incomes] = await Promise.all([
+          Promise.all(depositKeys.map(async k => {
+            const raw = await redis.get(k);
+            return raw ? JSON.parse(raw) : null;
+          })),
+          Promise.all(withdrawalKeys.map(async k => {
+            const raw = await redis.get(k);
+            return raw ? JSON.parse(raw) : null;
+          })),
+          Promise.all(incomeKeys.map(async k => {
+            const raw = await redis.get(k);
+            return raw ? JSON.parse(raw) : null;
+          }))
+        ]);
 
-      const userWithdrawals = withdrawals
-       .filter(Boolean)
-       .map(w => ({ type: 'Withdrawal', amount: w.amount, status: w.status, created_at: w.createdAt }));
-
-      const userHutIncome = incomes
-       .filter(Boolean)
-       .map(h => ({
-          type: h.type === 'referral'? 'Referral Bonus' : 'VIP Income',
-          amount: h.amount,
-          status: 'Completed',
-          created_at: h.createdAt
+        const userDeposits = deposits.filter(Boolean).map(d => ({ 
+          type: 'Deposit', amount: d.amount, status: d.status, created_at: d.createdAt 
+        }));
+        const userWithdrawals = withdrawals.filter(Boolean).map(w => ({ 
+          type: 'Withdrawal', amount: w.amount, status: w.status, created_at: w.createdAt 
+        }));
+        const userHutIncome = incomes.filter(Boolean).map(h => ({
+          type: h.type === 'referral' ? 'Referral Bonus' : 'VIP Income',
+          amount: h.amount, status: 'Completed', created_at: h.createdAt
         }));
 
-      const transactions = [...userDeposits,...userWithdrawals,...userHutIncome]
-       .sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+        const transactions = [...userDeposits, ...userWithdrawals, ...userHutIncome]
+          .sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
 
-      return res.status(200).json({ transactions });
+        return res.status(200).json({ transactions });
+      }
+
+      return res.status(400).json({ error: 'Invalid GET action' });
     }
 
     if (req.method === 'POST') {
-      const { action,...data } = req.body;
+      const { action, ...data } = req.body;
 
       if (action === 'deposit') {
-        const { phoneNumber, amount, method, status } = data;
-        if (!phoneNumber ||!amount ||!method) {
+        const { phoneNumber, amount, method } = data;
+        if (!phoneNumber || !amount || !method) {
           return res.status(400).json({ error: 'Missing required fields' });
         }
         if (Number(amount) < 10000) {
@@ -56,83 +79,84 @@ export default async function handler(req, res) {
         }
 
         const userKey = `user:${phoneNumber}`;
-        const user = await redis.get(userKey);
+        const rawUser = await redis.get(userKey);
+        const user = rawUser ? JSON.parse(rawUser) : null;
         if (!user) return res.status(404).json({ error: 'User not found' });
 
-        const depositId = Date.now().toString();
-        const depositKey = `deposit:${depositId}`;
+        const depositId = `deposit:${Date.now()}`;
+        const depositKey = `deposit:${phoneNumber}:${depositId}`;
 
         const deposit = {
           id: depositId,
           phoneNumber,
           amount: Number(amount),
           method,
-          status: status || 'pending',
+          status: 'pending',
           createdAt: new Date().toISOString()
         };
 
-        await redis.set(depositKey, deposit);
+        await redis.set(depositKey, JSON.stringify(deposit));
 
-        // Track deposit key for user
         const userDepositsKey = `deposits:${phoneNumber}`;
-        const userDeposits = await redis.get(userDepositsKey) || [];
+        const rawDeposits = await redis.get(userDepositsKey);
+        const userDeposits = rawDeposits ? JSON.parse(rawDeposits) : [];
         userDeposits.unshift(depositKey);
-        await redis.set(userDepositsKey, userDeposits);
-
-        // Credit referrer on first deposit only
-        if (!user.hasFirstDeposit) {
-          user.hasFirstDeposit = true;
-          await redis.set(userKey, user);
-
-          if (user.referredBy) {
-            const referrerKey = `user:${user.referredBy}`;
-            const referrer = await redis.get(referrerKey);
-            if (referrer) {
-              let commission = 0;
-              if (user.referralLevel === 'A') commission = deposit.amount * 0.10;
-              if (user.referralLevel === 'B') commission = deposit.amount * 0.03;
-              if (user.referralLevel === 'C') commission = deposit.amount * 0.01;
-
-              if (commission > 0) {
-                referrer.balance = (referrer.balance || 0) + commission;
-                await redis.set(referrerKey, referrer);
-
-                const incomeId = Date.now().toString() + 'r';
-                const incomeKey = `income:${incomeId}`;
-                const income = {
-                  id: incomeId,
-                  phoneNumber: referrer.phone,
-                  amount: commission,
-                  type: 'referral',
-                  from: phoneNumber,
-                  level: user.referralLevel,
-                  createdAt: new Date().toISOString()
-                };
-                await redis.set(incomeKey, income);
-
-                const referrerIncomeKey = `income:${referrer.phone}`;
-                const referrerIncomes = await redis.get(referrerIncomeKey) || [];
-                referrerIncomes.unshift(incomeKey);
-                await redis.set(referrerIncomeKey, referrerIncomes);
-              }
-            }
-          }
-        }
-
-        // Update users array for team page
-        const users = await redis.get('users') || [];
-        const idx = users.findIndex(u => u.phone === phoneNumber);
-        if (idx!== -1) {
-          users[idx] = user;
-          await redis.set('users', users);
-        }
+        await redis.set(userDepositsKey, JSON.stringify(userDeposits));
 
         return res.status(200).json({ success: true, message: 'Deposit submitted', deposit });
       }
 
+      if (action === 'confirm-deposit') {
+        const { phoneNumber, depositId } = data;
+        if (!phoneNumber || !depositId) {
+          return res.status(400).json({ error: 'Missing required fields' });
+        }
+
+        const depositKey = `deposit:${phoneNumber}:${depositId}`;
+        const rawDeposit = await redis.get(depositKey);
+        if (!rawDeposit) return res.status(404).json({ error: 'Deposit not found' });
+
+        const deposit = JSON.parse(rawDeposit);
+        if (deposit.status !== 'pending') {
+          return res.status(400).json({ error: 'Deposit already processed' });
+        }
+
+        deposit.status = 'confirmed';
+        await redis.set(depositKey, JSON.stringify(deposit));
+
+        const userKey = `user:${phoneNumber}`;
+        const rawUser = await redis.get(userKey);
+        const user = JSON.parse(rawUser);
+        user.balance = (user.balance || 0) + deposit.amount;
+        await redis.set(userKey, JSON.stringify(user));
+
+        return res.status(200).json({ success: true, message: 'Deposit confirmed', balance: user.balance });
+      }
+
+      if (action === 'reject-deposit') {
+        const { phoneNumber, depositId } = data;
+        if (!phoneNumber || !depositId) {
+          return res.status(400).json({ error: 'Missing required fields' });
+        }
+
+        const depositKey = `deposit:${phoneNumber}:${depositId}`;
+        const rawDeposit = await redis.get(depositKey);
+        if (!rawDeposit) return res.status(404).json({ error: 'Deposit not found' });
+
+        const deposit = JSON.parse(rawDeposit);
+        if (deposit.status !== 'pending') {
+          return res.status(400).json({ error: 'Deposit already processed' });
+        }
+
+        deposit.status = 'rejected';
+        await redis.set(depositKey, JSON.stringify(deposit));
+
+        return res.status(200).json({ success: true, message: 'Deposit rejected' });
+      }
+
       if (action === 'withdraw') {
         const { phoneNumber, amount, method, accountNumber, accountName } = data;
-        if (!phoneNumber ||!amount ||!method ||!accountNumber ||!accountName) {
+        if (!phoneNumber || !amount || !method || !accountNumber || !accountName) {
           return res.status(400).json({ error: 'Missing required fields' });
         }
         if (Number(amount) < 10000) {
@@ -140,18 +164,18 @@ export default async function handler(req, res) {
         }
 
         const userKey = `user:${phoneNumber}`;
-        const user = await redis.get(userKey);
+        const rawUser = await redis.get(userKey);
+        const user = rawUser ? JSON.parse(rawUser) : null;
         if (!user) return res.status(404).json({ error: 'User not found' });
         if ((user.balance || 0) < amount) {
           return res.status(400).json({ error: 'Insufficient balance' });
         }
 
-        // Deduct balance
         user.balance -= amount;
-        await redis.set(userKey, user);
+        await redis.set(userKey, JSON.stringify(user));
 
-        const withdrawalId = Date.now().toString();
-        const withdrawalKey = `withdrawal:${withdrawalId}`;
+        const withdrawalId = `withdrawal:${Date.now()}`;
+        const withdrawalKey = `withdrawal:${phoneNumber}:${withdrawalId}`;
 
         const withdrawal = {
           id: withdrawalId,
@@ -164,76 +188,24 @@ export default async function handler(req, res) {
           createdAt: new Date().toISOString()
         };
 
-        await redis.set(withdrawalKey, withdrawal);
+        await redis.set(withdrawalKey, JSON.stringify(withdrawal));
 
-        // Track withdrawal key for user
         const userWithdrawalsKey = `withdrawals:${phoneNumber}`;
-        const userWithdrawals = await redis.get(userWithdrawalsKey) || [];
+        const rawWithdrawals = await redis.get(userWithdrawalsKey);
+        const userWithdrawals = rawWithdrawals ? JSON.parse(rawWithdrawals) : [];
         userWithdrawals.unshift(withdrawalKey);
-        await redis.set(userWithdrawalsKey, userWithdrawals);
-
-        // Update users array
-        const users = await redis.get('users') || [];
-        const idx = users.findIndex(u => u.phone === phoneNumber);
-        if (idx!== -1) {
-          users[idx] = user;
-          await redis.set('users', users);
-        }
+        await redis.set(userWithdrawalsKey, JSON.stringify(userWithdrawals));
 
         return res.status(200).json({ success: true, message: 'Withdraw request submitted', withdrawal, user });
       }
 
-      if (action === 'hut_income') {
-        const { phoneNumber, amount } = data;
-        if (!phoneNumber ||!amount) {
-          return res.status(400).json({ error: 'Missing required fields' });
-        }
-
-        const userKey = `user:${phoneNumber}`;
-        const user = await redis.get(userKey);
-        if (!user) return res.status(404).json({ error: 'User not found' });
-
-        // Credit user balance
-        user.balance = (user.balance || 0) + Number(amount);
-        await redis.set(userKey, user);
-
-        const incomeId = Date.now().toString();
-        const incomeKey = `income:${incomeId}`;
-        const income = {
-          id: incomeId,
-          phoneNumber,
-          amount: Number(amount),
-          type: 'vip',
-          createdAt: new Date().toISOString()
-        };
-        await redis.set(incomeKey, income);
-
-        // Track income key for user
-        const userIncomeKey = `income:${phoneNumber}`;
-        const userIncomes = await redis.get(userIncomeKey) || [];
-        userIncomes.unshift(incomeKey);
-        await redis.set(userIncomeKey, userIncomes);
-
-        // Update users array
-        const users = await redis.get('users') || [];
-        const idx = users.findIndex(u => u.phone === phoneNumber);
-        if (idx!== -1) {
-          users[idx] = user;
-          await redis.set('users', users);
-        }
-
-        return res.status(200).json({ success: true, income, user });
-      }
-
-      return res.status(400).json({ error: 'Invalid action' });
+      return res.status(400).json({ error: 'Invalid POST action' });
     }
 
     return res.status(405).json({ error: 'Method not allowed' });
 
   } catch (err) {
     console.error('Transaction error:', err);
-    return res.status(500).json({ error: 'Server error' });
+    return res.status(500).json({ error: 'Server error', detail: err.message });
   }
 }
-
-
