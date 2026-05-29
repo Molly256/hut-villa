@@ -34,7 +34,7 @@ function Register({ onRegister }) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
           phoneNumber: cleanPhone, 
-          password,
+          password: password.trim(),
           inviteCode: inviteCode || null
         })
       });
@@ -47,8 +47,8 @@ function Register({ onRegister }) {
       }
 
       const userData = {
-        phoneNumber: data.user.phone,
-        phone: data.user.phone,
+        phoneNumber: data.user.phoneNumber,
+        phone: data.user.phoneNumber,
         role: data.user.role || 'user',
         balance: data.user.balance || 0,
         nickname: data.user.nickname || 'User',

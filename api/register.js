@@ -1,5 +1,4 @@
 import { redis } from './redis';
-import bcrypt from 'bcryptjs';
 
 export const config = {
   api: {
@@ -8,14 +7,12 @@ export const config = {
 }
 
 export default async function handler(req, res) {
-  // Only allow POST
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
   const { phoneNumber, password, inviteCode } = req.body;
 
-  // Validate input
   if (!phoneNumber || !password) {
     return res.status(400).json({ error: 'Phone and password required' });
   }
@@ -25,30 +22,24 @@ export default async function handler(req, res) {
   }
 
   try {
-    console.log("Register attempt:", phoneNumber);
+    const cleanPhone = phoneNumber.replace(/\D/g, '').trim();
+    console.log("Register attempt:", cleanPhone);
 
-    // Check if user exists
-    const existing = await redis.get(`user:${phoneNumber}`);
+    const existing = await redis.get(`user:${cleanPhone}`);
     if (existing) {
       return res.status(400).json({ error: 'User already exists' });
     }
 
-    // Handle invite code if provided
     let referrer = null;
     if (inviteCode) {
       console.log("Invite code:", inviteCode);
-      // You can implement referrer lookup here later
     }
 
-    // Hash password
-    const hashedPassword = await bcrypt.hash(password, 10);
-
-    // Create new user object
     const newUser = {
       id: Date.now().toString(),
-      phone: phoneNumber,
-      phoneNumber: phoneNumber,
-      password: hashedPassword,
+      phone: cleanPhone,
+      phoneNumber: cleanPhone,
+      password: password.trim(),
       role: 'user',
       balance: 0,
       nickname: 'User',
@@ -60,14 +51,11 @@ export default async function handler(req, res) {
       createdAt: Date.now()
     };
 
-    // Save to Redis
-    await redis.set(`user:${phoneNumber}`, newUser);
+    await redis.set(`user:${cleanPhone}`, newUser);
     
-    // Verify it saved
-    const verify = await redis.get(`user:${phoneNumber}`);
+    const verify = await redis.get(`user:${cleanPhone}`);
     console.log("Verify save:", verify ? "OK" : "FAILED");
 
-    // Return user without password
     const { password: _, ...userSafe } = newUser;
 
     return res.status(201).json({
@@ -80,4 +68,3 @@ export default async function handler(req, res) {
     return res.status(500).json({ error: 'Server error' });
   }
 }
-

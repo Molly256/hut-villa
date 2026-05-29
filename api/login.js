@@ -1,5 +1,4 @@
 import { redis } from './redis';
-import bcrypt from 'bcryptjs';
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
@@ -13,7 +12,7 @@ export default async function handler(req, res) {
   }
 
   try {
-    const cleanPhone = phoneNumber.trim();
+    const cleanPhone = phoneNumber.replace(/\D/g, '').trim();
     const key = `user:${cleanPhone}`;
     const type = await redis.type(key);
 
@@ -43,13 +42,10 @@ export default async function handler(req, res) {
       return res.status(401).json({ error: 'Invalid phone or password' });
     }
 
-    console.log('Password typed:', password);
-    console.log('Hash from Redis:', user.password);
+    console.log('Password typed:', password.trim());
+    console.log('Password in Redis:', user.password);
 
-    const isMatch = await bcrypt.compare(password, user.password);
-    console.log('bcrypt.compare result:', isMatch);
-
-    if (!isMatch) {
+    if (password.trim() !== user.password) {
       return res.status(401).json({ error: 'Invalid phone or password' });
     }
 

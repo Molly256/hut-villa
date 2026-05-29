@@ -24,7 +24,7 @@ function Login({ onLogin }) {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
-          phoneNumber: phone.trim(),
+          phoneNumber: phone.replace(/\D/g, '').trim(),
           password: password.trim()
         })
       });
@@ -82,7 +82,7 @@ function Login({ onLogin }) {
         type: 'password',
         placeholder: 'Password',
         value: password,
-        onChange: (e) => setPassword(e.target.value), // <-- FIXED: was setPhone
+        onChange: (e) => setPassword(e.target.value),
         style: styles.input
       }),
       React.createElement('button', {
