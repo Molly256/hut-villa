@@ -35,23 +35,23 @@ export default async function handler(req, res) {
         if (!phoneNumber) return res.status(400).json({ error: 'Phone number required' });
 
         const [depositKeys, withdrawalKeys, incomeKeys] = await Promise.all([
-          redis.get(`deposits:${phoneNumber}`).then(r => r ? JSON.parse(r) : []),
-          redis.get(`withdrawals:${phoneNumber}`).then(r => r ? JSON.parse(r) : []),
-          redis.get(`income:${phoneNumber}`).then(r => r ? JSON.parse(r) : [])
+          redis.get(`deposits:${phoneNumber}`).then(r => r ? (typeof r === 'string' ? JSON.parse(r) : r) : []),
+          redis.get(`withdrawals:${phoneNumber}`).then(r => r ? (typeof r === 'string' ? JSON.parse(r) : r) : []),
+          redis.get(`income:${phoneNumber}`).then(r => r ? (typeof r === 'string' ? JSON.parse(r) : r) : [])
         ]);
 
         const [deposits, withdrawals, incomes] = await Promise.all([
           Promise.all(depositKeys.map(async k => {
             const raw = await redis.get(k);
-            return raw ? JSON.parse(raw) : null;
+            return raw ? (typeof raw === 'string' ? JSON.parse(raw) : raw) : null;
           })),
           Promise.all(withdrawalKeys.map(async k => {
             const raw = await redis.get(k);
-            return raw ? JSON.parse(raw) : null;
+            return raw ? (typeof raw === 'string' ? JSON.parse(raw) : raw) : null;
           })),
           Promise.all(incomeKeys.map(async k => {
             const raw = await redis.get(k);
-            return raw ? JSON.parse(raw) : null;
+            return raw ? (typeof raw === 'string' ? JSON.parse(raw) : raw) : null;
           }))
         ]);
 
@@ -89,7 +89,7 @@ export default async function handler(req, res) {
 
         const userKey = `user:${phoneNumber}`;
         const rawUser = await redis.get(userKey);
-        const user = rawUser ? JSON.parse(rawUser) : null;
+        const user = rawUser ? (typeof rawUser === 'string' ? JSON.parse(rawUser) : rawUser) : null;
         if (!user) return res.status(404).json({ error: 'User not found' });
 
         const depositId = `deposit:${Date.now()}`;
@@ -108,7 +108,7 @@ export default async function handler(req, res) {
 
         const userDepositsKey = `deposits:${phoneNumber}`;
         const rawDeposits = await redis.get(userDepositsKey);
-        const userDeposits = rawDeposits ? JSON.parse(rawDeposits) : [];
+        const userDeposits = rawDeposits ? (typeof rawDeposits === 'string' ? JSON.parse(rawDeposits) : rawDeposits) : [];
         userDeposits.unshift(depositKey);
         await redis.set(userDepositsKey, JSON.stringify(userDeposits));
 
@@ -125,7 +125,7 @@ export default async function handler(req, res) {
         const rawDeposit = await redis.get(depositKey);
         if (!rawDeposit) return res.status(404).json({ error: 'Deposit not found' });
 
-        const deposit = JSON.parse(rawDeposit);
+        const deposit = typeof rawDeposit === 'string' ? JSON.parse(rawDeposit) : rawDeposit;
         if (deposit.status !== 'pending') {
           return res.status(400).json({ error: 'Deposit already processed' });
         }
@@ -135,7 +135,7 @@ export default async function handler(req, res) {
 
         const userKey = `user:${phoneNumber}`;
         const rawUser = await redis.get(userKey);
-        const user = JSON.parse(rawUser);
+        const user = typeof rawUser === 'string' ? JSON.parse(rawUser) : rawUser;
         user.balance = (user.balance || 0) + deposit.amount;
         await redis.set(userKey, JSON.stringify(user));
 
@@ -152,7 +152,7 @@ export default async function handler(req, res) {
         const rawDeposit = await redis.get(depositKey);
         if (!rawDeposit) return res.status(404).json({ error: 'Deposit not found' });
 
-        const deposit = JSON.parse(rawDeposit);
+        const deposit = typeof rawDeposit === 'string' ? JSON.parse(rawDeposit) : rawDeposit;
         if (deposit.status !== 'pending') {
           return res.status(400).json({ error: 'Deposit already processed' });
         }
@@ -174,7 +174,7 @@ export default async function handler(req, res) {
 
         const userKey = `user:${phoneNumber}`;
         const rawUser = await redis.get(userKey);
-        const user = rawUser ? JSON.parse(rawUser) : null;
+        const user = rawUser ? (typeof rawUser === 'string' ? JSON.parse(rawUser) : rawUser) : null;
         if (!user) return res.status(404).json({ error: 'User not found' });
         if ((user.balance || 0) < amount) {
           return res.status(400).json({ error: 'Insufficient balance' });
@@ -201,7 +201,7 @@ export default async function handler(req, res) {
 
         const userWithdrawalsKey = `withdrawals:${phoneNumber}`;
         const rawWithdrawals = await redis.get(userWithdrawalsKey);
-        const userWithdrawals = rawWithdrawals ? JSON.parse(rawWithdrawals) : [];
+        const userWithdrawals = rawWithdrawals ? (typeof rawWithdrawals === 'string' ? JSON.parse(rawWithdrawals) : rawWithdrawals) : [];
         userWithdrawals.unshift(withdrawalKey);
         await redis.set(userWithdrawalsKey, JSON.stringify(userWithdrawals));
 
@@ -215,6 +215,7 @@ export default async function handler(req, res) {
 
   } catch (err) {
     console.error('Transaction error:', err);
+    console.error('Stack:', err.stack);
     return res.status(500).json({ error: 'Server error', detail: err.message });
   }
 }
