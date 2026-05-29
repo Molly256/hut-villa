@@ -16,6 +16,7 @@ import VipTask from './pages/VipTask';
 import Bill from './pages/Bill';
 import Settings from './pages/Settings';
 import ModifyPassword from './pages/ModifyPassword';
+import AdminTransactions from './pages/AdminTransactions'; // <-- added
 
 function DashboardWrapper(props) {
   const navigate = useNavigate();
@@ -25,7 +26,6 @@ function DashboardWrapper(props) {
 function AppContent({ user, handleLogin, handleLogout, setUser, rentedHuts, setRentedHuts, avatar, setAvatar }) {
   const location = useLocation();
   
-  // Clear stale login when landing on register or home
   useEffect(() => {
     const path = location.pathname;
     if (path === '/register' || path === '/') {
@@ -39,12 +39,10 @@ function AppContent({ user, handleLogin, handleLogout, setUser, rentedHuts, setR
   return (
     <div style={{ paddingBottom: hideBottomBar ? 0 : '70px' }}>
       <Routes>
-        {/* Default route is Register */}
         <Route path="/" element={<Register onRegister={handleLogin} />} />
         <Route path="/register" element={<Register onRegister={handleLogin} />} />
         <Route path="/login" element={<Login onLogin={handleLogin} />} />
         
-        {/* Protected routes */}
         <Route path="/dashboard" element={user ? <DashboardWrapper user={user} handleLogout={handleLogout} /> : <Navigate to="/login" />} />
         <Route path="/team" element={user ? <MyTeam user={user} /> : <Navigate to="/login" />} />
         <Route path="/contact" element={user ? <ManagerContact /> : <Navigate to="/login" />} />
@@ -57,7 +55,13 @@ function AppContent({ user, handleLogin, handleLogout, setUser, rentedHuts, setR
         <Route path="/settings" element={user ? <Settings user={user} setUser={setUser} rentedHuts={rentedHuts} setAvatar={setAvatar} avatar={avatar} /> : <Navigate to="/login" />} />
         <Route path="/modifypassword" element={user ? <ModifyPassword user={user} setUser={setUser} /> : <Navigate to="/login" />} />
         
-        {/* Fallback */}
+        {/* Admin only route */}
+        <Route path="/admin/transactions" element={
+          user && user.role === 'admin' 
+            ? <AdminTransactions user={user} /> 
+            : <Navigate to="/dashboard" />
+        } />
+        
         <Route path="*" element={<Navigate to="/" />} />
       </Routes>
       {!hideBottomBar && <BottomBar />}
@@ -99,6 +103,8 @@ function App() {
     if (storedUser && isLoggedIn === 'true') {
       const parsedUser = JSON.parse(storedUser);
       parsedUser.phone = normalizePhone(parsedUser.phone);
+      parsedUser.balance = Number(parsedUser.balance) || 0;
+      parsedUser.role = parsedUser.role || 'user';
       setUser(parsedUser);
       setAvatar(parsedUser.avatar || 'https://via.placeholder.com/80');
       fetchHuts(parsedUser.phone);
@@ -111,7 +117,8 @@ function App() {
       ...userData,
       phone: normalizePhone(userData.phoneNumber || userData.phone),
       nickname: userData.nickname || userData.name || 'User',
-      role: userData.role || ''
+      balance: Number(userData.balance) || 0,
+      role: userData.role || 'user'
     };
     
     setUser(normalizedUser);

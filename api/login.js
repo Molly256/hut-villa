@@ -23,31 +23,31 @@ export default async function handler(req, res) {
     if (type === 'hash') {
       user = await redis.hgetall(key);
       if (!user || Object.keys(user).length === 0) {
-        console.log('Hash exists but is empty');
         return res.status(401).json({ error: 'Invalid phone or password' });
       }
+      // Convert hash strings to proper types
+      user.balance = Number(user.balance) || 0;
+      user.createdAt = Number(user.createdAt) || Date.now();
+      user.hasFirstDeposit = user.hasFirstDeposit === 'true';
     } else if (type === 'string') {
       const raw = await redis.get(key);
       user = typeof raw === 'string' ? JSON.parse(raw) : raw;
     } else {
-      console.log('Key does not exist');
       return res.status(401).json({ error: 'Invalid phone or password' });
     }
 
     if (!user || !user.password) {
-      console.log('User or password missing', user);
       return res.status(401).json({ error: 'Invalid phone or password' });
     }
 
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
-      console.log('Password mismatch');
       return res.status(401).json({ error: 'Invalid phone or password' });
     }
 
     const { password: _, ...safeUser } = user;
 
-    console.log('Login success for', phoneNumber);
+    console.log('Login success for', phoneNumber, 'Role:', safeUser.role);
     return res.status(200).json({
       success: true,
       user: safeUser
