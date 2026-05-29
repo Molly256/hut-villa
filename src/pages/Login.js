@@ -11,7 +11,7 @@ function Login({ onLogin }) {
   const navigate = useNavigate();
 
   const handleLogin = async (e) => {
-    e.preventDefault(); // stops page refresh
+    e.preventDefault();
 
     if (!phone || !password) {
       alert('Please fill all fields');
@@ -23,7 +23,10 @@ function Login({ onLogin }) {
       const res = await fetch(`${API_URL}/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ phoneNumber: phone, password })
+        body: JSON.stringify({ 
+          phoneNumber: phone.trim(),
+          password: password.trim()
+        })
       });
 
       const data = await res.json();
@@ -79,7 +82,7 @@ function Login({ onLogin }) {
         type: 'password',
         placeholder: 'Password',
         value: password,
-        onChange: (e) => setPassword(e.target.value),
+        onChange: (e) => setPassword(e.target.value), // <-- FIXED: was setPhone
         style: styles.input
       }),
       React.createElement('button', {

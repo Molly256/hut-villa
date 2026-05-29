@@ -13,19 +13,20 @@ export default async function handler(req, res) {
   }
 
   try {
-    const key = `user:${phoneNumber}`;
+    const cleanPhone = phoneNumber.trim();
+    const key = `user:${cleanPhone}`;
     const type = await redis.type(key);
 
-    console.log(`Login attempt for ${phoneNumber}, key type: ${type}`);
+    console.log(`Login: input="${phoneNumber}" clean="${cleanPhone}" key="${key}" type=${type}`);
 
     let user = null;
 
     if (type === 'hash') {
       user = await redis.hgetall(key);
       if (!user || Object.keys(user).length === 0) {
+        console.log('Hash exists but empty');
         return res.status(401).json({ error: 'Invalid phone or password' });
       }
-      // Convert hash strings to proper types
       user.balance = Number(user.balance) || 0;
       user.createdAt = Number(user.createdAt) || Date.now();
       user.hasFirstDeposit = user.hasFirstDeposit === 'true';
@@ -33,21 +34,28 @@ export default async function handler(req, res) {
       const raw = await redis.get(key);
       user = typeof raw === 'string' ? JSON.parse(raw) : raw;
     } else {
+      console.log('Key not found. Type:', type);
       return res.status(401).json({ error: 'Invalid phone or password' });
     }
 
     if (!user || !user.password) {
+      console.log('No password field in user');
       return res.status(401).json({ error: 'Invalid phone or password' });
     }
 
+    console.log('Password typed:', password);
+    console.log('Hash from Redis:', user.password);
+
     const isMatch = await bcrypt.compare(password, user.password);
+    console.log('bcrypt.compare result:', isMatch);
+
     if (!isMatch) {
       return res.status(401).json({ error: 'Invalid phone or password' });
     }
 
     const { password: _, ...safeUser } = user;
 
-    console.log('Login success for', phoneNumber, 'Role:', safeUser.role);
+    console.log('Login success for', cleanPhone, 'Role:', safeUser.role);
     return res.status(200).json({
       success: true,
       user: safeUser
