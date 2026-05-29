@@ -20,9 +20,12 @@ function Withdrawal() {
     setUser(parsedUser);
   }, [navigate]);
 
+  const amt = Number(amount);
+  const balance = Number(user?.balance || 0);
+  const canWithdraw = amt >= 10000 && method && number && name && balance >= amt &&!loading;
+
   const handleWithdraw = async () => {
-    const amt = Number(amount);
-    if (!amt || amt < 10000) {
+    if (amt < 10000) {
       alert('Minimum withdraw is 10,000 UGX');
       return;
     }
@@ -34,7 +37,7 @@ function Withdrawal() {
       alert('Enter number and name');
       return;
     }
-    if (user.balance < amt) {
+    if (balance < amt) {
       alert('Insufficient balance');
       return;
     }
@@ -60,7 +63,6 @@ function Withdrawal() {
         return;
       }
 
-      // Update local state and localStorage so balance updates instantly
       setUser(data.user);
       localStorage.setItem('hutvilla_user', JSON.stringify(data.user));
 
@@ -68,6 +70,7 @@ function Withdrawal() {
       navigate('/dashboard');
     } catch (err) {
       alert('Network error. Try again.');
+      console.error(err);
     } finally {
       setLoading(false);
     }
@@ -92,7 +95,7 @@ function Withdrawal() {
 
       <h2 style={{ textAlign: 'center', marginBottom: '10px' }}>Withdraw</h2>
       <p style={{ textAlign: 'center', color: '#666', marginBottom: '5px' }}>
-        Balance: {user.balance.toLocaleString()} UGX
+        Balance: {balance.toLocaleString()} UGX
       </p>
       <p style={{ textAlign: 'center', color: '#666', marginBottom: '20px' }}>
         Minimum withdraw: 10,000 UGX
@@ -140,8 +143,8 @@ function Withdrawal() {
 
       <button
         onClick={handleWithdraw}
-        disabled={loading}
-        style={{...styles.button, opacity: loading? 0.7 : 1 }}
+        disabled={!canWithdraw}
+        style={{...styles.button, opacity: canWithdraw? 1 : 0.6, cursor: canWithdraw? 'pointer' : 'not-allowed' }}
       >
         {loading? 'Processing...' : 'Tap withdraw button'}
       </button>
@@ -184,7 +187,6 @@ const styles = {
     borderRadius: '8px',
     fontSize: '16px',
     fontWeight: '600',
-    cursor: 'pointer',
     marginTop: '15px'
   },
   note: {

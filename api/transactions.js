@@ -6,20 +6,29 @@ export default async function handler(req, res) {
       const { phoneNumber, action } = req.query;
 
       if (action === 'list-pending-deposits') {
-        if (!phoneNumber) return res.status(400).json({ error: 'Phone number required' });
-
-        const rawKeys = await redis.get(`deposits:${phoneNumber}`);
-        const depositKeys = rawKeys ? JSON.parse(rawKeys) : [];
-
+        const keys = await redis.keys('deposit:*');
         const deposits = [];
-        for (const k of depositKeys) {
+        
+        for (const k of keys) {
           const raw = await redis.get(k);
           if (!raw) continue;
           const d = typeof raw === 'string' ? JSON.parse(raw) : raw;
           if (d.status === 'pending') deposits.push(d);
         }
-
         return res.status(200).json({ deposits });
+      }
+
+      if (action === 'list-pending-withdrawals') {
+        const keys = await redis.keys('withdrawal:*');
+        const withdrawals = [];
+        
+        for (const k of keys) {
+          const raw = await redis.get(k);
+          if (!raw) continue;
+          const w = typeof raw === 'string' ? JSON.parse(raw) : raw;
+          if (w.status === 'pending') withdrawals.push(w);
+        }
+        return res.status(200).json({ withdrawals });
       }
 
       if (action === 'history') {
