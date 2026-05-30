@@ -7,6 +7,8 @@ export default async function handler(req, res) {
 
   const { phoneNumber, hutId, hutName, rent, days, income } = req.body;
 
+  console.log('REQ BODY:', req.body);
+
   if (!phoneNumber || !hutId || !rent) {
     return res.status(400).json({
       error: 'Missing required fields',
@@ -18,6 +20,7 @@ export default async function handler(req, res) {
     const userKey = `user:${phoneNumber}`;
     const type = await redis.type(userKey);
 
+    // Fix: read user whether it's hash or string
     let user;
     if (type === 'hash') {
       const rawUser = await redis.hgetall(userKey);
@@ -44,8 +47,10 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: 'Insufficient balance' });
     }
 
+    // Deduct rent
     const newBalance = user.balance - rentAmount;
     
+    // Fix: save based on type
     if (type === 'hash') {
       await redis.hset(userKey, 'balance', String(newBalance));
     } else {
@@ -53,6 +58,7 @@ export default async function handler(req, res) {
       await redis.set(userKey, JSON.stringify(user));
     }
 
+    // Create rental record
     const rentalKey = `rental:${phoneNumber}:${hutId}`;
     const rental = {
       id: Date.now().toString(),
@@ -67,6 +73,7 @@ export default async function handler(req, res) {
     };
     await redis.set(rentalKey, JSON.stringify(rental));
 
+    // Track rental keys for this user
     const userRentalsKey = `rentals:${phoneNumber}`;
     const rawRentals = await redis.get(userRentalsKey);
     const userRentals = typeof rawRentals === 'string' ? JSON.parse(rawRentals) : rawRentals || [];
@@ -74,22 +81,6 @@ export default async function handler(req, res) {
       userRentals.push(rentalKey);
       await redis.set(userRentalsKey, JSON.stringify(userRentals));
     }
-
-    // FIX: Save to income history for Bill page
-    const incomeId = `income:${Date.now()}`;
-    const incomeData = {
-      type: 'hut_rent',
-      amount: rentAmount,
-      createdAt: new Date().toISOString(),
-      hut_name: hutName
-    };
-    await redis.set(incomeId, JSON.stringify(incomeData));
-
-    const userIncomeKey = `income:${phoneNumber}`;
-    const rawIncomes = await redis.get(userIncomeKey);
-    const userIncomes = rawIncomes ? (typeof rawIncomes === 'string' ? JSON.parse(rawIncomes) : rawIncomes) : [];
-    userIncomes.unshift(incomeId);
-    await redis.set(userIncomeKey, JSON.stringify(userIncomes));
 
     const { password, ...safeUser } = { ...user, balance: newBalance };
 
