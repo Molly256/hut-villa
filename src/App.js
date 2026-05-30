@@ -16,7 +16,7 @@ import VipTask from './pages/VipTask';
 import Bill from './pages/Bill';
 import Settings from './pages/Settings';
 import ModifyPassword from './pages/ModifyPassword';
-import AdminTransactions from './pages/AdminTransactions'; // <-- added
+import AdminTransactions from './pages/AdminTransactions';
 
 function DashboardWrapper(props) {
   const navigate = useNavigate();
@@ -55,7 +55,6 @@ function AppContent({ user, handleLogin, handleLogout, setUser, rentedHuts, setR
         <Route path="/settings" element={user ? <Settings user={user} setUser={setUser} rentedHuts={rentedHuts} setAvatar={setAvatar} avatar={avatar} /> : <Navigate to="/login" />} />
         <Route path="/modifypassword" element={user ? <ModifyPassword user={user} setUser={setUser} /> : <Navigate to="/login" />} />
         
-        {/* Admin only route */}
         <Route path="/admin/transactions" element={
           user && user.role === 'admin' 
             ? <AdminTransactions user={user} /> 

@@ -30,6 +30,7 @@ function Login({ onLogin }) {
       });
 
       const data = await res.json();
+      console.log('Login response:', data);
 
       if (!res.ok) {
         alert(data.error || 'Login failed');
@@ -38,8 +39,8 @@ function Login({ onLogin }) {
       }
 
       const userData = {
-        phoneNumber: data.user.phoneNumber,
-        phone: data.user.phoneNumber,
+        phoneNumber: data.user.phone,
+        phone: data.user.phone,
         role: data.user.role,
         balance: data.user.balance,
         nickname: data.user.nickname,
