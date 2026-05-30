@@ -10,6 +10,7 @@ export default async function handler(req, res) {
         const deposits = [];
         
         for (const k of keys) {
+          if (k.startsWith('deposits:')) continue; // skip user history arrays
           const raw = await redis.get(k);
           if (!raw) continue;
           const d = typeof raw === 'string' ? JSON.parse(raw) : raw;
@@ -23,6 +24,7 @@ export default async function handler(req, res) {
         const withdrawals = [];
         
         for (const k of keys) {
+          if (k.startsWith('withdrawals:')) continue; // skip user history arrays
           const raw = await redis.get(k);
           if (!raw) continue;
           const w = typeof raw === 'string' ? JSON.parse(raw) : raw;
@@ -76,7 +78,14 @@ export default async function handler(req, res) {
     }
 
     if (req.method === 'POST') {
-      const { action, ...data } = req.body;
+      const { action, adminPhone, adminPassword, ...data } = req.body;
+
+      // Admin auth check - visible credentials as requested
+      if (action.includes('confirm') || action.includes('reject')) {
+        if (adminPhone !== '0753041411' || adminPassword !== '123456') {
+          return res.status(403).json({ error: 'Unauthorized: Admin only' });
+        }
+      }
 
       if (action === 'deposit') {
         const { phoneNumber, amount, method } = data;
@@ -93,7 +102,7 @@ export default async function handler(req, res) {
         if (!user) return res.status(404).json({ error: 'User not found' });
 
         const depositId = `deposit:${Date.now()}`;
-        const depositKey = `deposit:${phoneNumber}:${depositId}`;
+        const depositKey = depositId; // use full key from frontend
 
         const deposit = {
           id: depositId,
@@ -121,7 +130,7 @@ export default async function handler(req, res) {
           return res.status(400).json({ error: 'Missing required fields' });
         }
 
-        const depositKey = `deposit:${phoneNumber}:${depositId}`;
+        const depositKey = depositId; // use full key from frontend
         const rawDeposit = await redis.get(depositKey);
         if (!rawDeposit) return res.status(404).json({ error: 'Deposit not found' });
 
@@ -139,7 +148,7 @@ export default async function handler(req, res) {
         user.balance = (user.balance || 0) + deposit.amount;
         await redis.set(userKey, JSON.stringify(user));
 
-        return res.status(200).json({ success: true, message: 'Deposit confirmed', balance: user.balance });
+        return res.status(200).json({ success: true, message: `Deposit confirmed +${deposit.amount} UGX`, balance: user.balance });
       }
 
       if (action === 'reject-deposit') {
@@ -148,7 +157,7 @@ export default async function handler(req, res) {
           return res.status(400).json({ error: 'Missing required fields' });
         }
 
-        const depositKey = `deposit:${phoneNumber}:${depositId}`;
+        const depositKey = depositId;
         const rawDeposit = await redis.get(depositKey);
         if (!rawDeposit) return res.status(404).json({ error: 'Deposit not found' });
 
@@ -184,7 +193,7 @@ export default async function handler(req, res) {
         await redis.set(userKey, JSON.stringify(user));
 
         const withdrawalId = `withdrawal:${Date.now()}`;
-        const withdrawalKey = `withdrawal:${phoneNumber}:${withdrawalId}`;
+        const withdrawalKey = withdrawalId;
 
         const withdrawal = {
           id: withdrawalId,
@@ -206,6 +215,55 @@ export default async function handler(req, res) {
         await redis.set(userWithdrawalsKey, JSON.stringify(userWithdrawals));
 
         return res.status(200).json({ success: true, message: 'Withdraw request submitted', withdrawal, user });
+      }
+
+      if (action === 'confirm-withdrawal') {
+        const { phoneNumber, withdrawalId } = data;
+        if (!phoneNumber || !withdrawalId) {
+          return res.status(400).json({ error: 'Missing required fields' });
+        }
+
+        const withdrawalKey = withdrawalId;
+        const rawWithdrawal = await redis.get(withdrawalKey);
+        if (!rawWithdrawal) return res.status(404).json({ error: 'Withdrawal not found' });
+
+        const withdrawal = typeof rawWithdrawal === 'string' ? JSON.parse(rawWithdrawal) : rawWithdrawal;
+        if (withdrawal.status !== 'pending') {
+          return res.status(400).json({ error: 'Withdrawal already processed' });
+        }
+
+        withdrawal.status = 'confirmed';
+        await redis.set(withdrawalKey, JSON.stringify(withdrawal));
+
+        return res.status(200).json({ success: true, message: `Withdrawal confirmed ${withdrawal.amount} UGX` });
+      }
+
+      if (action === 'reject-withdrawal') {
+        const { phoneNumber, withdrawalId } = data;
+        if (!phoneNumber || !withdrawalId) {
+          return res.status(400).json({ error: 'Missing required fields' });
+        }
+
+        const withdrawalKey = withdrawalId;
+        const rawWithdrawal = await redis.get(withdrawalKey);
+        if (!rawWithdrawal) return res.status(404).json({ error: 'Withdrawal not found' });
+
+        const withdrawal = typeof rawWithdrawal === 'string' ? JSON.parse(rawWithdrawal) : rawWithdrawal;
+        if (withdrawal.status !== 'pending') {
+          return res.status(400).json({ error: 'Withdrawal already processed' });
+        }
+
+        withdrawal.status = 'rejected';
+        await redis.set(withdrawalKey, JSON.stringify(withdrawal));
+
+        // Refund balance
+        const userKey = `user:${phoneNumber}`;
+        const rawUser = await redis.get(userKey);
+        const user = typeof rawUser === 'string' ? JSON.parse(rawUser) : rawUser;
+        user.balance = (user.balance || 0) + withdrawal.amount;
+        await redis.set(userKey, JSON.stringify(user));
+
+        return res.status(200).json({ success: true, message: `Withdrawal rejected + refunded ${withdrawal.amount} UGX`, balance: user.balance });
       }
 
       return res.status(400).json({ error: 'Invalid POST action' });

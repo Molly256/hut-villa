@@ -9,6 +9,13 @@ function Dashboard() {
   const fileInputRef = useRef(null);
   const [user, setUser] = useState({ phone: '', balance: 0, nickname: '', avatar: '', role: '' });
   const [loading, setLoading] = useState(true);
+  const [adminPanel, setAdminPanel] = useState(false);
+  const [adminTab, setAdminTab] = useState('reset'); // 'reset' or 'transactions'
+  const [searchPhone, setSearchPhone] = useState('');
+  const [foundUser, setFoundUser] = useState(null);
+  const [newPassword, setNewPassword] = useState('');
+  const [pendingDeposits, setPendingDeposits] = useState([]);
+  const [pendingWithdrawals, setPendingWithdrawals] = useState([]);
 
   useEffect(() => {
     const loadUser = async () => {
@@ -78,22 +85,70 @@ function Dashboard() {
     navigate('/download');
   };
 
-  const handleAdminClick = () => {
-    const pass = prompt("Enter admin password:");
-    if (pass === 'admin256$') {
-      navigate('/admin');
+  // Admin icon click - no password prompt
+  const handleAdminClick = async () => {
+    if (user.role !== 'admin') return alert('Admin only');
+    setAdminPanel(true);
+    setAdminTab('reset');
+    fetchPending();
+  };
+
+  const searchUser = async () => {
+    if (!searchPhone) return alert('Enter phone number');
+    const res = await fetch(`${API_URL}/user?phoneNumber=${searchPhone}`);
+    const data = await res.json();
+    if (data.error) {
+      alert(data.error);
+      setFoundUser(null);
     } else {
-      alert("Wrong password");
+      setFoundUser(data.user);
+      setNewPassword('');
     }
   };
 
-  // Temp handlers for admin buttons
-  const handleResetPassword = () => {
-    alert('🔑 Reset Password clicked - popup coming next');
+  const resetPassword = async () => {
+    if (!newPassword) return alert('Enter new password');
+    if (!foundUser) return alert('Search user first');
+    
+    const res = await fetch(`${API_URL}/user`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        action: 'reset-password',
+        phoneNumber: foundUser.phone,
+        newPassword: newPassword // plain text
+      })
+    });
+    const data = await res.json();
+    alert(data.message || data.error);
   };
 
-  const handlePendingTx = () => {
-    alert('⏳ Pending Transactions clicked - list coming next');
+  const fetchPending = async () => {
+    const [depRes, witRes] = await Promise.all([
+      fetch(`${API_URL}/transactions?action=list-pending-deposits`),
+      fetch(`${API_URL}/transactions?action=list-pending-withdrawals`)
+    ]);
+    const depData = await depRes.json();
+    const witData = await witRes.json();
+    setPendingDeposits(depData.deposits || []);
+    setPendingWithdrawals(witData.withdrawals || []);
+  };
+
+  const handleTxnAction = async (type, action, phoneNumber, id) => {
+    const res = await fetch(`${API_URL}/transactions`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ 
+        action, 
+        phoneNumber,
+        adminPhone: '0753041411',
+        adminPassword: '123456',
+        [`${type}Id`]: id 
+      })
+    });
+    const data = await res.json();
+    alert(data.message || data.error);
+    fetchPending();
   };
 
   const baseMenuItems = [
@@ -108,14 +163,11 @@ function Dashboard() {
     { label: 'Download App', icon: '📱', action: handleDownloadApp },
   ];
 
-  const adminMenuItems = [
+  const adminMenuItems = user.role === 'admin' ? [
     { label: 'Admin', icon: '🔐', action: handleAdminClick },
-    { label: 'Admin Transactions', icon: '💰', path: '/admin/transactions' },
-  ];
+  ] : [];
 
-  const menuItems = user.role === 'admin'
-    ? [...baseMenuItems, ...adminMenuItems]
-    : baseMenuItems;
+  const menuItems = [...baseMenuItems, ...adminMenuItems];
 
   const bottomNav = [
     { label: 'Home', icon: '🏠', path: '/dashboard' },
@@ -149,14 +201,12 @@ function Dashboard() {
           onChange: handleAvatarChange
         }),
         
-        // Show Admin if role is admin
         React.createElement('div', { style: styles.nickname }, 
           user.role === 'admin' ? 'Admin' : user.nickname || 'User'
         ),
         
         React.createElement('div', { style: styles.phone }, user.phone || user.phoneNumber),
         
-        // Balance: green if positive, red if negative
         React.createElement('div', { 
           style: { ...styles.balance, color: Number(user.balance) < 0 ? '#ff4444' : '#4caf50' } 
         }, 
@@ -169,6 +219,88 @@ function Dashboard() {
           'Welcome to Hut Villa site invest with confidence 🎉🎉🎊'
         )
       ),
+      
+      // Admin Panel - opens inline, no password prompt
+      ...(adminPanel ? [
+        React.createElement('div', { key: 'admin-panel', style: { background: '#fff', borderRadius: '12px', padding: '16px', marginBottom: '20px' } },
+          React.createElement('div', { style: { display: 'flex', gap: '8px', marginBottom: '16px' } },
+            React.createElement('button', { 
+              onClick: () => setAdminTab('reset'),
+              style: { flex: 1, padding: '10px', background: adminTab === 'reset' ? '#2196f3' : '#eee', color: adminTab === 'reset' ? '#fff' : '#333', border: 'none', borderRadius: '6px', fontWeight: '700' }
+            }, 'Password Reset'),
+            React.createElement('button', { 
+              onClick: () => { setAdminTab('transactions'); fetchPending(); },
+              style: { flex: 1, padding: '10px', background: adminTab === 'transactions' ? '#4caf50' : '#eee', color: adminTab === 'transactions' ? '#fff' : '#333', border: 'none', borderRadius: '6px', fontWeight: '700' }
+            }, 'Admin Transactions'),
+            React.createElement('button', { 
+              onClick: () => setAdminPanel(false),
+              style: { padding: '10px 16px', background: '#ff4444', color: '#fff', border: 'none', borderRadius: '6px', fontWeight: '700' }
+            }, 'Close')
+          ),
+
+          // Password Reset Tab
+          ...(adminTab === 'reset' ? [
+            React.createElement('div', { key: 'reset-tab' },
+              React.createElement('div', { style: { display: 'flex', gap: '8px', marginBottom: '12px' } },
+                React.createElement('input', {
+                  type: 'text',
+                  placeholder: 'Enter phone number',
+                  value: searchPhone,
+                  onChange: (e) => setSearchPhone(e.target.value),
+                  style: { flex: 1, padding: '8px', border: '1px solid #ccc', borderRadius: '6px' }
+                }),
+                React.createElement('button', { onClick: searchUser, style: { padding: '8px 16px', background: '#2196f3', color: '#fff', border: 'none', borderRadius: '6px' } }, 'Search')
+              ),
+              ...(foundUser ? [
+                React.createElement('div', { key: 'user-info', style: { borderTop: '1px solid #eee', paddingTop: '12px' } },
+                  React.createElement('p', null, React.createElement('b', null, 'Name: '), foundUser.name),
+                  React.createElement('p', null, React.createElement('b', null, 'Phone: '), foundUser.phone),
+                  React.createElement('p', null, React.createElement('b', null, 'Current Password: '), foundUser.password),
+                  React.createElement('p', null, React.createElement('b', null, 'Balance: '), foundUser.balance, ' UGX'),
+                  React.createElement('input', {
+                    type: 'text',
+                    placeholder: 'Enter new password',
+                    value: newPassword,
+                    onChange: (e) => setNewPassword(e.target.value),
+                    style: { width: '100%', padding: '8px', border: '1px solid #ccc', borderRadius: '6px', marginTop: '8px' }
+                  }),
+                  React.createElement('button', { onClick: resetPassword, style: { width: '100%', padding: '10px', background: '#4caf50', color: '#fff', border: 'none', borderRadius: '6px', marginTop: '8px', fontWeight: '700' } }, 'Update Password')
+                )
+              ] : [])
+            )
+          ] : []),
+
+          // Admin Transactions Tab
+          ...(adminTab === 'transactions' ? [
+            React.createElement('div', { key: 'tx-tab' },
+              React.createElement('h4', { style: { color: '#2196f3', marginBottom: '8px' } }, 'Pending Deposits'),
+              ...(pendingDeposits.length === 0 ? [React.createElement('p', { style: { color: '#999' } }, 'No pending deposits')] : 
+                pendingDeposits.map(d => React.createElement('div', { key: d.id, style: { border: '1px solid #ddd', padding: '10px', borderRadius: '6px', marginBottom: '8px' } },
+                  React.createElement('p', null, React.createElement('b', null, 'Phone: '), d.phoneNumber),
+                  React.createElement('p', null, React.createElement('b', null, 'Amount: '), d.amount, ' UGX'),
+                  React.createElement('div', { style: { display: 'flex', gap: '8px', marginTop: '8px' } },
+                    React.createElement('button', { onClick: () => handleTxnAction('deposit', 'confirm-deposit', d.phoneNumber, d.id), style: { flex: 1, padding: '6px', background: '#4caf50', color: '#fff', border: 'none', borderRadius: '4px' } }, 'Confirm'),
+                    React.createElement('button', { onClick: () => handleTxnAction('deposit', 'reject-deposit', d.phoneNumber, d.id), style: { flex: 1, padding: '6px', background: '#ff4444', color: '#fff', border: 'none', borderRadius: '4px' } }, 'Reject')
+                  )
+                ))
+              ),
+              
+              React.createElement('h4', { style: { color: '#ff9800', marginTop: '16px', marginBottom: '8px' } }, 'Pending Withdrawals'),
+              ...(pendingWithdrawals.length === 0 ? [React.createElement('p', { style: { color: '#999' } }, 'No pending withdrawals')] : 
+                pendingWithdrawals.map(w => React.createElement('div', { key: w.id, style: { border: '1px solid #ddd', padding: '10px', borderRadius: '6px', marginBottom: '8px' } },
+                  React.createElement('p', null, React.createElement('b', null, 'Phone: '), w.phoneNumber),
+                  React.createElement('p', null, React.createElement('b', null, 'Amount: '), w.amount, ' UGX'),
+                  React.createElement('p', null, React.createElement('b', null, 'Account: '), w.accountName, ' - ', w.accountNumber),
+                  React.createElement('div', { style: { display: 'flex', gap: '8px', marginTop: '8px' } },
+                    React.createElement('button', { onClick: () => handleTxnAction('withdrawal', 'confirm-withdrawal', w.phoneNumber, w.id), style: { flex: 1, padding: '6px', background: '#4caf50', color: '#fff', border: 'none', borderRadius: '4px' } }, 'Confirm'),
+                    React.createElement('button', { onClick: () => handleTxnAction('withdrawal', 'reject-withdrawal', w.phoneNumber, w.id), style: { flex: 1, padding: '6px', background: '#ff4444', color: '#fff', border: 'none', borderRadius: '4px' } }, 'Reject')
+                  )
+                ))
+              )
+            )
+          ] : [])
+        )
+      ] : []),
       
       React.createElement('div', { style: styles.grid },
         menuItems.map((item) =>
@@ -183,29 +315,7 @@ function Dashboard() {
         )
       ),
       
-      // Admin-only buttons
-      ...(user.role === 'admin' ? [
-        React.createElement('div', { 
-          key: 'admin-buttons',
-          style: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginTop: '20px', marginBottom: '80px' } 
-        },
-          React.createElement('div', {
-            onClick: handleResetPassword,
-            style: { ...styles.card, background: '#ff4444', color: '#fff', minHeight: '90px' }
-          },
-            React.createElement('div', { style: { ...styles.icon, fontSize: '32px' } }, '🔑'),
-            React.createElement('div', { style: { ...styles.label, color: '#fff', fontWeight: '700' } }, 'Reset Password')
-          ),
-          
-          React.createElement('div', {
-            onClick: handlePendingTx,
-            style: { ...styles.card, background: '#ffaa00', color: '#fff', minHeight: '90px' }
-          },
-            React.createElement('div', { style: { ...styles.icon, fontSize: '32px' } }, '⏳'),
-            React.createElement('div', { style: { ...styles.label, color: '#fff', fontWeight: '700' } }, 'Pending Tx')
-          )
-        )
-      ] : []),
+      // Removed red/yellow buttons here
       
       React.createElement('div', { style: styles.bottomBar },
         bottomNav.map((item) =>
