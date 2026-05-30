@@ -2,7 +2,7 @@ import { redis } from './redis';
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Method not allowed' }); // Fixed message
+    return res.status(405).json({ error: 'Method not allowed' });
   }
 
   const { phoneNumber, password } = req.body;
@@ -12,10 +12,11 @@ export default async function handler(req, res) {
   }
 
   try {
-    const key = `user:${phoneNumber.trim()}`;
+    const cleanPhone = phoneNumber.replace(/\D/g, '').trim();
+    const key = `user:${cleanPhone}`;
     const type = await redis.type(key);
 
-    console.log(`Login: input="${phoneNumber}" key="${key}" type=${type}`);
+    console.log(`Login: input="${phoneNumber}" clean="${cleanPhone}" key="${key}" type=${type}`);
 
     let user = null;
 
@@ -48,8 +49,8 @@ export default async function handler(req, res) {
     }
 
     const { password: _, ...safeUser } = {
-      phone: phoneNumber.trim(),
-      phoneNumber: phoneNumber.trim(),
+      phone: cleanPhone,
+      phoneNumber: cleanPhone,
       role: user.role || 'user',
       nickname: user.nickname || '',
       avatar: user.avatar || '',
@@ -59,7 +60,7 @@ export default async function handler(req, res) {
       hasFirstDeposit: user.hasFirstDeposit === true || user.hasFirstDeposit === 'true'
     };
 
-    console.log('Login success for', phoneNumber.trim(), 'Role:', safeUser.role);
+    console.log('Login success for', cleanPhone, 'Role:', safeUser.role);
     return res.status(200).json({
       success: true,
       user: safeUser
