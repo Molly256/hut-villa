@@ -84,6 +84,27 @@ export default async function handler(req, res) {
 
     const { password, ...safeUser } = { ...user, balance: newBalance };
 
+    // ADD ONLY THIS: Save income history so Bill.js VIP Purchase can read it
+    // Wrapped in try/catch so it never breaks rent logic
+    try {
+      const incomeId = `income:${Date.now()}`;
+      const incomeData = {
+        type: 'hut_rent',
+        amount: rentAmount,
+        createdAt: new Date().toISOString(),
+        hut_name: hutName
+      };
+      await redis.set(incomeId, JSON.stringify(incomeData));
+
+      const userIncomeKey = `income:${phoneNumber}`;
+      const rawIncomes = await redis.get(userIncomeKey);
+      const userIncomes = rawIncomes ? (typeof rawIncomes === 'string' ? JSON.parse(rawIncomes) : rawIncomes) : [];
+      userIncomes.unshift(incomeId);
+      await redis.set(userIncomeKey, JSON.stringify(userIncomes));
+    } catch(e) {
+      console.log('Income history save failed, rent still succeeded:', e);
+    }
+
     return res.status(200).json({
       success: true,
       user: safeUser,
