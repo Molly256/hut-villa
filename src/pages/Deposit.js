@@ -87,16 +87,16 @@ function Deposit() {
       onClick: () => setMethod('MTN')
     },
       React.createElement('div', { style: { fontWeight: '600' } }, 'MTN Mobile Money'),
-      React.createElement('div', null, '0773242118'),
-      React.createElement('div', null, 'Besigye Benard')
+      React.createElement('div', null, '0769306151'),
+      React.createElement('div', null, 'BETTY ANYAITI')
     ),
     React.createElement('div', {
       style: {...styles.method, border: method === 'Airtel'? '2px solid #ff6b35' : '1px solid #ddd' },
       onClick: () => setMethod('Airtel')
     },
       React.createElement('div', { style: { fontWeight: '600' } }, 'Airtel Mobile Money'),
-      React.createElement('div', null, '0753520252'),
-      React.createElement('div', null, 'Nakiyngi Maureen')
+      React.createElement('div', null, '0748575505'),
+      React.createElement('div', null, 'ANTHONY OTIBOK')
     ),
     React.createElement('button', {
       onClick: handleConfirm,
