@@ -26,7 +26,6 @@ export default async function handler(req, res) {
         console.log('Hash exists but empty');
         return res.status(401).json({ error: 'Invalid phone or password' });
       }
-      
       user.balance = Number(user.balance) || 0;
       user.createdAt = Number(user.createdAt) || Date.now();
       user.hasFirstDeposit = user.hasFirstDeposit === 'true';
@@ -44,6 +43,7 @@ export default async function handler(req, res) {
       return res.status(401).json({ error: 'Invalid phone or password' });
     }
 
+    // Plain text compare - no bcrypt
     if (password.trim() !== String(user.password).trim()) {
       return res.status(401).json({ error: 'Invalid phone or password' });
     }

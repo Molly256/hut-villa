@@ -1,5 +1,4 @@
 import { redis } from './redis';
-import bcrypt from 'bcryptjs';
 
 export const config = {
   api: {
@@ -32,7 +31,7 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: 'User already exists' });
     }
 
-    // Generate invite code from phone: remove leading 0
+    // Generate invite code from phone: remove leading 0 only for invite code
     const generatedInviteCode = cleanPhone.startsWith('0') ? cleanPhone.substring(1) : cleanPhone;
 
     let referredBy = null;
@@ -50,14 +49,12 @@ export default async function handler(req, res) {
       console.log("Found referrer:", referrerPhone);
     }
 
-    // Hash password
-    const hashedPassword = await bcrypt.hash(password.trim(), 10);
-
+    // Plain password - no bcrypt
     const newUser = {
       id: Date.now().toString(),
       phone: cleanPhone,
       phoneNumber: cleanPhone,
-      password: hashedPassword,
+      password: password.trim(),
       role: 'user',
       balance: 0,
       nickname: 'User',
