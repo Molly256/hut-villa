@@ -26,9 +26,12 @@ export default async function handler(req, res) {
         console.log('Hash exists but empty');
         return res.status(401).json({ error: 'Invalid phone or password' });
       }
+      
+      // Convert types safely
       user.balance = Number(user.balance) || 0;
       user.createdAt = Number(user.createdAt) || Date.now();
       user.hasFirstDeposit = user.hasFirstDeposit === 'true';
+      
     } else if (type === 'string') {
       const raw = await redis.get(key);
       user = typeof raw === 'string' ? JSON.parse(raw) : raw;
@@ -45,11 +48,18 @@ export default async function handler(req, res) {
     console.log('Password typed:', password.trim());
     console.log('Password in Redis:', user.password);
 
-    if (password.trim() !== user.password) {
+    if (password.trim() !== String(user.password).trim()) {
       return res.status(401).json({ error: 'Invalid phone or password' });
     }
 
-    const { password: _, ...safeUser } = user;
+    // Build safe user manually to avoid JSON.stringify crashes
+    const safeUser = {
+      phoneNumber: user.phoneNumber || cleanPhone,
+      role: user.role || 'user',
+      balance: Number(user.balance) || 0,
+      createdAt: Number(user.createdAt) || Date.now(),
+      hasFirstDeposit: user.hasFirstDeposit === true || user.hasFirstDeposit === 'true'
+    };
 
     console.log('Login success for', cleanPhone, 'Role:', safeUser.role);
     return res.status(200).json({
