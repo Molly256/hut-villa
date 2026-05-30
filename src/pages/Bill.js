@@ -19,27 +19,39 @@ export default function Bill() {
     const user = JSON.parse(savedUser);
     const phoneNumber = user.phone || user.phoneNumber;
 
-    fetch(`${API_URL}/transactions?phoneNumber=${encodeURIComponent(phoneNumber)}`)
-   .then(res => res.json())
-   .then(data => {
+    // FIX: Added action=history to match backend
+    fetch(`${API_URL}/transactions?action=history&phoneNumber=${encodeURIComponent(phoneNumber)}`)
+ .then(res => res.json())
+ .then(data => {
       if (!data.transactions) {
         setTransactions([]);
         setLoading(false);
         return;
       }
 
-      const formatted = data.transactions.map((tx, idx) => ({
-        id: tx.id || idx + 1,
-        type: tx.type || (tx.method? 'Deposit' : 'Withdrawal'),
-        amount: tx.type === 'Withdrawal'? -tx.amount : tx.amount,
-        status: tx.status || 'Pending',
-        date: new Date(tx.createdAt || tx.created_at).toLocaleString('en-UG')
-      }));
+      const formatted = data.transactions.map((tx, idx) => {
+        let type = tx.type;
+
+        // Fix 1: Normalize types to match button names
+        if (type === 'rent_income' || type === 'hut_rent' || type === 'VIP Income') type = 'VIP Purchase';
+        if (type === 'withdraw') type = 'Withdrawal';
+        if (type === 'deposit') type = 'Deposit';
+        if (!type) type = tx.method? 'Deposit' : 'Withdrawal';
+
+        return {
+          id: tx.id || idx + 1,
+          type: type,
+          // Fix 2: Amount sign - Withdrawals must be negative
+          amount: type === 'Withdrawal'? -Math.abs(Number(tx.amount)) : Math.abs(Number(tx.amount)),
+          status: tx.status || 'Pending',
+          date: new Date(tx.createdAt || tx.created_at).toLocaleString('en-UG')
+        };
+      });
 
       setTransactions(formatted);
       setLoading(false);
     })
-   .catch(err => {
+ .catch(err => {
       console.error(err);
       setTransactions([]);
       setLoading(false);
@@ -47,7 +59,7 @@ export default function Bill() {
   }, [navigate]);
 
   const filteredBills = filter === "All"
-   ? transactions
+ ? transactions
     : transactions.filter(b => b.type === filter);
 
   const getStatusColor = (status) => {
