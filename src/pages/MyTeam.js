@@ -8,7 +8,7 @@ const MyTeam = ({ user }) => {
     if (user?.phone) {
       fetchTeamData(user.phone);
     }
-  }, [user?.phone]); // Fixed: added dependency to stop infinite loop
+  }, [user?.phone]);
 
   const fetchTeamData = async (phone) => {
     try {
@@ -69,7 +69,7 @@ const MyTeam = ({ user }) => {
     React.createElement('h2', { style: styles.title }, 'My Team'),
     React.createElement('div', { style: styles.commissionBox },
       React.createElement('div', { style: styles.commissionLabel }, 'Total Commission'),
-      React.createElement('div', { style: styles.commissionAmount }, `₹${teamData.totalCommission || 0}`)
+      React.createElement('div', { style: styles.commissionAmount }, `UGX ${Number(teamData.totalCommission || 0).toFixed(0)}`)
     ),
     renderTeamSection('Level A', 'levelA', teamData.levelA || [], '#FFD700'),
     renderTeamSection('Level B', 'levelB', teamData.levelB || [], '#C0C0C0'),

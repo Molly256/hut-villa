@@ -25,16 +25,14 @@ export default async function handler(req, res) {
     const cleanPhone = phoneNumber.replace(/\D/g, '').trim();
     console.log("Register attempt:", cleanPhone);
 
-    // Check existing user
     const existingData = await redis.get(`user:${cleanPhone}`);
     if (existingData) {
       return res.status(400).json({ error: 'User already exists' });
     }
 
-    // Generate invite code from phone: remove leading 0 only for invite code
     const generatedInviteCode = cleanPhone.startsWith('0') ? cleanPhone.substring(1) : cleanPhone;
 
-    let referredBy = null;
+    let invitedBy = null; // CHANGED: was referredBy
     
     if (inviteCode) {
       console.log("Invite code:", inviteCode);
@@ -45,11 +43,10 @@ export default async function handler(req, res) {
         return res.status(400).json({ error: 'Invalid invitation code' });
       }
       
-      referredBy = referrerPhone;
+      invitedBy = referrerPhone; // CHANGED: was referredBy
       console.log("Found referrer:", referrerPhone);
     }
 
-    // Plain password - no bcrypt
     const newUser = {
       id: Date.now().toString(),
       phone: cleanPhone,
@@ -63,26 +60,24 @@ export default async function handler(req, res) {
       bankNumber: '',
       bankName: '',
       inviteCode: generatedInviteCode,
-      referredBy: referredBy,
+      invitedBy: invitedBy, // CHANGED: was referredBy
+      firstDepositRewarded: false, // NEW: flag for 1-time reward
       createdAt: Date.now()
     };
 
-    // Save to Redis
     await redis.set(`user:${cleanPhone}`, JSON.stringify(newUser));
     
-    // Add user to referrer's team list
-    if (referredBy) {
-      const teamKey = `team:${referredBy}`;
+    if (invitedBy) { // CHANGED: was referredBy
+      const teamKey = `team:${invitedBy}`; // CHANGED: was referredBy
       const keyType = await redis.type(teamKey);
       if (keyType !== 'none' && keyType !== 'set') {
         await redis.del(teamKey);
         console.log("Deleted wrong key type:", keyType);
       }
       await redis.sadd(teamKey, cleanPhone);
-      console.log("Added to team:", referredBy);
+      console.log("Added to team:", invitedBy); // CHANGED: was referredBy
     }
     
-    // Verify save - handle both string and object from redis
     const verifyData = await redis.get(`user:${cleanPhone}`);
     let verify = null;
     if (verifyData) {

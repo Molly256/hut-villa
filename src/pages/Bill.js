@@ -19,10 +19,9 @@ export default function Bill() {
     const user = JSON.parse(savedUser);
     const phoneNumber = user.phone || user.phoneNumber;
 
-    // FIX: Added action=history to match backend
     fetch(`${API_URL}/transactions?action=history&phoneNumber=${encodeURIComponent(phoneNumber)}`)
- .then(res => res.json())
- .then(data => {
+.then(res => res.json())
+.then(data => {
       if (!data.transactions) {
         setTransactions([]);
         setLoading(false);
@@ -32,16 +31,16 @@ export default function Bill() {
       const formatted = data.transactions.map((tx, idx) => {
         let type = tx.type;
 
-        // Fix 1: Normalize types to match button names
+        // Normalize types to match button names
         if (type === 'rent_income' || type === 'hut_rent' || type === 'VIP Income') type = 'VIP Purchase';
         if (type === 'withdraw') type = 'Withdrawal';
         if (type === 'deposit') type = 'Deposit';
+        if (type === 'referral') type = 'Invitation'; // Team A/B/C rewards
         if (!type) type = tx.method? 'Deposit' : 'Withdrawal';
 
         return {
           id: tx.id || idx + 1,
           type: type,
-          // Fix 2: Amount sign - Withdrawals must be negative
           amount: type === 'Withdrawal'? -Math.abs(Number(tx.amount)) : Math.abs(Number(tx.amount)),
           status: tx.status || 'Pending',
           date: new Date(tx.createdAt || tx.created_at).toLocaleString('en-UG')
@@ -51,7 +50,7 @@ export default function Bill() {
       setTransactions(formatted);
       setLoading(false);
     })
- .catch(err => {
+.catch(err => {
       console.error(err);
       setTransactions([]);
       setLoading(false);
@@ -59,7 +58,7 @@ export default function Bill() {
   }, [navigate]);
 
   const filteredBills = filter === "All"
- ? transactions
+? transactions
     : transactions.filter(b => b.type === filter);
 
   const getStatusColor = (status) => {
@@ -79,7 +78,7 @@ export default function Bill() {
     }, '← Back'),
     React.createElement('h2', { style: { textAlign: "center", marginBottom: "20px" } }, 'Transaction History'),
     React.createElement('div', { style: { display: "flex", gap: "8px", marginBottom: "20px", overflowX: "auto", paddingBottom: "5px" } },
-      ["All", "Deposit", "Withdrawal", "VIP Purchase"].map(f =>
+      ["All", "Deposit", "Withdrawal", "VIP Purchase", "Invitation"].map(f =>
         React.createElement('button', {
           key: f,
           onClick: () => setFilter(f),
@@ -125,7 +124,7 @@ export default function Bill() {
                     fontWeight: "bold",
                     color: getAmountColor(bill.amount)
                   }
-                }, `${bill.amount >= 0? "+" : ""}${Math.abs(bill.amount).toLocaleString()} UGX`),
+                }, `${bill.amount >= 0? "+" : ""}UGX ${Math.abs(bill.amount).toFixed(0).toLocaleString()}`),
                 React.createElement('span', {
                   style: {
                     fontSize: "12px",
