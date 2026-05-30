@@ -27,8 +27,8 @@ export default async function handler(req, res) {
     console.log("Register attempt:", cleanPhone);
 
     // Check existing user
-    const existingStr = await redis.get(`user:${cleanPhone}`);
-    if (existingStr) {
+    const existingData = await redis.get(`user:${cleanPhone}`);
+    if (existingData) {
       return res.status(400).json({ error: 'User already exists' });
     }
 
@@ -40,9 +40,9 @@ export default async function handler(req, res) {
     if (inviteCode) {
       console.log("Invite code:", inviteCode);
       const referrerPhone = `0${inviteCode}`;
-      const referrerDataStr = await redis.get(`user:${referrerPhone}`);
+      const referrerData = await redis.get(`user:${referrerPhone}`);
       
-      if (!referrerDataStr) {
+      if (!referrerData) {
         return res.status(400).json({ error: 'Invalid invitation code' });
       }
       
@@ -85,13 +85,11 @@ export default async function handler(req, res) {
       console.log("Added to team:", referredBy);
     }
     
-    // Verify save - safe parse
-    const verifyStr = await redis.get(`user:${cleanPhone}`);
+    // Verify save - handle both string and object from redis
+    const verifyData = await redis.get(`user:${cleanPhone}`);
     let verify = null;
-    try {
-      verify = verifyStr ? JSON.parse(verifyStr) : null;
-    } catch (e) {
-      console.log("Verify parse failed:", e.message);
+    if (verifyData) {
+      verify = typeof verifyData === 'string' ? JSON.parse(verifyData) : verifyData;
     }
     console.log("Verify save:", verify ? "OK" : "FAILED");
 
@@ -104,7 +102,6 @@ export default async function handler(req, res) {
     
   } catch (err) {
     console.error('Register error:', err.message);
-    // Always send string, never object
     return res.status(500).json({ error: err.message || 'Server error' });
   }
 }
