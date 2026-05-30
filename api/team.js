@@ -1,7 +1,7 @@
 import { redis } from './redis';
 
 export default async function handler(req, res) {
-  if (req.method!== 'POST') {
+  if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
@@ -11,47 +11,58 @@ export default async function handler(req, res) {
   }
 
   try {
-    const users = await redis.get('users') || [];
-    const hutsIncome = await redis.get('hutsIncome') || [];
+    // Level A: direct referrals from team set
+    const levelAPhones = await redis.smembers(`team:${phoneNumber}`);
+    const levelA = await Promise.all(
+      levelAPhones.map(async (phone) => {
+        const u = await redis.get(`user:${phone}`);
+        return u ? {
+          phone: u.phone || u.phoneNumber,
+          date: new Date(u.createdAt || u.id).toLocaleDateString()
+        } : null;
+      })
+    ).then(arr => arr.filter(Boolean));
 
-    // Build maps for fast lookup
-    const userMap = new Map();
-    users.forEach(u => {
-      const phone = u.phone || u.phoneNumber;
-      if (phone) userMap.set(phone, u);
-    });
-
-    // Level A: direct referrals
-    const levelA = users
-      .filter(u => u.referredBy === phoneNumber)
-      .map(u => ({
-        phone: u.phone || u.phoneNumber,
-        date: new Date(u.createdAt || u.id).toLocaleDateString()
-      }));
-
-    const levelAPhones = new Set(levelA.map(m => m.phone));
+    const levelAPhonesSet = new Set(levelA.map(m => m.phone));
 
     // Level B: referrals of Level A
-    const levelB = users
-      .filter(u => levelAPhones.has(u.referredBy))
-      .map(u => ({
-        phone: u.phone || u.phoneNumber,
-        date: new Date(u.createdAt || u.id).toLocaleDateString()
-      }));
+    const levelBPhones = [];
+    for (const phone of levelAPhones) {
+      const sub = await redis.smembers(`team:${phone}`);
+      levelBPhones.push(...sub);
+    }
+    const levelB = await Promise.all(
+      [...new Set(levelBPhones)].map(async (phone) => {
+        const u = await redis.get(`user:${phone}`);
+        return u ? {
+          phone: u.phone || u.phoneNumber,
+          date: new Date(u.createdAt || u.id).toLocaleDateString()
+        } : null;
+      })
+    ).then(arr => arr.filter(Boolean));
 
-    const levelBPhones = new Set(levelB.map(m => m.phone));
+    const levelBPhonesSet = new Set(levelB.map(m => m.phone));
 
     // Level C: referrals of Level B
-    const levelC = users
-      .filter(u => levelBPhones.has(u.referredBy))
-      .map(u => ({
-        phone: u.phone || u.phoneNumber,
-        date: new Date(u.createdAt || u.id).toLocaleDateString()
-      }));
+    const levelCPhones = [];
+    for (const phone of levelBPhones) {
+      const sub = await redis.smembers(`team:${phone}`);
+      levelCPhones.push(...sub);
+    }
+    const levelC = await Promise.all(
+      [...new Set(levelCPhones)].map(async (phone) => {
+        const u = await redis.get(`user:${phone}`);
+        return u ? {
+          phone: u.phone || u.phoneNumber,
+          date: new Date(u.createdAt || u.id).toLocaleDateString()
+        } : null;
+      })
+    ).then(arr => arr.filter(Boolean));
 
-    // Calculate total commission
+    // Calculate total commission from hutsIncome per-user keys
+    const hutsIncome = await redis.get(`hutsIncome:${phoneNumber}`) || [];
     const totalCommission = hutsIncome
-      .filter(h => h.phoneNumber === phoneNumber && h.type === 'referral')
+      .filter(h => h.type === 'referral')
       .reduce((sum, h) => sum + (Number(h.amount) || 0), 0);
 
     return res.status(200).json({
@@ -68,5 +79,3 @@ export default async function handler(req, res) {
     return res.status(500).json({ error: 'Server error' });
   }
 }
-
-

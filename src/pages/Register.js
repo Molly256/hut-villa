@@ -5,6 +5,8 @@ function Register({ onRegister }) {
   const [phone, setPhone] = useState(''); 
   const [password, setPassword] = useState('');
   const [repeatPassword, setRepeatPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [showRepeatPassword, setShowRepeatPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
@@ -89,20 +91,43 @@ function Register({ onRegister }) {
       style: styles.input
     }),
     
-    React.createElement('input', {
-      type: 'password',
-      placeholder: 'Password',
-      value: password,
-      onChange: (e) => setPassword(e.target.value),
-      style: styles.input
-    }),
+    // Password with eye button
+    React.createElement('div', { style: styles.passWrapper },
+      React.createElement('input', {
+        type: showPassword ? 'text' : 'password',
+        placeholder: 'Password',
+        value: password,
+        onChange: (e) => setPassword(e.target.value),
+        style: styles.inputPass
+      }),
+      React.createElement('span', {
+        onClick: () => setShowPassword(!showPassword),
+        style: styles.eye
+      }, showPassword ? '🙈' : '👁️')
+    ),
     
+    // Repeat Password with eye button
+    React.createElement('div', { style: styles.passWrapper },
+      React.createElement('input', {
+        type: showRepeatPassword ? 'text' : 'password',
+        placeholder: 'Repeat password',
+        value: repeatPassword,
+        onChange: (e) => setRepeatPassword(e.target.value),
+        style: styles.inputPass
+      }),
+      React.createElement('span', {
+        onClick: () => setShowRepeatPassword(!showRepeatPassword),
+        style: styles.eye
+      }, showRepeatPassword ? '🙈' : '👁️')
+    ),
+
+    // Invitation code input - auto filled
     React.createElement('input', {
-      type: 'password',
-      placeholder: 'Repeat password',
-      value: repeatPassword,
-      onChange: (e) => setRepeatPassword(e.target.value),
-      style: styles.input
+      type: 'text',
+      placeholder: 'Invitation code',
+      value: inviteCode || '',
+      readOnly: !!inviteCode,
+      style: { ...styles.input, background: inviteCode ? '#222' : '#1a1a1a', color: inviteCode ? '#ff6b35' : '#fff' }
     }),
     
     React.createElement('button', 
@@ -134,7 +159,32 @@ const styles = {
     fontSize: '14px', 
     background: '#1a1a1a', 
     color: '#fff', 
-    outline: 'none' 
+    outline: 'none',
+    boxSizing: 'border-box'
+  },
+  passWrapper: {
+    position: 'relative',
+    marginBottom: '15px'
+  },
+  inputPass: {
+    width: '100%',
+    padding: '12px 40px 12px 12px',
+    borderRadius: '8px',
+    border: '1px solid #333',
+    fontSize: '14px',
+    background: '#1a1a1a',
+    color: '#fff',
+    outline: 'none',
+    boxSizing: 'border-box'
+  },
+  eye: {
+    position: 'absolute',
+    right: '12px',
+    top: '50%',
+    transform: 'translateY(-50%)',
+    cursor: 'pointer',
+    fontSize: '18px',
+    userSelect: 'none'
   },
   button: { 
     width: '100%', 

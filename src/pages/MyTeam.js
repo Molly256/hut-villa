@@ -8,7 +8,7 @@ const MyTeam = ({ user }) => {
     if (user?.phone) {
       fetchTeamData(user.phone);
     }
-  }, );
+  }, [user?.phone]); // Fixed: added dependency to stop infinite loop
 
   const fetchTeamData = async (phone) => {
     try {

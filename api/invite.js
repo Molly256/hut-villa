@@ -10,11 +10,22 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: 'Phone number required' });
   }
 
-  const inviteStats = await redis.get('inviteStats') || {};
-  inviteStats[phoneNumber] = (inviteStats[phoneNumber] || 0) + 1;
-  await redis.set('inviteStats', inviteStats);
+  try {
+    const cleanPhone = phoneNumber.replace(/\D/g, '').trim();
 
-  return res.status(200).json({ success: true });
+    // Get existing stats, parse JSON
+    const statsStr = await redis.get('inviteStats');
+    const inviteStats = statsStr? JSON.parse(statsStr) : {};
+
+    // Increment count
+    inviteStats[cleanPhone] = (inviteStats[cleanPhone] || 0) + 1;
+
+    // Save back as JSON string
+    await redis.set('inviteStats', JSON.stringify(inviteStats));
+
+    return res.status(200).json({ success: true, clicks: inviteStats[cleanPhone] });
+  } catch (err) {
+    console.error('Invite track error:', err);
+    return res.status(500).json({ error: 'Server error' });
+  }
 }
-
-
