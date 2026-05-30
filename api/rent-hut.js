@@ -6,8 +6,15 @@ export default async function handler(req, res) {
   }
 
   const { phoneNumber, hutId, hutName, rent, days, income } = req.body;
+
+  // Debug what backend receives
+  console.log('REQ BODY:', req.body);
+
   if (!phoneNumber ||!hutId ||!rent) {
-    return res.status(400).json({ error: 'Missing required fields' });
+    return res.status(400).json({
+      error: 'Missing required fields',
+      received: { phoneNumber, hutId, rent }
+    });
   }
 
   try {
@@ -19,7 +26,7 @@ export default async function handler(req, res) {
       return res.status(404).json({ error: 'User not found' });
     }
 
-    // Redis HASH stores everything as string, convert to numbers
+    // Redis HASH stores everything as string
     const balance = Number(user.balance || 0);
     const rentAmount = Number(rent);
 
@@ -54,7 +61,7 @@ export default async function handler(req, res) {
     };
     await redis.set(rentalKey, JSON.stringify(rental));
 
-    // Track rental keys
+    // Track rental keys for this user
     const userRentalsKey = `rentals:${phoneNumber}`;
     const rawRentals = await redis.get(userRentalsKey);
     const userRentals = rawRentals? JSON.parse(rawRentals) : [];
@@ -63,10 +70,10 @@ export default async function handler(req, res) {
       await redis.set(userRentalsKey, JSON.stringify(userRentals));
     }
 
-    // Update users array - convert user object first
+    // Update users array for admin team lookups
     const rawUsers = await redis.get('users') || '[]';
     const users = typeof rawUsers === 'string'? JSON.parse(rawUsers) : rawUsers;
-    const userObj = {...user, balance: newBalance, phone: user.phone || phoneNumber };
+    const userObj = {...user, balance: newBalance, phone: user.phone || phoneNumber, phoneNumber };
     const idx = users.findIndex(u => u.phone === phoneNumber || u.phoneNumber === phoneNumber);
     if (idx!== -1) {
       users[idx] = userObj;
