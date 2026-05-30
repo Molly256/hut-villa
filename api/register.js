@@ -1,4 +1,5 @@
 import { redis } from './redis';
+import bcrypt from 'bcryptjs';
 
 export const config = {
   api: {
@@ -25,24 +26,24 @@ export default async function handler(req, res) {
     const cleanPhone = phoneNumber.replace(/\D/g, '').trim();
     console.log("Register attempt:", cleanPhone);
 
-    const existing = await redis.get(`user:${cleanPhone}`);
-    if (existing) {
+    // Check existing user - FIX: parse JSON
+    const existingStr = await redis.get(`user:${cleanPhone}`);
+    if (existingStr) {
       return res.status(400).json({ error: 'User already exists' });
     }
 
-    // Generate invite code from phone: remove leading 0, must start with 7
+    // Generate invite code from phone: remove leading 0
     const generatedInviteCode = cleanPhone.startsWith('0') ? cleanPhone.substring(1) : cleanPhone;
 
     let referredBy = null;
-    let referrerPhone = null;
     
     if (inviteCode) {
       console.log("Invite code:", inviteCode);
       // Find referrer by invite code - add 0 back to match phone format
-      referrerPhone = `0${inviteCode}`;
-      const referrerData = await redis.get(`user:${referrerPhone}`);
+      const referrerPhone = `0${inviteCode}`;
+      const referrerDataStr = await redis.get(`user:${referrerPhone}`);
       
-      if (!referrerData) {
+      if (!referrerDataStr) {
         return res.status(400).json({ error: 'Invalid invitation code' });
       }
       
@@ -50,11 +51,14 @@ export default async function handler(req, res) {
       console.log("Found referrer:", referrerPhone);
     }
 
+    // Hash password
+    const hashedPassword = await bcrypt.hash(password.trim(), 10);
+
     const newUser = {
       id: Date.now().toString(),
       phone: cleanPhone,
       phoneNumber: cleanPhone,
-      password: password.trim(),
+      password: hashedPassword,
       role: 'user',
       balance: 0,
       nickname: 'User',
@@ -67,20 +71,24 @@ export default async function handler(req, res) {
       createdAt: Date.now()
     };
 
-    await redis.set(`user:${cleanPhone}`, newUser);
+    // FIX: Stringify before saving to Redis
+    await redis.set(`user:${cleanPhone}`, JSON.stringify(newUser));
     
-    // Add user to referrer's team list - FIX: delete wrong key type first
+    // Add user to referrer's team list - FIX: type safety
     if (referredBy) {
-      const keyType = await redis.type(`team:${referredBy}`);
+      const teamKey = `team:${referredBy}`;
+      const keyType = await redis.type(teamKey);
       if (keyType !== 'none' && keyType !== 'set') {
-        await redis.del(`team:${referredBy}`);
+        await redis.del(teamKey);
         console.log("Deleted wrong key type:", keyType);
       }
-      await redis.sadd(`team:${referredBy}`, cleanPhone);
+      await redis.sadd(teamKey, cleanPhone);
       console.log("Added to team:", referredBy);
     }
     
-    const verify = await redis.get(`user:${cleanPhone}`);
+    // Verify save - FIX: parse JSON
+    const verifyStr = await redis.get(`user:${cleanPhone}`);
+    const verify = verifyStr ? JSON.parse(verifyStr) : null;
     console.log("Verify save:", verify ? "OK" : "FAILED");
 
     const { password: _, ...userSafe } = newUser;
@@ -92,7 +100,6 @@ export default async function handler(req, res) {
     
   } catch (err) {
     console.error('Register error:', err.message, err.stack);
-    // Show real error instead of hiding it
     return res.status(500).json({ error: err.message });
   }
 }

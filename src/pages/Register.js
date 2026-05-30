@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 
 function Register({ onRegister }) {
-  const [phone, setPhone] = useState(''); 
+  const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
   const [repeatPassword, setRepeatPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -10,17 +10,21 @@ function Register({ onRegister }) {
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
-  const urlParams = new URLSearchParams(window.location.search);
-  const inviteCode = urlParams.get('code');
+  const [searchParams] = useSearchParams();
+  const inviteCode = searchParams.get('code');
 
   const handleRegister = async () => {
     const cleanPhone = phone.replace(/\D/g, '');
-    
-    if (!cleanPhone || !password || !repeatPassword) {
+
+    if (!cleanPhone ||!password ||!repeatPassword) {
       alert('Please fill all fields');
       return;
     }
-    if (password !== repeatPassword) {
+    if (cleanPhone.length < 10) {
+      alert('Enter valid phone number');
+      return;
+    }
+    if (password!== repeatPassword) {
       alert('Passwords do not match');
       return;
     }
@@ -34,8 +38,8 @@ function Register({ onRegister }) {
       const res = await fetch('/api/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          phoneNumber: cleanPhone, 
+        body: JSON.stringify({
+          phoneNumber: cleanPhone,
           password: password.trim(),
           inviteCode: inviteCode || null
         })
@@ -57,16 +61,17 @@ function Register({ onRegister }) {
         avatar: data.user.avatar || '',
         bankMethod: data.user.bankMethod || '',
         bankNumber: data.user.bankNumber || '',
-        bankName: data.user.bankName || ''
+        bankName: data.user.bankName || '',
+        inviteCode: data.user.inviteCode
       };
-      
+
       localStorage.setItem('hutvilla_user', JSON.stringify(userData));
       localStorage.setItem('isLoggedIn', 'true');
-      
+
       onRegister(userData);
       alert('Registered successfully!');
       navigate('/dashboard');
-      
+
     } catch (err) {
       alert('Network error. Try again.');
       console.error(err);
@@ -75,14 +80,15 @@ function Register({ onRegister }) {
     }
   };
 
-  return React.createElement('div', 
+  return React.createElement('div',
     { style: { padding: '30px', background: '#000', minHeight: '100vh', color: '#fff' } },
+
     React.createElement('h2', { style: { textAlign: 'center', marginBottom: '20px' } }, 'Register'),
-    
+
     inviteCode && React.createElement('p', {
       style: { textAlign: 'center', color: '#ff6b35', marginBottom: '15px', fontSize: '14px' }
     }, `Invited by: ${inviteCode}`),
-    
+
     React.createElement('input', {
       type: 'tel',
       placeholder: 'Enter phone number',
@@ -90,11 +96,11 @@ function Register({ onRegister }) {
       onChange: (e) => setPhone(e.target.value),
       style: styles.input
     }),
-    
+
     // Password with eye button
     React.createElement('div', { style: styles.passWrapper },
       React.createElement('input', {
-        type: showPassword ? 'text' : 'password',
+        type: showPassword? 'text' : 'password',
         placeholder: 'Password',
         value: password,
         onChange: (e) => setPassword(e.target.value),
@@ -103,13 +109,13 @@ function Register({ onRegister }) {
       React.createElement('span', {
         onClick: () => setShowPassword(!showPassword),
         style: styles.eye
-      }, showPassword ? '🙈' : '👁️')
+      }, showPassword? '🙈' : '👁️')
     ),
-    
+
     // Repeat Password with eye button
     React.createElement('div', { style: styles.passWrapper },
       React.createElement('input', {
-        type: showRepeatPassword ? 'text' : 'password',
+        type: showRepeatPassword? 'text' : 'password',
         placeholder: 'Repeat password',
         value: repeatPassword,
         onChange: (e) => setRepeatPassword(e.target.value),
@@ -118,7 +124,7 @@ function Register({ onRegister }) {
       React.createElement('span', {
         onClick: () => setShowRepeatPassword(!showRepeatPassword),
         style: styles.eye
-      }, showRepeatPassword ? '🙈' : '👁️')
+      }, showRepeatPassword? '🙈' : '👁️')
     ),
 
     // Invitation code input - auto filled
@@ -126,21 +132,25 @@ function Register({ onRegister }) {
       type: 'text',
       placeholder: 'Invitation code',
       value: inviteCode || '',
-      readOnly: !!inviteCode,
-      style: { ...styles.input, background: inviteCode ? '#222' : '#1a1a1a', color: inviteCode ? '#ff6b35' : '#fff' }
+      readOnly:!!inviteCode,
+      style: {...styles.input, background: inviteCode? '#222' : '#1a1a1a', color: inviteCode? '#ff6b35' : '#fff' }
     }),
-    
-    React.createElement('button', 
-      { onClick: handleRegister, style: { ...styles.button, background: loading ? '#555' : '#ff6b35' }, disabled: loading },
-      loading ? 'Registering...' : 'Register'
+
+    React.createElement('button',
+      {
+        onClick: handleRegister,
+        style: {...styles.button, background: loading? '#555' : '#ff6b35', cursor: loading? 'not-allowed' : 'pointer' },
+        disabled: loading
+      },
+      loading? 'Registering...' : 'Register'
     ),
 
-    React.createElement('p', 
+    React.createElement('p',
       { style: { textAlign: 'center', marginTop: '20px', color: '#aaa' } },
       'Already have an account? ',
-      React.createElement('span', 
-        { 
-          onClick: () => navigate('/login'), 
+      React.createElement('span',
+        {
+          onClick: () => navigate('/login'),
           style: { color: '#ff6b35', cursor: 'pointer', textDecoration: 'underline' }
         },
         'Login'
@@ -150,15 +160,15 @@ function Register({ onRegister }) {
 }
 
 const styles = {
-  input: { 
-    width: '100%', 
-    padding: '12px', 
-    marginBottom: '15px', 
-    borderRadius: '8px', 
-    border: '1px solid #333', 
-    fontSize: '14px', 
-    background: '#1a1a1a', 
-    color: '#fff', 
+  input: {
+    width: '100%',
+    padding: '12px',
+    marginBottom: '15px',
+    borderRadius: '8px',
+    border: '1px solid #333',
+    fontSize: '14px',
+    background: '#1a1a1a',
+    color: '#fff',
     outline: 'none',
     boxSizing: 'border-box'
   },
@@ -186,15 +196,14 @@ const styles = {
     fontSize: '18px',
     userSelect: 'none'
   },
-  button: { 
-    width: '100%', 
-    padding: '12px', 
-    color: '#fff', 
-    border: 'none', 
-    borderRadius: '8px', 
-    fontSize: '16px', 
-    fontWeight: '600', 
-    cursor: 'pointer' 
+  button: {
+    width: '100%',
+    padding: '12px',
+    color: '#fff',
+    border: 'none',
+    borderRadius: '8px',
+    fontSize: '16px',
+    fontWeight: '600'
   }
 };
 
