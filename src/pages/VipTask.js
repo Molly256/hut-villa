@@ -17,7 +17,7 @@ function VipTask() {
     }
     const parsedUser = JSON.parse(savedUser);
     setUser(parsedUser);
-    fetchHuts(parsedUser.phone);
+    fetchHuts(parsedUser.phone || parsedUser.phoneNumber);
   }, [navigate]);
 
   const fetchHuts = async (phone) => {
@@ -59,6 +59,8 @@ function VipTask() {
   const expiredHuts = rentedHuts.filter(h => h.collected);
 
   const handleRent = async (hut) => {
+    const phone = user.phone || user.phoneNumber;
+
     const alreadyRented = rentedHuts.some(h => h.hut_id === hut.id &&!h.collected);
     if (alreadyRented) {
       alert(`You already rented the ${hut.name}. Each color can only be rented once.`);
@@ -68,7 +70,7 @@ function VipTask() {
     const confirmed = window.confirm(`Rent ${hut.name} for ${hut.rent.toLocaleString()} UGX?`);
     if (!confirmed) return;
 
-    if (user.balance < hut.rent) {
+    if (Number(user.balance) < hut.rent) {
       alert('Insufficient balance. Please deposit first.');
       return;
     }
@@ -78,7 +80,7 @@ function VipTask() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          phoneNumber: user.phone,
+          phoneNumber: phone,
           hutId: hut.id,
           hutName: hut.name,
           rent: hut.rent,
@@ -95,23 +97,25 @@ function VipTask() {
 
       setUser(data.user);
       localStorage.setItem('hutvilla_user', JSON.stringify(data.user));
-      fetchHuts(user.phone);
+      fetchHuts(phone);
       alert(`${hut.name} rented successfully!`);
     } catch (err) {
+      console.error(err);
       alert('Network error. Try again.');
     }
   };
 
   const handleCollect = async (hutId, incomeAmount) => {
-    if (collectingId) return; // prevent double click
+    if (collectingId) return;
     setCollectingId(hutId);
+    const phone = user.phone || user.phoneNumber;
 
     try {
       const res = await fetch('/api/collect-hut', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          phoneNumber: user.phone,
+          phoneNumber: phone,
           hutId: hutId
         })
       });
@@ -123,19 +127,9 @@ function VipTask() {
         return;
       }
 
-      await fetch('/api/transactions', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          action: 'hut_income',
-          phoneNumber: user.phone,
-          amount: incomeAmount
-        })
-      });
-
       setUser(data.user);
       localStorage.setItem('hutvilla_user', JSON.stringify(data.user));
-      fetchHuts(user.phone);
+      fetchHuts(phone);
       alert(`${incomeAmount.toLocaleString()} UGX collected!`);
     } catch (err) {
       alert('Network error. Try again.');
@@ -178,10 +172,10 @@ function VipTask() {
           style: styles.rentButton
         }, 'Rent Now'),
         onCollect && maturity?.matured &&!maturity?.collected && React.createElement('button', {
-          onClick: () => onCollect(hut.id, hut.income),
+          onClick: () => onCollect(hut.hut_id, hut.income || hut.total_income),
           style: {...styles.collectButton, opacity: collectingId? 0.6 : 1 },
           disabled:!!collectingId
-        }, collectingId === hut.id? 'Collecting...' : 'Collect Income'),
+        }, collectingId === hut.hut_id? 'Collecting...' : 'Collect Income'),
         isRented && maturity &&!maturity.matured &&!maturity.collected && React.createElement('p', {
           style: styles.statusText
         }, maturity.timeLeft),
@@ -203,7 +197,7 @@ function VipTask() {
       style: styles.backBtn
     }, '← Back'),
     React.createElement('h2', { style: styles.title }, 'VIP Tasks'),
-    React.createElement('h4', { style: styles.balance }, `Balance: ${user.balance.toLocaleString()} UGX`),
+    React.createElement('h4', { style: styles.balance }, `Balance: ${Number(user.balance).toLocaleString()} UGX`),
     React.createElement('div', { style: styles.tabWrapper },
       React.createElement('button', {
         onClick: () => setActiveTab('VIP LITE'),
@@ -223,10 +217,10 @@ function VipTask() {
     React.createElement('div', { style: styles.section },
       React.createElement('h3', { style: styles.sectionTitle }, 'Active Rented Huts'),
       activeHuts.length === 0
-     ? React.createElement('p', { style: { textAlign: 'center', color: '#666' } }, 'No active rented huts')
+      ? React.createElement('p', { style: { textAlign: 'center', color: '#666' } }, 'No active rented huts')
         : React.createElement('div', { style: styles.list },
             activeHuts.map(hut => {
-              const maturity = getMaturityInfo(hut.rentedAt || hut.rented_at, hut.days);
+              const maturity = getMaturityInfo(hut.rented_at, hut.days);
               return renderHutItem(hut, true, maturity, null, handleCollect);
             })
           )
@@ -234,7 +228,7 @@ function VipTask() {
     React.createElement('div', { style: styles.section },
       React.createElement('h3', { style: styles.sectionTitle }, 'Expired Rented Huts'),
       expiredHuts.length === 0
-     ? React.createElement('p', { style: { textAlign: 'center', color: '#666' } }, 'No expired huts yet')
+      ? React.createElement('p', { style: { textAlign: 'center', color: '#666' } }, 'No expired huts yet')
         : React.createElement('div', { style: styles.list },
             expiredHuts.map(hut => {
               const maturity = { collected: true };

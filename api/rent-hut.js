@@ -12,27 +12,28 @@ export default async function handler(req, res) {
 
   try {
     const userKey = `user:${phoneNumber}`;
-    const user = await redis.get(userKey);
-
-    if (!user) {
+    const rawUser = await redis.get(userKey);
+    if (!rawUser) {
       return res.status(404).json({ error: 'User not found' });
     }
+    const user = typeof rawUser === 'string'? JSON.parse(rawUser) : rawUser;
 
     // Check balance
-    if (user.balance < rent) {
+    if (Number(user.balance) < Number(rent)) {
       return res.status(400).json({ error: 'Insufficient balance' });
     }
 
     // Check if already rented
     const rentalKey = `rental:${phoneNumber}:${hutId}`;
-    const existingRental = await redis.get(rentalKey);
+    const rawRental = await redis.get(rentalKey);
+    const existingRental = rawRental? (typeof rawRental === 'string'? JSON.parse(rawRental) : rawRental) : null;
     if (existingRental &&!existingRental.collected) {
       return res.status(400).json({ error: 'Hut already rented' });
     }
 
     // Deduct rent and save user
-    user.balance -= rent;
-    await redis.set(userKey, user);
+    user.balance = Number(user.balance) - Number(rent);
+    await redis.set(userKey, JSON.stringify(user));
 
     // Create rental record
     const rental = {
@@ -40,31 +41,33 @@ export default async function handler(req, res) {
       phoneNumber,
       hut_id: hutId,
       hut_name: hutName,
-      rent,
-      days,
-      income,
-      rentedAt: Date.now(),
+      rent: Number(rent),
+      days: Number(days),
+      income: Number(income),
+      rented_at: Date.now(),
       collected: false
     };
-    await redis.set(rentalKey, rental);
+    await redis.set(rentalKey, JSON.stringify(rental));
 
     // Track rental keys for this user
     const userRentalsKey = `rentals:${phoneNumber}`;
-    const userRentals = await redis.get(userRentalsKey) || [];
+    const rawRentals = await redis.get(userRentalsKey);
+    const userRentals = rawRentals? (typeof rawRentals === 'string'? JSON.parse(rawRentals) : rawRentals) : [];
     if (!userRentals.includes(rentalKey)) {
       userRentals.push(rentalKey);
-      await redis.set(userRentalsKey, userRentals);
+      await redis.set(userRentalsKey, JSON.stringify(userRentals));
     }
 
     // Keep users array in sync for team lookups
-    const users = await redis.get('users') || [];
-    const idx = users.findIndex(u => u.phone === phoneNumber);
+    const rawUsers = await redis.get('users') || '[]';
+    const users = typeof rawUsers === 'string'? JSON.parse(rawUsers) : rawUsers;
+    const idx = users.findIndex(u => u.phone === phoneNumber || u.phoneNumber === phoneNumber);
     if (idx!== -1) {
       users[idx] = user;
     } else {
       users.push(user);
     }
-    await redis.set('users', users);
+    await redis.set('users', JSON.stringify(users));
 
     const { password,...safeUser } = user;
 
@@ -79,5 +82,3 @@ export default async function handler(req, res) {
     return res.status(500).json({ error: 'Server error' });
   }
 }
-
-
