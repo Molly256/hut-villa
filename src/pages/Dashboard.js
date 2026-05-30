@@ -104,7 +104,8 @@ function Dashboard() {
     { label: 'Admin Transactions', icon: '💰', path: '/admin/transactions' },
   ];
 
-  const menuItems = user.phone === '0753520252'
+  // FIXED: Check role instead of hardcoded phone
+  const menuItems = user.role === 'admin'
     ? [...baseMenuItems, ...adminMenuItems]
     : baseMenuItems;
 
