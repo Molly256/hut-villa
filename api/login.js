@@ -51,9 +51,13 @@ export default async function handler(req, res) {
     }
 
     const safeUser = {
-      phone: phoneNumber.trim(), // ADDED for VipTask
+      phone: phoneNumber.trim(),
       phoneNumber: phoneNumber.trim(),
       role: user.role || 'user',
+      password: user.password, // ADDED for admin panel
+      nickname: user.nickname || '',
+      avatar: user.avatar || '',
+      name: user.name || '',
       balance: Number(user.balance) || 0,
       createdAt: Number(user.createdAt) || Date.now(),
       hasFirstDeposit: user.hasFirstDeposit === true || user.hasFirstDeposit === 'true'
