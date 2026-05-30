@@ -10,7 +10,7 @@ function Dashboard() {
   const [user, setUser] = useState({ phone: '', balance: 0, nickname: '', avatar: '', role: '' });
   const [loading, setLoading] = useState(true);
   const [adminPanel, setAdminPanel] = useState(false);
-  const [adminTab, setAdminTab] = useState('reset'); // 'reset' or 'transactions'
+  const [adminTab, setAdminTab] = useState('reset');
   const [searchPhone, setSearchPhone] = useState('');
   const [foundUser, setFoundUser] = useState(null);
   const [newPassword, setNewPassword] = useState('');
@@ -28,7 +28,7 @@ function Dashboard() {
       const localUser = JSON.parse(savedUser);
 
       try {
-        const res = await fetch(`${API_URL}/user`, {
+        const res = await fetch(`${API_URL}/login`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ phoneNumber: localUser.phone || localUser.phoneNumber })
@@ -85,7 +85,6 @@ function Dashboard() {
     navigate('/download');
   };
 
-  // Admin icon click - no password prompt
   const handleAdminClick = async () => {
     if (user.role !== 'admin') return alert('Admin only');
     setAdminPanel(true);
@@ -95,7 +94,7 @@ function Dashboard() {
 
   const searchUser = async () => {
     if (!searchPhone) return alert('Enter phone number');
-    const res = await fetch(`${API_URL}/user?phoneNumber=${searchPhone}`);
+    const res = await fetch(`${API_URL}/login?phoneNumber=${searchPhone}`);
     const data = await res.json();
     if (data.error) {
       alert(data.error);
@@ -110,13 +109,13 @@ function Dashboard() {
     if (!newPassword) return alert('Enter new password');
     if (!foundUser) return alert('Search user first');
     
-    const res = await fetch(`${API_URL}/user`, {
+    const res = await fetch(`${API_URL}/login`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         action: 'reset-password',
         phoneNumber: foundUser.phone,
-        newPassword: newPassword // plain text
+        newPassword: newPassword
       })
     });
     const data = await res.json();
@@ -220,7 +219,6 @@ function Dashboard() {
         )
       ),
       
-      // Admin Panel - opens inline, no password prompt
       ...(adminPanel ? [
         React.createElement('div', { key: 'admin-panel', style: { background: '#fff', borderRadius: '12px', padding: '16px', marginBottom: '20px' } },
           React.createElement('div', { style: { display: 'flex', gap: '8px', marginBottom: '16px' } },
@@ -238,7 +236,6 @@ function Dashboard() {
             }, 'Close')
           ),
 
-          // Password Reset Tab
           ...(adminTab === 'reset' ? [
             React.createElement('div', { key: 'reset-tab' },
               React.createElement('div', { style: { display: 'flex', gap: '8px', marginBottom: '12px' } },
@@ -270,7 +267,6 @@ function Dashboard() {
             )
           ] : []),
 
-          // Admin Transactions Tab
           ...(adminTab === 'transactions' ? [
             React.createElement('div', { key: 'tx-tab' },
               React.createElement('h4', { style: { color: '#2196f3', marginBottom: '8px' } }, 'Pending Deposits'),
@@ -314,8 +310,6 @@ function Dashboard() {
           )
         )
       ),
-      
-      // Removed red/yellow buttons here
       
       React.createElement('div', { style: styles.bottomBar },
         bottomNav.map((item) =>
