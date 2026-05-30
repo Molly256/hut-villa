@@ -12,11 +12,10 @@ export default async function handler(req, res) {
   }
 
   try {
-    const cleanPhone = phoneNumber.replace(/\D/g, '').trim();
-    const key = `user:${cleanPhone}`;
+    const key = `user:${phoneNumber.trim()}`;
     const type = await redis.type(key);
 
-    console.log(`Login: input="${phoneNumber}" clean="${cleanPhone}" key="${key}" type=${type}`);
+    console.log(`Login: input="${phoneNumber}" key="${key}" type=${type}`);
 
     let user = null;
 
@@ -27,7 +26,6 @@ export default async function handler(req, res) {
         return res.status(401).json({ error: 'Invalid phone or password' });
       }
       
-      // Convert types safely
       user.balance = Number(user.balance) || 0;
       user.createdAt = Number(user.createdAt) || Date.now();
       user.hasFirstDeposit = user.hasFirstDeposit === 'true';
@@ -52,17 +50,16 @@ export default async function handler(req, res) {
       return res.status(401).json({ error: 'Invalid phone or password' });
     }
 
-    // Build safe user manually to avoid JSON.stringify crashes
     const safeUser = {
-      phone: user.phoneNumber || user.phone || cleanPhone, // ADD THIS LINE
-      phoneNumber: user.phoneNumber || user.phone || cleanPhone, // CHANGED: added user.phone fallback
+      phone: phoneNumber.trim(), // ADDED for VipTask
+      phoneNumber: phoneNumber.trim(),
       role: user.role || 'user',
       balance: Number(user.balance) || 0,
       createdAt: Number(user.createdAt) || Date.now(),
       hasFirstDeposit: user.hasFirstDeposit === true || user.hasFirstDeposit === 'true'
     };
 
-    console.log('Login success for', cleanPhone, 'Role:', safeUser.role);
+    console.log('Login success for', phoneNumber.trim(), 'Role:', safeUser.role);
     return res.status(200).json({
       success: true,
       user: safeUser
