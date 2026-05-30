@@ -69,8 +69,13 @@ export default async function handler(req, res) {
 
     await redis.set(`user:${cleanPhone}`, newUser);
     
-    // Add user to referrer's team list
+    // Add user to referrer's team list - FIX: delete wrong key type first
     if (referredBy) {
+      const keyType = await redis.type(`team:${referredBy}`);
+      if (keyType !== 'none' && keyType !== 'set') {
+        await redis.del(`team:${referredBy}`);
+        console.log("Deleted wrong key type:", keyType);
+      }
       await redis.sadd(`team:${referredBy}`, cleanPhone);
       console.log("Added to team:", referredBy);
     }
@@ -86,7 +91,8 @@ export default async function handler(req, res) {
     });
     
   } catch (err) {
-    console.error('Register error:', err);
-    return res.status(500).json({ error: 'Server error' });
+    console.error('Register error:', err.message, err.stack);
+    // Show real error instead of hiding it
+    return res.status(500).json({ error: err.message });
   }
 }
