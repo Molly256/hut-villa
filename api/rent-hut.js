@@ -7,7 +7,6 @@ export default async function handler(req, res) {
 
   const { phoneNumber, hutId, hutName, rent, days, income } = req.body;
 
-  // Debug what backend receives
   console.log('REQ BODY:', req.body);
 
   if (!phoneNumber || !hutId || !rent) {
@@ -19,29 +18,76 @@ export default async function handler(req, res) {
 
   try {
     const userKey = `user:${phoneNumber}`;
+    const type = await redis.type(userKey);
 
-    // HASH type = use hgetall, not get
-    const rawUser = await redis.hgetall(userKey);
-    if (!rawUser || Object.keys(rawUser).length === 0) {
+    // Fix: read user whether it's hash or string
+    let user;
+    if (type === 'hash') {
+      const rawUser = await redis.hgetall(userKey);
+      if (!rawUser || Object.keys(rawUser).length === 0) {
+        return res.status(404).json({ error: 'User not found' });
+      }
+      user = {
+        ...rawUser,
+        balance: Number(rawUser.balance || 0),
+        rent: rawUser.rent ? Number(rawUser.rent) : undefined,
+        days: rawUser.days ? Number(rawUser.days) : undefined,
+        income: rawUser.income ? Number(rawUser.income) : undefined
+      };
+    } else if (type === 'string') {
+      const raw = await redis.get(userKey);
+      user = typeof raw === 'string' ? JSON.parse(raw) : raw;
+      user.balance = Number(user.balance || 0);
+    } else {
       return res.status(404).json({ error: 'User not found' });
     }
 
-    // Fix: Redis HASH stores everything as string, convert numbers
-    const user = {
-      ...rawUser,
-      balance: Number(rawUser.balance || 0),
-      rent: rawUser.rent ? Number(rawUser.rent) : undefined,
-      days: rawUser.days ? Number(rawUser.days) : undefined,
-      income: rawUser.income ? Number(rawUser.income) : undefined
-    };
+    const rentAmount = Number(rent);
+    if (user.balance < rentAmount) {
+      return res.status(400).json({ error: 'Insufficient balance' });
+    }
 
-    // Deduct rent - use hset for HASH
-    user.balance = user.balance - Number(rent);
-    await redis.hset(userKey, 'balance', String(user.balance));
+    // Deduct rent
+    const newBalance = user.balance - rentAmount;
+    
+    // Fix: save based on type
+    if (type === 'hash') {
+      await redis.hset(userKey, 'balance', String(newBalance));
+    } else {
+      user.balance = newBalance;
+      await redis.set(userKey, JSON.stringify(user));
+    }
+
+    // Create rental record
+    const rentalKey = `rental:${phoneNumber}:${hutId}`;
+    const rental = {
+      id: Date.now().toString(),
+      phoneNumber,
+      hut_id: Number(hutId),
+      hut_name: hutName,
+      rent: rentAmount,
+      days: Number(days),
+      income: Number(income),
+      rented_at: Date.now(),
+      collected: false
+    };
+    await redis.set(rentalKey, JSON.stringify(rental));
+
+    // Track rental keys for this user
+    const userRentalsKey = `rentals:${phoneNumber}`;
+    const rawRentals = await redis.get(userRentalsKey);
+    const userRentals = typeof rawRentals === 'string' ? JSON.parse(rawRentals) : rawRentals || [];
+    if (!userRentals.includes(rentalKey)) {
+      userRentals.push(rentalKey);
+      await redis.set(userRentalsKey, JSON.stringify(userRentals));
+    }
+
+    const { password, ...safeUser } = { ...user, balance: newBalance };
 
     return res.status(200).json({
       success: true,
-      user
+      user: safeUser,
+      message: `${hutName} rented successfully`
     });
 
   } catch (err) {

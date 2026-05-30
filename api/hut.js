@@ -1,7 +1,7 @@
 import { redis } from './redis';
 
 export default async function handler(req, res) {
-  if (req.method!== 'POST') {
+  if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
@@ -11,12 +11,16 @@ export default async function handler(req, res) {
   }
 
   try {
-    const rentalKeys = await redis.get(`rentals:${phoneNumber}`) || [];
+    const rawKeys = await redis.get(`rentals:${phoneNumber}`);
+    const rentalKeys = typeof rawKeys === 'string' ? JSON.parse(rawKeys) : rawKeys || [];
     const huts = [];
 
     for (const key of rentalKeys) {
-      const hut = await redis.get(key);
-      if (hut) huts.push(hut);
+      const hutRaw = await redis.get(key);
+      if (hutRaw) {
+        const hut = typeof hutRaw === 'string' ? JSON.parse(hutRaw) : hutRaw;
+        huts.push(hut);
+      }
     }
 
     return res.status(200).json({ success: true, huts });
@@ -25,5 +29,3 @@ export default async function handler(req, res) {
     return res.status(500).json({ error: 'Server error' });
   }
 }
-
-
