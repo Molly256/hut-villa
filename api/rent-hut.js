@@ -12,36 +12,41 @@ export default async function handler(req, res) {
 
   try {
     const userKey = `user:${phoneNumber}`;
-    const rawUser = await redis.get(userKey);
-    if (!rawUser) {
+
+    // HASH type = use hgetall, not get
+    const user = await redis.hgetall(userKey);
+    if (!user || Object.keys(user).length === 0) {
       return res.status(404).json({ error: 'User not found' });
     }
-    const user = typeof rawUser === 'string'? JSON.parse(rawUser) : rawUser;
+
+    // Redis HASH stores everything as string, convert to numbers
+    const balance = Number(user.balance || 0);
+    const rentAmount = Number(rent);
 
     // Check balance
-    if (Number(user.balance) < Number(rent)) {
+    if (balance < rentAmount) {
       return res.status(400).json({ error: 'Insufficient balance' });
     }
 
     // Check if already rented
     const rentalKey = `rental:${phoneNumber}:${hutId}`;
     const rawRental = await redis.get(rentalKey);
-    const existingRental = rawRental? (typeof rawRental === 'string'? JSON.parse(rawRental) : rawRental) : null;
+    const existingRental = rawRental? JSON.parse(rawRental) : null;
     if (existingRental &&!existingRental.collected) {
       return res.status(400).json({ error: 'Hut already rented' });
     }
 
-    // Deduct rent and save user
-    user.balance = Number(user.balance) - Number(rent);
-    await redis.set(userKey, JSON.stringify(user));
+    // Deduct rent - use hset for HASH
+    const newBalance = balance - rentAmount;
+    await redis.hset(userKey, 'balance', String(newBalance));
 
     // Create rental record
     const rental = {
       id: Date.now().toString(),
       phoneNumber,
-      hut_id: hutId,
+      hut_id: Number(hutId),
       hut_name: hutName,
-      rent: Number(rent),
+      rent: rentAmount,
       days: Number(days),
       income: Number(income),
       rented_at: Date.now(),
@@ -49,27 +54,28 @@ export default async function handler(req, res) {
     };
     await redis.set(rentalKey, JSON.stringify(rental));
 
-    // Track rental keys for this user
+    // Track rental keys
     const userRentalsKey = `rentals:${phoneNumber}`;
     const rawRentals = await redis.get(userRentalsKey);
-    const userRentals = rawRentals? (typeof rawRentals === 'string'? JSON.parse(rawRentals) : rawRentals) : [];
+    const userRentals = rawRentals? JSON.parse(rawRentals) : [];
     if (!userRentals.includes(rentalKey)) {
       userRentals.push(rentalKey);
       await redis.set(userRentalsKey, JSON.stringify(userRentals));
     }
 
-    // Keep users array in sync for team lookups
+    // Update users array - convert user object first
     const rawUsers = await redis.get('users') || '[]';
     const users = typeof rawUsers === 'string'? JSON.parse(rawUsers) : rawUsers;
+    const userObj = {...user, balance: newBalance, phone: user.phone || phoneNumber };
     const idx = users.findIndex(u => u.phone === phoneNumber || u.phoneNumber === phoneNumber);
     if (idx!== -1) {
-      users[idx] = user;
+      users[idx] = userObj;
     } else {
-      users.push(user);
+      users.push(userObj);
     }
     await redis.set('users', JSON.stringify(users));
 
-    const { password,...safeUser } = user;
+    const { password,...safeUser } = userObj;
 
     return res.status(200).json({
       success: true,
