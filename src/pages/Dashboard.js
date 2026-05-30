@@ -87,6 +87,15 @@ function Dashboard() {
     }
   };
 
+  // Temp handlers for admin buttons
+  const handleResetPassword = () => {
+    alert('🔑 Reset Password clicked - popup coming next');
+  };
+
+  const handlePendingTx = () => {
+    alert('⏳ Pending Transactions clicked - list coming next');
+  };
+
   const baseMenuItems = [
     { label: 'Deposit', icon: '💳', path: '/deposit' },
     { label: 'Withdraw', icon: '💸', path: '/withdraw' },
@@ -104,7 +113,6 @@ function Dashboard() {
     { label: 'Admin Transactions', icon: '💰', path: '/admin/transactions' },
   ];
 
-  // FIXED: Check role instead of hardcoded phone
   const menuItems = user.role === 'admin'
     ? [...baseMenuItems, ...adminMenuItems]
     : baseMenuItems;
@@ -140,17 +148,28 @@ function Dashboard() {
           accept: 'image/*',
           onChange: handleAvatarChange
         }),
-        React.createElement('div', { style: styles.nickname }, user.nickname || 'User'),
+        
+        // Show Admin if role is admin
+        React.createElement('div', { style: styles.nickname }, 
+          user.role === 'admin' ? 'Admin' : user.nickname || 'User'
+        ),
+        
         React.createElement('div', { style: styles.phone }, user.phone || user.phoneNumber),
-        React.createElement('div', { style: styles.balance }, 
-          user.balance ? `${Number(user.balance).toLocaleString()} UGX` : '0 UGX'
+        
+        // Balance: green if positive, red if negative
+        React.createElement('div', { 
+          style: { ...styles.balance, color: Number(user.balance) < 0 ? '#ff4444' : '#4caf50' } 
+        }, 
+          `${Number(user.balance).toLocaleString()} UGX`
         )
       ),
+      
       React.createElement('div', { style: styles.noticeWrapper },
         React.createElement('div', { style: styles.notice }, 
           'Welcome to Hut Villa site invest with confidence 🎉🎉🎊'
         )
       ),
+      
       React.createElement('div', { style: styles.grid },
         menuItems.map((item) =>
           React.createElement('div', {
@@ -163,6 +182,31 @@ function Dashboard() {
           )
         )
       ),
+      
+      // Admin-only buttons
+      ...(user.role === 'admin' ? [
+        React.createElement('div', { 
+          key: 'admin-buttons',
+          style: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginTop: '20px', marginBottom: '80px' } 
+        },
+          React.createElement('div', {
+            onClick: handleResetPassword,
+            style: { ...styles.card, background: '#ff4444', color: '#fff', minHeight: '90px' }
+          },
+            React.createElement('div', { style: { ...styles.icon, fontSize: '32px' } }, '🔑'),
+            React.createElement('div', { style: { ...styles.label, color: '#fff', fontWeight: '700' } }, 'Reset Password')
+          ),
+          
+          React.createElement('div', {
+            onClick: handlePendingTx,
+            style: { ...styles.card, background: '#ffaa00', color: '#fff', minHeight: '90px' }
+          },
+            React.createElement('div', { style: { ...styles.icon, fontSize: '32px' } }, '⏳'),
+            React.createElement('div', { style: { ...styles.label, color: '#fff', fontWeight: '700' } }, 'Pending Tx')
+          )
+        )
+      ] : []),
+      
       React.createElement('div', { style: styles.bottomBar },
         bottomNav.map((item) =>
           React.createElement('div', {
@@ -244,7 +288,6 @@ const styles = {
   balance: {
     fontSize: '20px',
     fontWeight: '700',
-    color: '#ff69b4',
   },
   noticeWrapper: {
     marginBottom: '32px',
