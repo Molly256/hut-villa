@@ -13,9 +13,22 @@ export default async function handler(req, res) {
   try {
     const cleanPhone = phoneNumber.replace(/\D/g, '').trim();
 
-    // Get existing stats, parse JSON
-    const statsStr = await redis.get('inviteStats');
-    const inviteStats = statsStr? JSON.parse(statsStr) : {};
+    // FIX: Check key type before JSON.parse to avoid WRONGTYPE
+    const keyType = await redis.type('inviteStats');
+    let inviteStats = {};
+
+    if (keyType === 'string') {
+      const statsStr = await redis.get('inviteStats');
+      try {
+        inviteStats = statsStr? JSON.parse(statsStr) : {};
+      } catch {
+        inviteStats = {}; // Reset if JSON corrupted
+      }
+    } else if (keyType!== 'none') {
+      // Key exists but wrong type like set/hash - delete it
+      await redis.del('inviteStats');
+      console.log("Deleted inviteStats with wrong type:", keyType);
+    }
 
     // Increment count
     inviteStats[cleanPhone] = (inviteStats[cleanPhone] || 0) + 1;
@@ -25,7 +38,7 @@ export default async function handler(req, res) {
 
     return res.status(200).json({ success: true, clicks: inviteStats[cleanPhone] });
   } catch (err) {
-    console.error('Invite track error:', err);
-    return res.status(500).json({ error: 'Server error' });
+    console.error('Invite track error:', err.message, err.stack);
+    return res.status(500).json({ error: err.message });
   }
 }
