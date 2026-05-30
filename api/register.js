@@ -12,21 +12,21 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  const { phoneNumber, password, inviteCode } = req.body;
-
-  if (!phoneNumber || !password) {
-    return res.status(400).json({ error: 'Phone and password required' });
-  }
-
-  if (password.length < 6) {
-    return res.status(400).json({ error: 'Password must be at least 6 characters' });
-  }
-
   try {
+    const { phoneNumber, password, inviteCode } = req.body;
+
+    if (!phoneNumber || !password) {
+      return res.status(400).json({ error: 'Phone and password required' });
+    }
+
+    if (password.length < 6) {
+      return res.status(400).json({ error: 'Password must be at least 6 characters' });
+    }
+
     const cleanPhone = phoneNumber.replace(/\D/g, '').trim();
     console.log("Register attempt:", cleanPhone);
 
-    // Check existing user - FIX: parse JSON
+    // Check existing user
     const existingStr = await redis.get(`user:${cleanPhone}`);
     if (existingStr) {
       return res.status(400).json({ error: 'User already exists' });
@@ -39,7 +39,6 @@ export default async function handler(req, res) {
     
     if (inviteCode) {
       console.log("Invite code:", inviteCode);
-      // Find referrer by invite code - add 0 back to match phone format
       const referrerPhone = `0${inviteCode}`;
       const referrerDataStr = await redis.get(`user:${referrerPhone}`);
       
@@ -71,10 +70,10 @@ export default async function handler(req, res) {
       createdAt: Date.now()
     };
 
-    // FIX: Stringify before saving to Redis
+    // Save to Redis
     await redis.set(`user:${cleanPhone}`, JSON.stringify(newUser));
     
-    // Add user to referrer's team list - FIX: type safety
+    // Add user to referrer's team list
     if (referredBy) {
       const teamKey = `team:${referredBy}`;
       const keyType = await redis.type(teamKey);
@@ -86,9 +85,14 @@ export default async function handler(req, res) {
       console.log("Added to team:", referredBy);
     }
     
-    // Verify save - FIX: parse JSON
+    // Verify save - safe parse
     const verifyStr = await redis.get(`user:${cleanPhone}`);
-    const verify = verifyStr ? JSON.parse(verifyStr) : null;
+    let verify = null;
+    try {
+      verify = verifyStr ? JSON.parse(verifyStr) : null;
+    } catch (e) {
+      console.log("Verify parse failed:", e.message);
+    }
     console.log("Verify save:", verify ? "OK" : "FAILED");
 
     const { password: _, ...userSafe } = newUser;
@@ -99,7 +103,8 @@ export default async function handler(req, res) {
     });
     
   } catch (err) {
-    console.error('Register error:', err.message, err.stack);
-    return res.status(500).json({ error: err.message });
+    console.error('Register error:', err.message);
+    // Always send string, never object
+    return res.status(500).json({ error: err.message || 'Server error' });
   }
 }
