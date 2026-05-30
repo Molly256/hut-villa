@@ -8,67 +8,42 @@ export default async function handler(req, res) {
   const { phoneNumber, password } = req.body;
 
   if (!phoneNumber || !password) {
-    return res.status(400).json({ error: 'Phone and password required' });
+    return res.status(400).json({ error: 'Missing phoneNumber or password' });
   }
 
   try {
-    const cleanPhone = phoneNumber.replace(/\D/g, '').trim();
+    const cleanPhone = phoneNumber.replace(/\D/g, '');
     const key = `user:${cleanPhone}`;
-    const type = await redis.type(key);
-
-    console.log(`Login: input="${phoneNumber}" clean="${cleanPhone}" key="${key}" type=${type}`);
-
-    let user = null;
-
-    if (type === 'hash') {
-      user = await redis.hgetall(key);
-      if (!user || Object.keys(user).length === 0) {
-        console.log('Hash exists but empty');
-        return res.status(401).json({ error: 'Invalid phone or password' });
-      }
-      
-      // Convert types safely
-      user.balance = Number(user.balance) || 0;
-      user.createdAt = Number(user.createdAt) || Date.now();
-      user.hasFirstDeposit = user.hasFirstDeposit === 'true';
-      
-    } else if (type === 'string') {
-      const raw = await redis.get(key);
-      user = typeof raw === 'string' ? JSON.parse(raw) : raw;
-    } else {
-      console.log('Key not found. Type:', type);
-      return res.status(401).json({ error: 'Invalid phone or password' });
+    
+    const user = await redis.hgetall(key);
+    
+    if (!user || Object.keys(user).length === 0) {
+      return res.status(401).json({ error: 'Invalid credentials' });
     }
 
-    if (!user || !user.password) {
-      console.log('No password field in user');
-      return res.status(401).json({ error: 'Invalid phone or password' });
+    if (user.password !== password) {
+      return res.status(401).json({ error: 'Invalid credentials' });
     }
 
-    console.log('Password typed:', password.trim());
-    console.log('Password in Redis:', user.password);
-
-    if (password.trim() !== String(user.password).trim()) {
-      return res.status(401).json({ error: 'Invalid phone or password' });
-    }
-
-    // Build safe user manually to avoid JSON.stringify crashes
+    // FIX 1: Redis hash might store as 'phone' or 'phoneNumber'
+    const actualPhone = user.phoneNumber || user.phone || cleanPhone;
+    
+    // FIX 2: Always return both fields so frontend gets phone
     const safeUser = {
-      phoneNumber: user.phoneNumber || cleanPhone,
-      role: user.role || 'user',
+      phone: actualPhone,
+      phoneNumber: actualPhone,
       balance: Number(user.balance) || 0,
-      createdAt: Number(user.createdAt) || Date.now(),
-      hasFirstDeposit: user.hasFirstDeposit === true || user.hasFirstDeposit === 'true'
+      role: user.role || 'user',
+      createdAt: user.createdAt || Date.now()
     };
 
-    console.log('Login success for', cleanPhone, 'Role:', safeUser.role);
-    return res.status(200).json({
-      success: true,
-      user: safeUser
+    return res.status(200).json({ 
+      success: true, 
+      user: safeUser 
     });
     
   } catch (err) {
     console.error('Login error:', err);
-    return res.status(500).json({ error: 'Server error', detail: err.message });
+    return res.status(500).json({ error: 'Server error' });
   }
 }
