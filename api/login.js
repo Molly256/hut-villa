@@ -2,7 +2,7 @@ import { redis } from './redis';
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Method not allowed' });
+    return res.status(405).json({ error: 'Phone and password required' });
   }
 
   const { phoneNumber, password } = req.body;
@@ -32,6 +32,7 @@ export default async function handler(req, res) {
       
     } else if (type === 'string') {
       const raw = await redis.get(key);
+      // Fix: only parse if it's a string, Upstash may return object already
       user = typeof raw === 'string' ? JSON.parse(raw) : raw;
     } else {
       console.log('Key not found. Type:', type);
@@ -54,7 +55,7 @@ export default async function handler(req, res) {
       phone: phoneNumber.trim(),
       phoneNumber: phoneNumber.trim(),
       role: user.role || 'user',
-      password: user.password, // ADDED for admin panel
+      password: user.password,
       nickname: user.nickname || '',
       avatar: user.avatar || '',
       name: user.name || '',
