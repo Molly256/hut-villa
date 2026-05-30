@@ -22,13 +22,14 @@ function VipTask() {
 
   const fetchHuts = async (phone) => {
     try {
-      const res = await fetch('/api/huts', {
+      const res = await fetch('/api/hut.js', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ phoneNumber: phone })
+        body: JSON.stringify({ phoneNumber: phone, action: 'get' })
       });
       const data = await res.json();
-      setRentedHuts(data.huts || []);
+      // merge active + expired so your filters still work
+      setRentedHuts([...(data.active || []),...(data.expired || [])]);
     } catch (err) {
       console.error(err);
     } finally {
@@ -59,7 +60,6 @@ function VipTask() {
   const expiredHuts = rentedHuts.filter(h => h.collected);
 
   const handleRent = async (hut) => {
-    // FIX: read phone from localStorage to avoid undefined
     const phone = JSON.parse(localStorage.getItem('hutvilla_user') || '{}').phone || user.phone || user.phoneNumber;
 
     const alreadyRented = rentedHuts.some(h => h.hut_id === hut.id &&!h.collected);
@@ -106,19 +106,19 @@ function VipTask() {
     }
   };
 
-  const handleCollect = async (hutId, incomeAmount) => {
+  const handleCollect = async (hutId, incomeAmount, rentalKey) => {
     if (collectingId) return;
     setCollectingId(hutId);
-    // FIX: read phone from localStorage to avoid undefined
     const phone = JSON.parse(localStorage.getItem('hutvilla_user') || '{}').phone || user.phone || user.phoneNumber;
 
     try {
-      const res = await fetch('/api/collect-hut', {
+      const res = await fetch('/api/hut.js', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           phoneNumber: phone,
-          hutId: hutId
+          action: 'collect',
+          rentalKey: rentalKey
         })
       });
 
@@ -174,7 +174,7 @@ function VipTask() {
           style: styles.rentButton
         }, 'Rent Now'),
         onCollect && maturity?.matured &&!maturity?.collected && React.createElement('button', {
-          onClick: () => onCollect(hut.hut_id, hut.income || hut.total_income),
+          onClick: () => onCollect(hut.hut_id, hut.income || hut.total_income, hut.rental_key),
           style: {...styles.collectButton, opacity: collectingId? 0.6 : 1 },
           disabled:!!collectingId
         }, collectingId === hut.hut_id? 'Collecting...' : 'Collect Income'),
@@ -219,7 +219,7 @@ function VipTask() {
     React.createElement('div', { style: styles.section },
       React.createElement('h3', { style: styles.sectionTitle }, 'Active Rented Huts'),
       activeHuts.length === 0
-     ? React.createElement('p', { style: { textAlign: 'center', color: '#666' } }, 'No active rented huts')
+    ? React.createElement('p', { style: { textAlign: 'center', color: '#666' } }, 'No active rented huts')
         : React.createElement('div', { style: styles.list },
             activeHuts.map(hut => {
               const maturity = getMaturityInfo(hut.rented_at, hut.days);
@@ -230,7 +230,7 @@ function VipTask() {
     React.createElement('div', { style: styles.section },
       React.createElement('h3', { style: styles.sectionTitle }, 'Expired Rented Huts'),
       expiredHuts.length === 0
-     ? React.createElement('p', { style: { textAlign: 'center', color: '#666' } }, 'No expired huts yet')
+    ? React.createElement('p', { style: { textAlign: 'center', color: '#666' } }, 'No expired huts yet')
         : React.createElement('div', { style: styles.list },
             expiredHuts.map(hut => {
               const maturity = { collected: true };
