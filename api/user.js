@@ -7,10 +7,11 @@ export const config = {
 };
 
 export default async function handler(req, res) {
-  // CORS headers - fixes NetworkError
+  // CORS + Force JSON
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  res.setHeader('Content-Type', 'application/json');
 
   if (req.method === 'OPTIONS') {
     return res.status(200).end();
@@ -21,13 +22,15 @@ export default async function handler(req, res) {
   }
 
   try {
-    const { phoneNumber, avatar, nickname, bankDetails, password } = req.body;
+    const { phoneNumber, avatar, nickname, bankDetails, password } = req.body || {};
 
     if (!phoneNumber) {
       return res.status(400).json({ error: 'Phone number required' });
     }
 
-    const users = await redis.get('users') || [];
+    // FIX: Upstash returns string. Parse it safely
+    const usersRaw = await redis.get('users');
+    const users = typeof usersRaw === 'string' ? JSON.parse(usersRaw) : (usersRaw || []);
 
     // Find user by either phone or phoneNumber field
     let user = users.find(u => u.phoneNumber === phoneNumber || u.phone === phoneNumber);
@@ -51,7 +54,7 @@ export default async function handler(req, res) {
       };
 
       users.push(user);
-      await redis.set('users', users);
+      await redis.set('users', JSON.stringify(users)); // FIX: stringify for Upstash
     } else {
       // Sync phone fields for older users
       if (!user.phone) user.phone = user.phoneNumber;
@@ -74,9 +77,7 @@ export default async function handler(req, res) {
         updated = true;
       }
       if (bankDetails !== undefined) {
-        // Store as object for new logic
         user.bankDetails = bankDetails;
-        // Also sync old fields for compatibility
         user.bankMethod = bankDetails.method || user.bankMethod;
         user.bankNumber = bankDetails.accountNumber || user.bankNumber;
         user.bankName = bankDetails.accountName || user.bankName;
@@ -88,7 +89,7 @@ export default async function handler(req, res) {
       }
 
       if (updated) {
-        await redis.set('users', users);
+        await redis.set('users', JSON.stringify(users)); // FIX: stringify for Upstash
       }
     }
 
@@ -98,6 +99,6 @@ export default async function handler(req, res) {
 
   } catch (err) {
     console.error('Error in /api/user:', err);
-    return res.status(500).json({ error: 'Server error' });
+    return res.status(500).json({ error: 'Server error', details: err.message });
   }
 }
