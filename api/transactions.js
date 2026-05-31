@@ -214,16 +214,19 @@ export default async function handler(req, res) {
           status: 'Completed'
         });
 
+        // ABC Team Commission - Only on first deposit
         if (!hasDeposit && user.invitedBy) {
+          const depositAmount = Number(deposit.amount);
           const inviterPhone = user.invitedBy.replace(/\D/g, '');
-          const commission = Math.floor(Number(deposit.amount) * 0.1);
 
-          if (commission > 0) {
+          // Team A: 10%
+          const commissionA = Math.floor(depositAmount * 0.1);
+          if (commissionA > 0) {
             const inviterKey = `user:${inviterPhone}`;
             const rawInviter = await redis.get(inviterKey);
             if (rawInviter) {
               const inviter = typeof rawInviter === 'string'? JSON.parse(rawInviter) : rawInviter;
-              inviter.balance = (Number(inviter.balance) || 0) + commission;
+              inviter.balance = (Number(inviter.balance) || 0) + commissionA;
               await redis.set(inviterKey, JSON.stringify(inviter));
 
               const inviterIndex = users.findIndex(u => (u.phoneNumber || u.phone) === inviterPhone);
@@ -234,10 +237,69 @@ export default async function handler(req, res) {
 
               await saveTransaction(inviterPhone, {
                 type: 'referral',
-                amount: commission,
+                amount: commissionA,
+                level: 'A',
                 invitedPhone: cleanPhone,
                 status: 'Completed'
               });
+            }
+
+            // Team B: 3% - Inviter's inviter
+            if (inviter.invitedBy) {
+              const inviterBPhone = inviter.invitedBy.replace(/\D/g, '');
+              const commissionB = Math.floor(depositAmount * 0.03);
+              if (commissionB > 0) {
+                const inviterBKey = `user:${inviterBPhone}`;
+                const rawInviterB = await redis.get(inviterBKey);
+                if (rawInviterB) {
+                  const inviterB = typeof rawInviterB === 'string'? JSON.parse(rawInviterB) : rawInviterB;
+                  inviterB.balance = (Number(inviterB.balance) || 0) + commissionB;
+                  await redis.set(inviterBKey, JSON.stringify(inviterB));
+
+                  const inviterBIndex = users.findIndex(u => (u.phoneNumber || u.phone) === inviterBPhone);
+                  if (inviterBIndex!== -1) {
+                    users[inviterBIndex].balance = inviterB.balance;
+                    await redis.set('users', JSON.stringify(users));
+                  }
+
+                  await saveTransaction(inviterBPhone, {
+                    type: 'referral',
+                    amount: commissionB,
+                    level: 'B',
+                    invitedPhone: cleanPhone,
+                    status: 'Completed'
+                  });
+                }
+
+                // Team C: 1% - Inviter's inviter's inviter
+                if (inviterB.invitedBy) {
+                  const inviterCPhone = inviterB.invitedBy.replace(/\D/g, '');
+                  const commissionC = Math.floor(depositAmount * 0.01);
+                  if (commissionC > 0) {
+                    const inviterCKey = `user:${inviterCPhone}`;
+                    const rawInviterC = await redis.get(inviterCKey);
+                    if (rawInviterC) {
+                      const inviterC = typeof rawInviterC === 'string'? JSON.parse(rawInviterC) : rawInviterC;
+                      inviterC.balance = (Number(inviterC.balance) || 0) + commissionC;
+                      await redis.set(inviterCKey, JSON.stringify(inviterC));
+
+                      const inviterCIndex = users.findIndex(u => (u.phoneNumber || u.phone) === inviterCPhone);
+                      if (inviterCIndex!== -1) {
+                        users[inviterCIndex].balance = inviterC.balance;
+                        await redis.set('users', JSON.stringify(users));
+                      }
+
+                      await saveTransaction(inviterCPhone, {
+                        type: 'referral',
+                        amount: commissionC,
+                        level: 'C',
+                        invitedPhone: cleanPhone,
+                        status: 'Completed'
+                      });
+                    }
+                  }
+                }
+              }
             }
           }
         }
