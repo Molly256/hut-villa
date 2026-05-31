@@ -16,7 +16,7 @@ async function saveTransaction(phoneNumber, tx) {
     method: tx.method || '',
     status: tx.status || 'Completed',
     createdAt: new Date().toISOString(),
-...tx
+   ...tx
   };
 
   history.unshift(newTx);
