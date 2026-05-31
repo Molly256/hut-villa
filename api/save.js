@@ -1,8 +1,23 @@
 import { redis } from './redis';
 
+export const config = {
+  api: {
+    bodyParser: true,
+  },
+};
+
 const ALLOWED_KEYS = ['inviteStats', 'appSettings', 'announcements'];
 
 export default async function handler(req, res) {
+  // CORS headers - fixes NetworkError
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+
+  if (req.method === 'OPTIONS') {
+    return res.status(200).end();
+  }
+
   const key = req.method === 'POST' ? req.body.key : req.query.key;
 
   // Allow user:* keys for profile updates + existing allowed keys
