@@ -20,45 +20,52 @@ export default function Bill() {
     const phoneNumber = user.phone || user.phoneNumber;
 
     fetch(`${API_URL}/transactions?action=history&phoneNumber=${encodeURIComponent(phoneNumber)}`)
-.then(res => res.json())
-.then(data => {
-      if (!data.transactions) {
+     .then(res => res.json())
+     .then(data => {
+        if (!data.transactions ||!Array.isArray(data.transactions)) {
+          setTransactions([]);
+          setLoading(false);
+          return;
+        }
+
+        const formatted = data.transactions.map((tx, idx) => {
+          let type = tx.type || '';
+
+          // Normalize ALL transaction types to match button names
+          type = type.toLowerCase();
+          if (type.includes('deposit')) type = 'Deposit';
+          else if (type.includes('withdraw')) type = 'Withdrawal';
+          else if (type.includes('vip') || type.includes('rent') || type.includes('hut')) type = 'VIP Purchase';
+          else if (type.includes('referral') || type.includes('invite') || type.includes('team')) type = 'Invitation';
+          else type = tx.method? 'Deposit' : 'Withdrawal';
+
+          const amount = Number(tx.amount) || 0;
+          const isWithdrawal = type === 'Withdrawal';
+
+          return {
+            id: tx.id || `${phoneNumber}_${idx}`,
+            type: type,
+            amount: isWithdrawal? -Math.abs(amount) : Math.abs(amount),
+            status: tx.status || 'Pending',
+            date: new Date(tx.createdAt || tx.created_at || Date.now()).toLocaleString('en-UG')
+          };
+        });
+
+        // Sort newest first
+        formatted.sort((a, b) => new Date(b.date) - new Date(a.date));
+
+        setTransactions(formatted);
+        setLoading(false);
+      })
+     .catch(err => {
+        console.error('Transactions fetch error:', err);
         setTransactions([]);
         setLoading(false);
-        return;
-      }
-
-      const formatted = data.transactions.map((tx, idx) => {
-        let type = tx.type;
-
-        // Normalize types to match button names
-        if (type === 'rent_income' || type === 'hut_rent' || type === 'VIP Income') type = 'VIP Purchase';
-        if (type === 'withdraw') type = 'Withdrawal';
-        if (type === 'deposit') type = 'Deposit';
-        if (type === 'referral') type = 'Invitation'; // Team A/B/C rewards
-        if (!type) type = tx.method? 'Deposit' : 'Withdrawal';
-
-        return {
-          id: tx.id || idx + 1,
-          type: type,
-          amount: type === 'Withdrawal'? -Math.abs(Number(tx.amount)) : Math.abs(Number(tx.amount)),
-          status: tx.status || 'Pending',
-          date: new Date(tx.createdAt || tx.created_at).toLocaleString('en-UG')
-        };
       });
-
-      setTransactions(formatted);
-      setLoading(false);
-    })
-.catch(err => {
-      console.error(err);
-      setTransactions([]);
-      setLoading(false);
-    });
   }, [navigate]);
 
   const filteredBills = filter === "All"
-? transactions
+   ? transactions
     : transactions.filter(b => b.type === filter);
 
   const getStatusColor = (status) => {
@@ -98,44 +105,44 @@ export default function Bill() {
     React.createElement('div', null,
       loading?
         React.createElement('div', { style: { textAlign: "center", padding: "40px", color: "#666" } }, 'Loading...')
-      : filteredBills.length === 0?
-        React.createElement('div', { style: { textAlign: "center", padding: "40px", color: "#666" } }, 'No transactions yet')
-      : filteredBills.map(bill =>
-          React.createElement('div', {
-            key: bill.id,
-            style: {
-              background: "#fff",
-              padding: "15px",
-              borderRadius: "12px",
-              marginBottom: "12px",
-              boxShadow: "0 2px 6px rgba(0,0,0,0.05)"
-            }
-          },
-            React.createElement('div', { style: { display: "flex", justifyContent: "space-between", alignItems: "center" } },
-              React.createElement('div', null,
-                React.createElement('h4', { style: { margin: "0 0 4px" } }, bill.type),
-                React.createElement('p', { style: { margin: 0, fontSize: "13px", color: "#666" } }, bill.date)
-              ),
-              React.createElement('div', { style: { textAlign: "right" } },
-                React.createElement('p', {
-                  style: {
-                    margin: "0 0 4px",
-                    fontSize: "18px",
-                    fontWeight: "bold",
-                    color: getAmountColor(bill.amount)
-                  }
-                }, `${bill.amount >= 0? "+" : ""}UGX ${Math.abs(bill.amount).toFixed(0).toLocaleString()}`),
-                React.createElement('span', {
-                  style: {
-                    fontSize: "12px",
-                    color: getStatusColor(bill.status),
-                    fontWeight: "bold"
-                  }
-                }, bill.status)
+        : filteredBills.length === 0?
+          React.createElement('div', { style: { textAlign: "center", padding: "40px", color: "#666" } }, 'No transactions yet')
+          : filteredBills.map(bill =>
+            React.createElement('div', {
+              key: bill.id,
+              style: {
+                background: "#fff",
+                padding: "15px",
+                borderRadius: "12px",
+                marginBottom: "12px",
+                boxShadow: "0 2px 6px rgba(0,0,0,0.05)"
+              }
+            },
+              React.createElement('div', { style: { display: "flex", justifyContent: "space-between", alignItems: "center" } },
+                React.createElement('div', null,
+                  React.createElement('h4', { style: { margin: "0 0 4px" } }, bill.type),
+                  React.createElement('p', { style: { margin: 0, fontSize: "13px", color: "#666" } }, bill.date)
+                ),
+                React.createElement('div', { style: { textAlign: "right" } },
+                  React.createElement('p', {
+                    style: {
+                      margin: "0 0 4px",
+                      fontSize: "18px",
+                      fontWeight: "bold",
+                      color: getAmountColor(bill.amount)
+                    }
+                  }, `${bill.amount >= 0? "+" : "-"}UGX ${Math.abs(bill.amount).toLocaleString()}`),
+                  React.createElement('span', {
+                    style: {
+                      fontSize: "12px",
+                      color: getStatusColor(bill.status),
+                      fontWeight: "bold"
+                    }
+                  }, bill.status)
+                )
               )
             )
           )
-        )
     )
   );
 }

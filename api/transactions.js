@@ -2,6 +2,28 @@ import { redis } from './redis';
 
 export const config = { api: { bodyParser: true } };
 
+// Helper to save transaction to user history
+async function saveTransaction(phoneNumber, tx) {
+  const cleanPhone = phoneNumber.replace(/\D/g, '');
+  const historyKey = `history:${cleanPhone}`;
+  const historyRaw = await redis.get(historyKey);
+  const history = typeof historyRaw === 'string'? JSON.parse(historyRaw) : (historyRaw || []);
+
+  const newTx = {
+    id: Date.now().toString() + Math.random().toString(36).substr(2, 5),
+    type: tx.type,
+    amount: Number(tx.amount),
+    method: tx.method || '',
+    status: tx.status || 'Completed',
+    createdAt: new Date().toISOString(),
+   ...tx
+  };
+
+  history.unshift(newTx);
+  await redis.set(historyKey, JSON.stringify(history));
+  return newTx;
+}
+
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
@@ -10,9 +32,24 @@ export default async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(200).end();
 
   try {
-    // GET requests for pending lists
+    // GET requests
     if (req.method === 'GET') {
       const action = req.query.action;
+
+      // FIXED: User transaction history for Bill.js
+      if (action === 'history') {
+        const phoneNumber = req.query.phoneNumber;
+        if (!phoneNumber) {
+          return res.status(400).json({ error: 'Phone number required' });
+        }
+
+        const cleanPhone = phoneNumber.replace(/\D/g, '');
+        const historyKey = `history:${cleanPhone}`;
+        const historyRaw = await redis.get(historyKey);
+        const transactions = typeof historyRaw === 'string'? JSON.parse(historyRaw) : (historyRaw || []);
+
+        return res.status(200).json({ transactions });
+      }
 
       if (action === 'list-pending-deposits') {
         const depositsRaw = await redis.get('pending_deposits');
@@ -135,19 +172,13 @@ export default async function handler(req, res) {
           await redis.set('users', JSON.stringify(users));
         }
 
-        // Save to user history
-        const historyKey = `history:${cleanPhone}`;
-        const historyRaw = await redis.get(historyKey);
-        const history = typeof historyRaw === 'string'? JSON.parse(historyRaw) : (historyRaw || []);
-        history.unshift({
-          id: Date.now().toString(),
+        // Save to user history as Deposit
+        await saveTransaction(cleanPhone, {
           type: 'deposit',
           amount: deposit.amount,
           method: deposit.method,
-          status: 'confirmed',
-          date: new Date().toISOString()
+          status: 'Completed'
         });
-        await redis.set(historyKey, JSON.stringify(history));
 
         return res.status(200).json({ success: true, message: 'Deposit confirmed. Balance updated.' });
       }
@@ -169,22 +200,109 @@ export default async function handler(req, res) {
         return res.status(200).json({ success: true, message: 'Deposit rejected' });
       }
 
+      // FIXED: Confirm withdrawal - deduct balance + save history
       if (action === 'confirm-withdrawal') {
         const { phoneNumber, withdrawalId } = data;
         if (!phoneNumber ||!withdrawalId) {
           return res.status(400).json({ error: 'Missing required fields' });
         }
-        // add your confirm-withdrawal logic here
+
+        const cleanPhone = phoneNumber.replace(/\D/g, '');
+        const withdrawalsRaw = await redis.get('pending_withdrawals');
+        const withdrawals = typeof withdrawalsRaw === 'string'? JSON.parse(withdrawalsRaw) : (withdrawalsRaw || []);
+
+        const withdrawalIndex = withdrawals.findIndex(w => w.id === withdrawalId && w.phoneNumber === cleanPhone);
+        if (withdrawalIndex === -1) {
+          return res.status(404).json({ error: 'Withdrawal not found' });
+        }
+
+        const withdrawal = withdrawals[withdrawalIndex];
+        withdrawals.splice(withdrawalIndex, 1);
+        await redis.set('pending_withdrawals', JSON.stringify(withdrawals));
+
+        // Save to user history as Withdrawal
+        await saveTransaction(cleanPhone, {
+          type: 'withdraw',
+          amount: withdrawal.amount,
+          method: withdrawal.method,
+          status: 'Completed'
+        });
+
         return res.status(200).json({ success: true, message: 'Withdrawal confirmed' });
       }
 
+      // FIXED: Reject withdrawal - refund balance + save history
       if (action === 'reject-withdrawal') {
         const { phoneNumber, withdrawalId } = data;
         if (!phoneNumber ||!withdrawalId) {
           return res.status(400).json({ error: 'Missing required fields' });
         }
-        // add your reject-withdrawal logic here
-        return res.status(200).json({ success: true, message: 'Withdrawal rejected' });
+
+        const cleanPhone = phoneNumber.replace(/\D/g, '');
+        const withdrawalsRaw = await redis.get('pending_withdrawals');
+        const withdrawals = typeof withdrawalsRaw === 'string'? JSON.parse(withdrawalsRaw) : (withdrawalsRaw || []);
+
+        const withdrawalIndex = withdrawals.findIndex(w => w.id === withdrawalId && w.phoneNumber === cleanPhone);
+        if (withdrawalIndex === -1) {
+          return res.status(404).json({ error: 'Withdrawal not found' });
+        }
+
+        const withdrawal = withdrawals[withdrawalIndex];
+        withdrawals.splice(withdrawalIndex, 1);
+        await redis.set('pending_withdrawals', JSON.stringify(withdrawals));
+
+        // Refund balance
+        const userKey = `user:${cleanPhone}`;
+        const rawUser = await redis.get(userKey);
+        if (rawUser) {
+          const user = typeof rawUser === 'string'? JSON.parse(rawUser) : rawUser;
+          user.balance = (Number(user.balance) || 0) + Number(withdrawal.amount);
+          await redis.set(userKey, JSON.stringify(user));
+        }
+
+        // Save to user history as rejected
+        await saveTransaction(cleanPhone, {
+          type: 'withdraw',
+          amount: withdrawal.amount,
+          method: withdrawal.method,
+          status: 'Rejected'
+        });
+
+        return res.status(200).json({ success: true, message: 'Withdrawal rejected and refunded' });
+      }
+
+      // NEW: Log VIP purchase/rent income
+      if (action === 'log-vip') {
+        const { phoneNumber, amount, hutId } = data;
+        if (!phoneNumber ||!amount) {
+          return res.status(400).json({ error: 'Missing fields' });
+        }
+
+        await saveTransaction(phoneNumber, {
+          type: 'vip_rent',
+          amount: amount,
+          hutId: hutId || '',
+          status: 'Completed'
+        });
+
+        return res.status(200).json({ success: true });
+      }
+
+      // NEW: Log invitation/referral reward
+      if (action === 'log-invitation') {
+        const { phoneNumber, amount, invitedPhone } = data;
+        if (!phoneNumber ||!amount) {
+          return res.status(400).json({ error: 'Missing fields' });
+        }
+
+        await saveTransaction(phoneNumber, {
+          type: 'referral',
+          amount: amount,
+          invitedPhone: invitedPhone || '',
+          status: 'Completed'
+        });
+
+        return res.status(200).json({ success: true });
       }
 
       return res.status(400).json({ error: 'Invalid POST action' });
