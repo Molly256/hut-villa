@@ -9,7 +9,6 @@ import MyTeam from './pages/MyTeam';
 import ManagerContact from './pages/ManagerContact';
 import Invite from './pages/Invite';
 import Downloadapp from './pages/Downloadapp';
-
 import Deposit from './pages/Deposit';
 import Withdraw from './pages/Withdraw';
 import VipTask from './pages/VipTask';
@@ -26,25 +25,22 @@ function DashboardWrapper(props) {
 function AppContent({ user, handleLogin, handleLogout, setUser, rentedHuts, setRentedHuts, avatar, setAvatar }) {
   const location = useLocation();
   
-  // FIXED: Don't clear storage on register page if user is already logged in
-  useEffect(() => {
+  useEffect(function() {
     const path = location.pathname;
     const isLoggedIn = localStorage.getItem('isLoggedIn') === 'true';
-    
     if ((path === '/register' || path === '/') && !isLoggedIn) {
       localStorage.removeItem('hutvilla_user');
       localStorage.removeItem('isLoggedIn');
     }
   }, [location.pathname]);
 
-  const hideBottomBar = !user || ['/', '/login', '/register'].includes(location.pathname);
+  const hideBottomBar = !user || ['/', '/login', '/register'].indexOf(location.pathname) !== -1;
 
   return React.createElement('div', { style: { paddingBottom: hideBottomBar ? 0 : '70px' } },
     React.createElement(Routes, null,
       React.createElement(Route, { path: '/', element: React.createElement(Register, { onRegister: handleLogin }) }),
       React.createElement(Route, { path: '/register', element: React.createElement(Register, { onRegister: handleLogin }) }),
       React.createElement(Route, { path: '/login', element: React.createElement(Login, { onLogin: handleLogin }) }),
-      
       React.createElement(Route, { path: '/dashboard', element: user ? React.createElement(DashboardWrapper, { user: user, handleLogout: handleLogout }) : React.createElement(Navigate, { to: '/login' }) }),
       React.createElement(Route, { path: '/team', element: user ? React.createElement(MyTeam, { user: user }) : React.createElement(Navigate, { to: '/login' }) }),
       React.createElement(Route, { path: '/contact', element: user ? React.createElement(ManagerContact, null) : React.createElement(Navigate, { to: '/login' }) }),
@@ -57,6 +53,7 @@ function AppContent({ user, handleLogin, handleLogout, setUser, rentedHuts, setR
       React.createElement(Route, { path: '/settings', element: user ? React.createElement(Settings, { user: user, setUser: setUser, rentedHuts: rentedHuts, setAvatar: setAvatar, avatar: avatar }) : React.createElement(Navigate, { to: '/login' }) }),
       React.createElement(Route, { path: '/modifypassword', element: user ? React.createElement(ModifyPassword, { user: user, setUser: setUser }) : React.createElement(Navigate, { to: '/login' }) }),
       
+      // FIXED: Route path must match what Admin button uses
       React.createElement(Route, { path: '/admin/transactions', element: user && user.role === 'admin' ? React.createElement(AdminTransactions, { user: user }) : React.createElement(Navigate, { to: '/dashboard' }) }),
       
       React.createElement(Route, { path: '*', element: React.createElement(Navigate, { to: '/' }) })
@@ -71,12 +68,12 @@ function App() {
   const [avatar, setAvatar] = useState('https://via.placeholder.com/80');
   const [rentedHuts, setRentedHuts] = useState([]);
 
-  const normalizePhone = (phone) => {
+  function normalizePhone(phone) {
     if (!phone) return '';
     return phone.replace(/\D/g, '');
-  };
+  }
 
-  const fetchHuts = async (phone) => {
+  async function fetchHuts(phone) {
     try {
       const res = await fetch('/api/huts', {
         method: 'POST',
@@ -90,12 +87,11 @@ function App() {
     } catch (err) {
       console.error('Failed to fetch huts:', err);
     }
-  };
+  }
 
-  useEffect(() => {
+  useEffect(function() {
     const storedUser = localStorage.getItem('hutvilla_user');
     const isLoggedIn = localStorage.getItem('isLoggedIn');
-    
     if (storedUser && isLoggedIn === 'true') {
       try {
         const parsedUser = JSON.parse(storedUser);
@@ -113,7 +109,7 @@ function App() {
     setLoading(false);
   }, []);
 
-  const handleLogin = async (userData) => {
+  async function handleLogin(userData) {
     const normalizedUser = {
       ...userData,
       phone: normalizePhone(userData.phoneNumber || userData.phone),
@@ -121,22 +117,20 @@ function App() {
       balance: Number(userData.balance) || 0,
       role: userData.role || 'user'
     };
-    
     setUser(normalizedUser);
     setAvatar(normalizedUser.avatar || 'https://via.placeholder.com/80');
     localStorage.setItem('hutvilla_user', JSON.stringify(normalizedUser));
     localStorage.setItem('isLoggedIn', 'true');
-    
     await fetchHuts(normalizedUser.phone);
-  };
+  }
 
-  const handleLogout = () => {
+  function handleLogout() {
     setUser(null);
     setAvatar('https://via.placeholder.com/80');
     setRentedHuts([]);
     localStorage.removeItem('hutvilla_user');
     localStorage.removeItem('isLoggedIn');
-  };
+  }
 
   if (loading) {
     return React.createElement('div', { 
