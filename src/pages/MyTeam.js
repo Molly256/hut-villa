@@ -1,12 +1,14 @@
 import React, { useState, useEffect } from 'react';
 
 const MyTeam = ({ user }) => {
-  const [teamData, setTeamData] = useState({ levelA: [], levelB: [], levelC: [], totalCommission: 0 });
+  const [teamData, setTeamData] = useState({ levelA: [], levelB: [], levelC: [] });
+  const [totalCommission, setTotalCommission] = useState(0);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (user?.phone) {
       fetchTeamData(user.phone);
+      fetchCommission(user.phone);
     }
   }, [user?.phone]);
 
@@ -23,6 +25,23 @@ const MyTeam = ({ user }) => {
       }
     } catch (err) {
       console.error('Failed to fetch team:', err);
+    }
+  };
+
+  // FIXED: Fetch transaction history and sum referral rewards
+  const fetchCommission = async (phone) => {
+    try {
+      const res = await fetch(`/api/transactions?action=history&phoneNumber=${phone}`);
+      const data = await res.json();
+      if (res.ok && data.transactions) {
+        const referralTxs = data.transactions.filter(tx => 
+          tx.type === 'referral' && tx.status === 'Completed'
+        );
+        const total = referralTxs.reduce((sum, tx) => sum + Number(tx.amount || 0), 0);
+        setTotalCommission(total);
+      }
+    } catch (err) {
+      console.error('Failed to fetch commission:', err);
     } finally {
       setLoading(false);
     }
@@ -69,7 +88,7 @@ const MyTeam = ({ user }) => {
     React.createElement('h2', { style: styles.title }, 'My Team'),
     React.createElement('div', { style: styles.commissionBox },
       React.createElement('div', { style: styles.commissionLabel }, 'Total Commission'),
-      React.createElement('div', { style: styles.commissionAmount }, `UGX ${Number(teamData.totalCommission || 0).toFixed(0)}`)
+      React.createElement('div', { style: styles.commissionAmount }, `UGX ${Number(totalCommission || 0).toLocaleString()}`)
     ),
     renderTeamSection('Level A', 'levelA', teamData.levelA || [], '#FFD700'),
     renderTeamSection('Level B', 'levelB', teamData.levelB || [], '#C0C0C0'),

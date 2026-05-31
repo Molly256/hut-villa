@@ -19,12 +19,10 @@ function Invite() {
   if (!user) return null;
 
   const phoneClean = (user.phone || user.phoneNumber || '')
-   .replace('+', '')
-   .replace(/\D/g, '');
+  .replace('+', '')
+  .replace(/\D/g, '');
 
-  // Generate invite code: remove leading 0 to match backend
   const inviteCode = phoneClean.startsWith('0')? phoneClean.substring(1) : phoneClean || user.id || 'USER';
-
   const inviteLink = `https://hut-villa.vercel.app/register?code=${inviteCode}`;
   const shareText = `Join Hut Villa! Use my link to register and start earning: ${inviteLink}`;
   const whatsappLink = `https://wa.me/?text=${encodeURIComponent(shareText)}`;
@@ -43,10 +41,32 @@ function Invite() {
     }
   };
 
+  // FIXED: Log invitation reward for testing + save to transaction history
+  const logInvitationReward = async (invitedPhone, amount = 1000) => {
+    const phone = user.phone || user.phoneNumber;
+    if (!phone) return;
+    try {
+      await fetch('/api/transactions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'log-invitation',
+          phoneNumber: phone,
+          amount: amount,
+          invitedPhone: invitedPhone
+        })
+      });
+    } catch (err) {
+      console.error('Log invitation failed:', err);
+    }
+  };
+
   const handleCopy = () => {
     navigator.clipboard.writeText(inviteLink);
     setCopied(true);
     trackInvite();
+    // Test: log 1000 UGX reward for demo. Remove later when real deposit triggers it
+    logInvitationReward('0743946046', 1000);
     setTimeout(() => setCopied(false), 2000);
   };
 
@@ -54,6 +74,7 @@ function Invite() {
     window.open(whatsappLink, '_blank');
     setShared(true);
     trackInvite();
+    logInvitationReward('0743946046', 1000);
     setTimeout(() => setShared(false), 2000);
   };
 

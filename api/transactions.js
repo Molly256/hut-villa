@@ -16,7 +16,7 @@ async function saveTransaction(phoneNumber, tx) {
     method: tx.method || '',
     status: tx.status || 'Completed',
     createdAt: new Date().toISOString(),
- ...tx
+...tx
   };
 
   history.unshift(newTx);
@@ -93,7 +93,6 @@ export default async function handler(req, res) {
         return res.status(200).json({ success: true, message: 'Deposit submitted for review' });
       }
 
-      // NEW: User submits withdrawal request
       if (action === 'withdraw') {
         const { phoneNumber, amount, method, accountName } = data;
         if (!phoneNumber ||!amount ||!method) return res.status(400).json({ error: 'Missing fields' });
@@ -111,11 +110,9 @@ export default async function handler(req, res) {
           return res.status(400).json({ error: 'Insufficient balance' });
         }
 
-        // Deduct balance immediately
         user.balance = Number(user.balance) - withdrawAmount;
         await redis.set(userKey, JSON.stringify(user));
 
-        // Update users array
         const usersRaw = await redis.get('users');
         const users = Array.isArray(usersRaw)? usersRaw : (typeof usersRaw === 'string'? JSON.parse(usersRaw) : []);
         const userIndex = users.findIndex(u => (u.phoneNumber || u.phone) === cleanPhone);
@@ -124,7 +121,6 @@ export default async function handler(req, res) {
           await redis.set('users', JSON.stringify(users));
         }
 
-        // Save as pending for admin approval
         const withdrawalId = Date.now().toString();
         const newWithdrawal = {
           id: withdrawalId,
@@ -141,7 +137,6 @@ export default async function handler(req, res) {
         withdrawals.unshift(newWithdrawal);
         await redis.set('pending_withdrawals', JSON.stringify(withdrawals));
 
-        // Save to user history as pending
         await saveTransaction(cleanPhone, {
           type: 'withdraw',
           amount: withdrawAmount,
@@ -195,6 +190,13 @@ export default async function handler(req, res) {
         if (!rawUser) return res.status(404).json({ error: 'User not found' });
 
         const user = typeof rawUser === 'string'? JSON.parse(rawUser) : rawUser;
+
+        // Check if first deposit for referral commission
+        const historyKey = `history:${cleanPhone}`;
+        const historyRaw = await redis.get(historyKey);
+        const history = Array.isArray(historyRaw)? historyRaw : (typeof historyRaw === 'string'? JSON.parse(historyRaw) : []);
+        const hasDeposit = history.some(tx => tx.type === 'deposit' && tx.status === 'Completed');
+
         user.balance = (Number(user.balance) || 0) + Number(deposit.amount);
         await redis.set(userKey, JSON.stringify(user));
 
@@ -212,6 +214,37 @@ export default async function handler(req, res) {
           method: deposit.method,
           status: 'Completed'
         });
+
+        // FIXED: Pay referral commission on first deposit only
+        if (!hasDeposit && user.invitedBy) {
+          const inviterPhone = user.invitedBy.replace(/\D/g, '');
+          const commission = Math.floor(Number(deposit.amount) * 0.1); // 10% Team A
+
+          if (commission > 0) {
+            const inviterKey = `user:${inviterPhone}`;
+            const rawInviter = await redis.get(inviterKey);
+            if (rawInviter) {
+              const inviter = typeof rawInviter === 'string'? JSON.parse(rawInviter) : rawInviter;
+              inviter.balance = (Number(inviter.balance) || 0) + commission;
+              await redis.set(inviterKey, JSON.stringify(inviter));
+
+              // Update inviter in users array
+              const inviterIndex = users.findIndex(u => (u.phoneNumber || u.phone) === inviterPhone);
+              if (inviterIndex!== -1) {
+                users[inviterIndex].balance = inviter.balance;
+                await redis.set('users', JSON.stringify(users));
+              }
+
+              // Log referral transaction for inviter
+              await saveTransaction(inviterPhone, {
+                type: 'referral',
+                amount: commission,
+                invitedPhone: cleanPhone,
+                status: 'Completed'
+              });
+            }
+          }
+        }
 
         return res.status(200).json({ success: true, message: 'Deposit confirmed. Balance updated.' });
       }
