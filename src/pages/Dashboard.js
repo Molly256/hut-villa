@@ -28,7 +28,7 @@ function Dashboard() {
       const localUser = JSON.parse(savedUser);
 
       try {
-        const res = await fetch(`${API_URL}/user/login`, {
+        const res = await fetch(`${API_URL}/login`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ phoneNumber: localUser.phone || localUser.phoneNumber })
@@ -95,7 +95,7 @@ function Dashboard() {
   const searchUser = async () => {
     if (!searchPhone) return alert('Enter phone number');
     try {
-      const res = await fetch(`${API_URL}/user/login`, {
+      const res = await fetch(`${API_URL}/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ phoneNumber: searchPhone })
