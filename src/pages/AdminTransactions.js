@@ -17,8 +17,6 @@ function AdminTransactions() {
   const [message, setMessage] = useState('');
   const [loading, setLoading] = useState(false);
 
-  // eslint-disable-next-line no-unused-vars
-  const ADMIN_TOKEN = process.env.REACT_APP_ADMIN_TOKEN;
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -54,27 +52,43 @@ function AdminTransactions() {
 
   const fetchPending = async () => {
     setLoading(true);
-    const [depRes, witRes] = await Promise.all([
-      fetch('/api/transactions?action=list-pending-deposits'),
-      fetch('/api/transactions?action=list-pending-withdrawals')
-    ]);
-    const depData = await depRes.json();
-    const witData = await witRes.json();
-    setDeposits(depData.deposits || []);
-    setWithdrawals(witData.withdrawals || []);
+    try {
+      const [depRes, witRes] = await Promise.all([
+        fetch('/api/transactions?action=list-pending-deposits'),
+        fetch('/api/transactions?action=list-pending-withdrawals')
+      ]);
+      const depData = await depRes.json();
+      const witData = await witRes.json();
+      setDeposits(depData.deposits || []);
+      setWithdrawals(witData.withdrawals || []);
+    } catch (err) {
+      console.log('Fetch error:', err);
+    }
     setLoading(false);
   };
 
   const handleTxnAction = async (type, action, phoneNumber, id) => {
+    if (!window.confirm(`Confirm ${action.includes('confirm')? 'APPROVE' : 'REJECT'} this ${type}?`)) return;
+
     setLoading(true);
-    const res = await fetch('/api/transactions', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action, phoneNumber, [`${type}Id`]: id })
-    });
-    const data = await res.json();
-    alert(data.message || data.error);
-    fetchPending();
+    try {
+      const res = await fetch('/api/transactions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action,
+          adminPhone: '0753041411',
+          adminPassword: '123456',
+          phoneNumber,
+          [`${type}Id`]: id
+        })
+      });
+      const data = await res.json();
+      alert(data.message || data.error);
+      fetchPending();
+    } catch (err) {
+      alert('Network error: ' + err.message);
+    }
     setLoading(false);
   };
 
@@ -87,12 +101,9 @@ function AdminTransactions() {
     setLoading(true);
     setMessage('');
     try {
-      // FIXED: Use /api/transactions with action: 'reset-password' + admin auth
       const res = await fetch('/api/transactions', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           action: 'reset-password',
           adminPhone: '0753041411',
@@ -143,7 +154,7 @@ function AdminTransactions() {
             deposits.map(d => (
               <div key={d.id} style={cardStyle}>
                 <p><b>Phone:</b> {d.phoneNumber}</p>
-                <p><b>Amount:</b> {d.amount} UGX</p>
+                <p><b>Amount:</b> {Number(d.amount).toLocaleString()} UGX</p>
                 <p><b>Method:</b> {d.method}</p>
                 <p><b>Time:</b> {new Date(d.createdAt).toLocaleString()}</p>
                 <div>
@@ -156,16 +167,16 @@ function AdminTransactions() {
         </div>
       )}
 
-      {/* Withdrawals Tab */}
+      {/* Withdrawals Tab - FIXED: removed w.accountNumber crash */}
       {tab === 'withdrawals' && (
         <div style={containerStyle}>
           {loading? <p>Loading...</p> : withdrawals.length === 0? <p>No pending withdrawals</p> :
             withdrawals.map(w => (
               <div key={w.id} style={cardStyle}>
                 <p><b>Phone:</b> {w.phoneNumber}</p>
-                <p><b>Amount:</b> {w.amount} UGX</p>
+                <p><b>Amount:</b> {Number(w.amount).toLocaleString()} UGX</p>
                 <p><b>Method:</b> {w.method}</p>
-                <p><b>Account:</b> {w.accountName} - {w.accountNumber}</p>
+                <p><b>Account:</b> {w.accountName || w.phoneNumber}</p>
                 <div>
                   <button disabled={loading} onClick={() => handleTxnAction('withdrawal', 'confirm-withdrawal', w.phoneNumber, w.id)} style={btnGreen}>Confirm</button>
                   <button disabled={loading} onClick={() => handleTxnAction('withdrawal', 'reject-withdrawal', w.phoneNumber, w.id)} style={btnRed}>Reject</button>
@@ -200,7 +211,7 @@ function AdminTransactions() {
   );
 }
 
-// Styles - same vibe as your old admin.js
+// Styles
 const centerStyle = { minHeight: '100vh', background: '#0f0f0f', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center' };
 const containerStyle = { maxWidth: '800px', margin: '0 auto' };
 const formStyle = { background: '#1a1a1a', padding: '30px', borderRadius: '12px', width: '100%', maxWidth: '400px', margin: '0 auto', border: '1px solid hotpink' };
