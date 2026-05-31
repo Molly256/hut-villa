@@ -40,7 +40,37 @@ export default async function handler(req, res) {
         }
       }
 
-      // ... your deposit/withdraw submit code stays same here ...
+      // NEW: User submits deposit - save as pending for admin approval
+      if (action === 'deposit') {
+        const { phoneNumber, amount, method } = data;
+        
+        if (!phoneNumber || !amount || !method) {
+          return res.status(400).json({ error: 'Missing fields' });
+        }
+        
+        if (Number(amount) < 10000) {
+          return res.status(400).json({ error: 'Minimum deposit is 10,000 UGX' });
+        }
+
+        const depositId = Date.now().toString();
+        const newDeposit = {
+          id: depositId,
+          phoneNumber: phoneNumber.replace(/\D/g, ''),
+          amount: Number(amount),
+          method,
+          status: 'pending',
+          createdAt: new Date().toISOString()
+        };
+
+        // Load existing pending deposits
+        const depositsRaw = await redis.get('pending_deposits');
+        const deposits = typeof depositsRaw === 'string' ? JSON.parse(depositsRaw) : (depositsRaw || []);
+        
+        deposits.unshift(newDeposit); // add to top
+        await redis.set('pending_deposits', JSON.stringify(deposits));
+
+        return res.status(200).json({ success: true, message: 'Deposit submitted for review' });
+      }
 
       // FIXED: Reset password action - updates both places
       if (action === 'reset-password') {
