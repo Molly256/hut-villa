@@ -45,12 +45,14 @@ function Settings() {
     setRentedHuts(huts);
   }, [navigate]);
 
-  const isLegitUser = Array.isArray(rentedHuts) && rentedHuts.length > 0;
+  // FIXED: Unlock settings if user has balance OR has rented huts
+  const isLegitUser = (Number(user.balance) > 0) || (Array.isArray(rentedHuts) && rentedHuts.length > 0);
 
   const updateProfile = async (data) => {
     setLoading(true);
     try {
-      const res = await fetch(`${API_URL}/update-profile`, {
+      // FIXED: Changed back to /api/user to match your filename
+      const res = await fetch(`${API_URL}/user`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ phoneNumber: user.phone,...data })
@@ -77,7 +79,7 @@ function Settings() {
 
   const handleAvatarUpload = (e) => {
     if (!isLegitUser) {
-      alert('Rent a hut first to change avatar');
+      alert('Deposit or rent a hut first to change avatar');
       return;
     }
     const file = e.target.files[0];
@@ -99,7 +101,7 @@ function Settings() {
 
   const handleNicknameChange = () => {
     if (!isLegitUser) {
-      alert('Rent a hut first to change nickname');
+      alert('Deposit or rent a hut first to change nickname');
       return;
     }
     const newName = prompt('Enter new nickname:', user.nickname || '');
@@ -110,7 +112,7 @@ function Settings() {
 
   const handleBankSave = async () => {
     if (!isLegitUser) {
-      alert('Rent a hut first to add bank details');
+      alert('Deposit or rent a hut first to add bank details');
       return;
     }
     if (!bankDetails.accountNumber ||!bankDetails.accountName) {
@@ -127,7 +129,7 @@ function Settings() {
 
   const handlePasswordChange = async () => {
     if (!isLegitUser) {
-      alert('Rent a hut first to change password');
+      alert('Deposit or rent a hut first to change password');
       return;
     }
     if (passwords.oldPassword!== user.password) {
@@ -180,7 +182,7 @@ function Settings() {
             src: avatar,
             alt: 'avatar',
             style: {
-             ...styles.avatar,
+           ...styles.avatar,
               opacity: isLegitUser? 1 : 0.6
             }
           }),
@@ -206,13 +208,13 @@ function Settings() {
           React.createElement('span', { style: styles.arrow }, '›')
         )
       ),
-      // Phone Number - read only
+      // Phone Number - read only, cannot edit
       React.createElement('div', { style: {...styles.item, cursor: 'default' } },
         React.createElement('span', null, 'Phone Number'),
         React.createElement('span', { style: { color: '#999' } }, user.phone || '---')
       ),
 
-      // Bank Information - MM dropdown + number + name
+      // Bank Information
       React.createElement('div', {
         style: {...styles.item, opacity: isLegitUser? 1 : 0.5 },
         onClick: () => isLegitUser && setShowBankForm(!showBankForm)
@@ -250,7 +252,7 @@ function Settings() {
         }, loading? 'Saving...' : 'Save Bank Details')
       ),
 
-      // Modify Password - 3 boxes
+      // Modify Password
       React.createElement('div', {
         style: {...styles.item, opacity: isLegitUser? 1 : 0.5 },
         onClick: () => isLegitUser && setShowPasswordForm(!showPasswordForm)

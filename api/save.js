@@ -18,34 +18,37 @@ export default async function handler(req, res) {
     return res.status(200).end();
   }
 
-  const key = req.method === 'POST' ? req.body.key : req.query.key;
+  const key = req.method === 'POST'? req.body.key : req.query.key;
 
   // Allow user:* keys for profile updates + existing allowed keys
   const isUserKey = typeof key === 'string' && key.startsWith('user:');
-  if (!ALLOWED_KEYS.includes(key) && !isUserKey) {
+  if (!ALLOWED_KEYS.includes(key) &&!isUserKey) {
     return res.status(403).json({ error: 'Key not allowed' });
   }
 
   if (req.method === 'POST') {
     const { value } = req.body;
-    
-    // Parse JSON if it's a string for user objects
-    let dataToSave = value;
-    if (typeof value === 'string' && isUserKey) {
+
+    // FIX: Always stringify before saving to redis
+    // redis.set only accepts strings. Objects must be JSON.stringify'd
+    const dataToSave = typeof value === 'string'? value : JSON.stringify(value);
+
+    await redis.set(key, dataToSave);
+    return res.json({ ok: true });
+  }
+
+  if (req.method === 'GET') {
+    const value = await redis.get(key);
+    // Parse JSON back if it looks like JSON
+    let parsedValue = value;
+    if (typeof value === 'string' && (value.startsWith('{') || value.startsWith('['))) {
       try {
-        dataToSave = JSON.parse(value);
+        parsedValue = JSON.parse(value);
       } catch {
         // Keep as string if not valid JSON
       }
     }
-    
-    await redis.set(key, dataToSave);
-    return res.json({ ok: true });
-  }
-  
-  if (req.method === 'GET') {
-    const value = await redis.get(key);
-    return res.json({ value });
+    return res.json({ value: parsedValue });
   }
 
   return res.status(405).json({ error: 'Method not allowed' });
