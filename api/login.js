@@ -1,11 +1,19 @@
 import { redis } from './redis';
 
-export default async function handler(req, res) {
-  if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Method not allowed' });
-  }
+export const config = {
+  api: { bodyParser: true },
+};
 
-  const { phoneNumber, password } = req.body;
+export default async function handler(req, res) {
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  res.setHeader('Content-Type', 'application/json');
+
+  if (req.method === 'OPTIONS') return res.status(200).end();
+  if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
+
+  const { phoneNumber, password } = req.body || {};
 
   if (!phoneNumber || !password) {
     return res.status(400).json({ error: 'Phone and password required' });
@@ -14,36 +22,23 @@ export default async function handler(req, res) {
   try {
     const cleanPhone = phoneNumber.replace(/\D/g, '').trim();
     const key = `user:${cleanPhone}`;
-    const type = await redis.type(key);
+    const raw = await redis.get(key);
 
-    console.log(`Login: input="${phoneNumber}" clean="${cleanPhone}" key="${key}" type=${type}`);
+    console.log(`Login: input="${phoneNumber}" clean="${cleanPhone}" key="${key}"`);
 
-    let user = null;
-
-    if (type === 'hash') {
-      user = await redis.hgetall(key);
-      if (!user || Object.keys(user).length === 0) {
-        console.log('Hash exists but empty');
-        return res.status(401).json({ error: 'Invalid phone or password' });
-      }
-      user.balance = Number(user.balance) || 0;
-      user.createdAt = Number(user.createdAt) || Date.now();
-      user.hasFirstDeposit = user.hasFirstDeposit === 'true';
-      
-    } else if (type === 'string') {
-      const raw = await redis.get(key);
-      user = typeof raw === 'string' ? JSON.parse(raw) : raw;
-    } else {
-      console.log('Key not found. Type:', type);
+    if (!raw) {
       return res.status(401).json({ error: 'Invalid phone or password' });
     }
+
+    // FIX: Upstash returns string. Parse safely
+    const user = typeof raw === 'string' ? JSON.parse(raw) : raw;
 
     if (!user || !user.password) {
       console.log('No password field in user');
       return res.status(401).json({ error: 'Invalid phone or password' });
     }
 
-    // Plain text compare - no bcrypt
+    // Plain text compare
     if (password.trim() !== String(user.password).trim()) {
       return res.status(401).json({ error: 'Invalid phone or password' });
     }
@@ -52,11 +47,10 @@ export default async function handler(req, res) {
       phone: cleanPhone,
       phoneNumber: cleanPhone,
       role: user.role || 'user',
-      nickname: user.nickname || '',
+      nickname: user.nickname || user.name || '',
       avatar: user.avatar || '',
-      name: user.name || '',
       balance: Number(user.balance) || 0,
-      createdAt: Number(user.createdAt) || Date.now(),
+      createdAt: user.createdAt || Date.now(),
       hasFirstDeposit: user.hasFirstDeposit === true || user.hasFirstDeposit === 'true'
     };
 
@@ -65,7 +59,7 @@ export default async function handler(req, res) {
       success: true,
       user: safeUser
     });
-    
+
   } catch (err) {
     console.error('Login error:', err);
     return res.status(500).json({ error: 'Server error', detail: err.message });

@@ -94,14 +94,23 @@ function Dashboard() {
 
   const searchUser = async () => {
     if (!searchPhone) return alert('Enter phone number');
-    const res = await fetch(`${API_URL}/user/login?phoneNumber=${searchPhone}`);
-    const data = await res.json();
-    if (data.error) {
-      alert(data.error);
+    try {
+      const res = await fetch(`${API_URL}/user/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phoneNumber: searchPhone })
+      });
+      const data = await res.json();
+      if (data.error) {
+        alert(data.error);
+        setFoundUser(null);
+      } else {
+        setFoundUser(data.user);
+        setNewPassword('');
+      }
+    } catch (err) {
+      alert('Network error: ' + err.message);
       setFoundUser(null);
-    } else {
-      setFoundUser(data.user);
-      setNewPassword('');
     }
   };
 
@@ -109,19 +118,23 @@ function Dashboard() {
     if (!newPassword) return alert('Enter new password');
     if (!foundUser) return alert('Search user first');
     
-    const res = await fetch(`${API_URL}/transactions`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        action: 'reset-password',
-        adminPhone: '0753041411',
-        adminPassword: '123456',
-        phoneNumber: foundUser.phone,
-        newPassword: newPassword
-      })
-    });
-    const data = await res.json();
-    alert(data.message || data.error);
+    try {
+      const res = await fetch(`${API_URL}/transactions`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'reset-password',
+          adminPhone: '0753041411',
+          adminPassword: '123456',
+          phoneNumber: foundUser.phone,
+          newPassword: newPassword
+        })
+      });
+      const data = await res.json().catch(() => ({}));
+      alert(data.message || data.error || 'No response from server');
+    } catch (err) {
+      alert('Network error: ' + err.message);
+    }
   };
 
   const fetchPending = async () => {
