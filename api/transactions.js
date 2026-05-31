@@ -1,8 +1,8 @@
 import { redis } from './redis';
 
-export const config = { api: { bodyParser: true } };
+// FIX 1: Turn off bodyParser so GET works for admin panel
+export const config = { api: { bodyParser: false } };
 
-// Helper to save transaction to user history
 async function saveTransaction(phoneNumber, tx) {
   const cleanPhone = phoneNumber.replace(/\D/g, '');
   const historyKey = `history:${cleanPhone}`;
@@ -16,7 +16,7 @@ async function saveTransaction(phoneNumber, tx) {
     method: tx.method || '',
     status: tx.status || 'Completed',
     createdAt: new Date().toISOString(),
-   ...tx
+  ...tx
   };
 
   history.unshift(newTx);
@@ -32,9 +32,14 @@ export default async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(200).end();
 
   try {
-    if (req.method === 'GET') {
-      const action = req.query.action;
+    // FIX 2: Handle both GET query and POST body
+    let body = req.body;
+    if (typeof body === 'string') {
+      try { body = JSON.parse(body) } catch {}
+    }
+    const action = req.method === 'GET'? req.query.action : body?.action;
 
+    if (req.method === 'GET') {
       if (action === 'history') {
         const phoneNumber = req.query.phoneNumber;
         if (!phoneNumber) return res.status(400).json({ error: 'Phone number required' });
@@ -63,7 +68,7 @@ export default async function handler(req, res) {
     }
 
     if (req.method === 'POST') {
-      const { action, adminPhone, adminPassword,...data } = req.body;
+      const { action, adminPhone, adminPassword,...data } = body;
 
       if (action && (action.includes('confirm') || action.includes('reject') || action === 'reset-password')) {
         if (adminPhone!== '0753041411' || adminPassword!== '123456') {
@@ -393,7 +398,6 @@ export default async function handler(req, res) {
         const historyRaw = await redis.get(historyKey);
         const history = Array.isArray(historyRaw)? historyRaw : (typeof historyRaw === 'string'? JSON.parse(historyRaw) : []);
 
-        // Check for duplicate: same hutId + amount within 10 seconds
         const now = Date.now();
         const duplicate = history.find(tx =>
           tx.type === 'vip_rent' &&
