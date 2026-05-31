@@ -1,6 +1,21 @@
 import { redis } from './redis';
 
+export const config = {
+  api: {
+    bodyParser: true,
+  },
+};
+
 export default async function handler(req, res) {
+  // CORS headers - fixes NetworkError + JSON parse error
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+
+  if (req.method === 'OPTIONS') {
+    return res.status(200).end();
+  }
+
   try {
     if (req.method === 'GET') {
       const { phoneNumber, action } = req.query;
@@ -70,7 +85,7 @@ export default async function handler(req, res) {
         }));
 
         const transactions = [...userDeposits,...userWithdrawals,...userHutIncome]
-       .sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+      .sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
 
         return res.status(200).json({ transactions });
       }
@@ -81,7 +96,7 @@ export default async function handler(req, res) {
     if (req.method === 'POST') {
       const { action, adminPhone, adminPassword,...data } = req.body;
 
-      if (action.includes('confirm') || action.includes('reject') || action === 'reset-password') {
+      if (action && (action.includes('confirm') || action.includes('reject') || action === 'reset-password')) {
         if (adminPhone!== '0753041411' || adminPassword!== '123456') {
           return res.status(403).json({ error: 'Unauthorized: Admin only' });
         }
