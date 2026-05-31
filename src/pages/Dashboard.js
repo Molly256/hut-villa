@@ -7,7 +7,7 @@ const API_URL = '/api';
 function Dashboard() {
   const navigate = useNavigate();
   const fileInputRef = useRef(null);
-  const [user, setUser] = useState({ phone: '', balance: 0, nickname: '', avatar: '', role: '' });
+  const [user, setUser] = useState({ phone: '', balance: 0, nickname: '', avatar: '', role: '', rentedHuts: [] });
   const [loading, setLoading] = useState(true);
   const [adminPanel, setAdminPanel] = useState(false);
   const [adminTab, setAdminTab] = useState('reset');
@@ -168,6 +168,29 @@ function Dashboard() {
     fetchPending();
   };
 
+  // NEW: Split rented huts by expiry using startTime + days like VipTask.js
+  const now = Date.now();
+  const activeRentedHuts = (user?.rentedHuts || []).filter(hut => {
+    if (!hut.startTime || !hut.days) return false;
+    const endTime = new Date(hut.startTime).getTime() + (hut.days * 24 * 60 * 60 * 1000);
+    return endTime > now;
+  });
+
+  const expiredRentedHuts = (user?.rentedHuts || []).filter(hut => {
+    if (!hut.startTime || !hut.days) return false;
+    const endTime = new Date(hut.startTime).getTime() + (hut.days * 24 * 60 * 60 * 1000);
+    return endTime <= now;
+  });
+
+  const getTimeLeft = (hut) => {
+    const endTime = new Date(hut.startTime).getTime() + (hut.days * 24 * 60 * 60 * 1000);
+    const diff = endTime - now;
+    if (diff <= 0) return { days: 0, hours: 0 };
+    const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+    const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+    return { days, hours };
+  };
+
   const baseMenuItems = [
     { label: 'Deposit', icon: '💳', path: '/deposit' },
     { label: 'Withdraw', icon: '💸', path: '/withdraw' },
@@ -236,101 +259,76 @@ function Dashboard() {
           'Welcome to Hut Villa site invest with confidence 🎉🎉🎊'
         )
       ),
-      
-      ...(adminPanel ? [
-        React.createElement('div', { key: 'admin-panel', style: { background: '#fff', borderRadius: '12px', padding: '16px', marginBottom: '20px' } },
-          React.createElement('div', { style: { display: 'flex', gap: '8px', marginBottom: '16px' } },
-            React.createElement('button', { 
-              onClick: () => setAdminTab('reset'),
-              style: { flex: 1, padding: '10px', background: adminTab === 'reset' ? '#2196f3' : '#eee', color: adminTab === 'reset' ? '#fff' : '#333', border: 'none', borderRadius: '6px', fontWeight: '700' }
-            }, 'Password Reset'),
-            React.createElement('button', { 
-              onClick: () => { setAdminTab('transactions'); fetchPending(); },
-              style: { flex: 1, padding: '10px', background: adminTab === 'transactions' ? '#4caf50' : '#eee', color: adminTab === 'transactions' ? '#fff' : '#333', border: 'none', borderRadius: '6px', fontWeight: '700' }
-            }, 'Admin Transactions'),
-            React.createElement('button', { 
-              onClick: () => setAdminPanel(false),
-              style: { padding: '10px 16px', background: '#ff4444', color: '#fff', border: 'none', borderRadius: '6px', fontWeight: '700' }
-            }, 'Close')
-          ),
 
-          ...(adminTab === 'reset' ? [
-            React.createElement('div', { key: 'reset-tab' },
-              React.createElement('div', { style: { display: 'flex', gap: '8px', marginBottom: '12px' } },
-                React.createElement('input', {
-                  type: 'text',
-                  placeholder: 'Enter phone number',
-                  value: searchPhone,
-                  onChange: (e) => setSearchPhone(e.target.value),
-                  style: { flex: 1, padding: '8px', border: '1px solid #ccc', borderRadius: '6px' }
-                }),
-                React.createElement('button', { onClick: searchUser, style: { padding: '8px 16px', background: '#2196f3', color: '#fff', border: 'none', borderRadius: '6px' } }, 'Search')
-              ),
-              ...(foundUser ? [
-                React.createElement('div', { key: 'user-info', style: { borderTop: '1px solid #eee', paddingTop: '12px' } },
-                  React.createElement('p', null, React.createElement('b', null, 'Name: '), foundUser.nickname || foundUser.name || 'N/A'),
-                  React.createElement('p', null, React.createElement('b', null, 'Phone: '), foundUser.phone),
-                  React.createElement('p', null, React.createElement('b', null, 'Balance: '), Number(foundUser.balance || 0).toLocaleString(), ' UGX'),
-                  
-                  React.createElement('div', { style: { display: 'flex', alignItems: 'center', gap: '8px', marginTop: '12px', marginBottom: '8px' } },
-                    React.createElement('span', null, React.createElement('b', null, 'Password: ')),
-                    React.createElement('input', {
-                      type: 'text',
-                      value: foundUser.password || '****',
-                      readOnly: true,
-                      style: { flex: 1, padding: '6px', border: '1px solid #ccc', borderRadius: '4px', background: '#f5f5f5' }
-                    }),
-                    React.createElement('button', { 
-                      onClick: resetPassword, 
-                      style: { padding: '6px 12px', background: '#ff4444', color: '#fff', border: 'none', borderRadius: '4px', fontWeight: '700', cursor: 'pointer' } 
-                    }, 'Reset')
-                  ),
-                  
-                  React.createElement('input', {
-                    type: 'text',
-                    placeholder: 'Enter temp password for user',
-                    value: newPassword,
-                    onChange: (e) => setNewPassword(e.target.value),
-                    style: { width: '100%', padding: '8px', border: '1px solid #ccc', borderRadius: '6px', marginTop: '8px' }
-                  }),
-                  React.createElement('p', { style: { fontSize: '12px', color: '#666', marginTop: '4px' } }, 
-                    'User logs in with temp password, then changes it in Settings'
-                  )
-                )
-              ] : [])
-            )
-          ] : []),
-
-          ...(adminTab === 'transactions' ? [
-            React.createElement('div', { key: 'tx-tab' },
-              React.createElement('h4', { style: { color: '#2196f3', marginBottom: '8px' } }, 'Pending Deposits'),
-              ...(pendingDeposits.length === 0 ? [React.createElement('p', { style: { color: '#999' } }, 'No pending deposits')] : 
-                pendingDeposits.map(d => React.createElement('div', { key: d.id, style: { border: '1px solid #ddd', padding: '10px', borderRadius: '6px', marginBottom: '8px' } },
-                  React.createElement('p', null, React.createElement('b', null, 'Phone: '), d.phoneNumber),
-                  React.createElement('p', null, React.createElement('b', null, 'Amount: '), d.amount, ' UGX'),
-                  React.createElement('div', { style: { display: 'flex', gap: '8px', marginTop: '8px' } },
-                    React.createElement('button', { onClick: () => handleTxnAction('deposit', 'confirm-deposit', d.phoneNumber, d.id), style: { flex: 1, padding: '6px', background: '#4caf50', color: '#fff', border: 'none', borderRadius: '4px' } }, 'Confirm'),
-                    React.createElement('button', { onClick: () => handleTxnAction('deposit', 'reject-deposit', d.phoneNumber, d.id), style: { flex: 1, padding: '6px', background: '#ff4444', color: '#fff', border: 'none', borderRadius: '4px' } }, 'Reject')
-                  )
-                ))
-              ),
-              
-              React.createElement('h4', { style: { color: '#ff9800', marginTop: '16px', marginBottom: '8px' } }, 'Pending Withdrawals'),
-              ...(pendingWithdrawals.length === 0 ? [React.createElement('p', { style: { color: '#999' } }, 'No pending withdrawals')] : 
-                pendingWithdrawals.map(w => React.createElement('div', { key: w.id, style: { border: '1px solid #ddd', padding: '10px', borderRadius: '6px', marginBottom: '8px' } },
-                  React.createElement('p', null, React.createElement('b', null, 'Phone: '), w.phoneNumber),
-                  React.createElement('p', null, React.createElement('b', null, 'Amount: '), w.amount, ' UGX'),
-                  React.createElement('p', null, React.createElement('b', null, 'Account: '), w.accountName, ' - ', w.accountNumber),
-                  React.createElement('div', { style: { display: 'flex', gap: '8px', marginTop: '8px' } },
-                    React.createElement('button', { onClick: () => handleTxnAction('withdrawal', 'confirm-withdrawal', w.phoneNumber, w.id), style: { flex: 1, padding: '6px', background: '#4caf50', color: '#fff', border: 'none', borderRadius: '4px' } }, 'Confirm'),
-                    React.createElement('button', { onClick: () => handleTxnAction('withdrawal', 'reject-withdrawal', w.phoneNumber, w.id), style: { flex: 1, padding: '6px', background: '#ff4444', color: '#fff', border: 'none', borderRadius: '4px' } }, 'Reject')
-                  )
-                ))
+      // NEW: Active Rented Huts - same card as VipTask.js
+      activeRentedHuts.length > 0 && React.createElement('div', { style: { marginTop: '30px' } },
+        React.createElement('h3', { style: styles.sectionTitle }, 'Active Rented Huts'),
+        React.createElement('div', { style: styles.list },
+          activeRentedHuts.map((hut, idx) => {
+            const timeLeft = getTimeLeft(hut);
+            const hutImage = hut.img || hut.image || hut.colorImage; // matches VipTask.js
+            
+            return React.createElement('div', { key: idx, style: styles.listItem },
+              React.createElement('img', {
+                src: hutImage,
+                alt: hut.name,
+                style: styles.hutImage,
+                onError: (e) => e.target.style.display = 'none'
+              }),
+              React.createElement('div', { style: styles.hutInfo },
+                React.createElement('h3', { style: styles.hutName }, hut.name),
+                React.createElement('p', { style: styles.detail }, `Price: ${Number(hut.rent || hut.price).toLocaleString()} UGX`),
+                React.createElement('p', { style: styles.detail }, `Lock: ${hut.days} Days`),
+                React.createElement('p', { style: styles.detail }, `Total income: ${Number(hut.income || hut.totalIncome).toLocaleString()} UGX`),
+                React.createElement('p', { style: styles.statusText }, `${timeLeft.days}d ${timeLeft.hours}h left`)
               )
-            )
-          ] : [])
+            );
+          })
         )
-      ] : []),
+      ),
+
+      // NEW: Expired Rented Huts - same card + EXPIRED label
+      React.createElement('div', { style: { marginTop: '35px' } },
+        React.createElement('h3', { style: styles.sectionTitle }, 'Expired Rented Huts'),
+        expiredRentedHuts.length === 0
+          ? React.createElement('p', { style: { textAlign: 'center', color: '#666' } }, 'No expired huts yet')
+          : React.createElement('div', { style: styles.list },
+              expiredRentedHuts.map((hut, idx) => {
+                const hutImage = hut.img || hut.image || hut.colorImage;
+                
+                return React.createElement('div', { key: idx, style: { ...styles.listItem, opacity: 0.75 } },
+                  React.createElement('div', { style: { position: 'relative' } },
+                    React.createElement('img', {
+                      src: hutImage,
+                      alt: hut.name,
+                      style: styles.hutImage,
+                      onError: (e) => e.target.style.display = 'none'
+                    }),
+                    React.createElement('div', { 
+                      style: { 
+                        position: 'absolute', 
+                        inset: 0, 
+                        background: 'rgba(0,0,0,0.6)', 
+                        display: 'flex', 
+                        alignItems: 'center', 
+                        justifyContent: 'center',
+                        borderRadius: '12px 0 0 12px'
+                      } 
+                    },
+                      React.createElement('span', { style: { color: '#fff', fontWeight: '700', fontSize: '12px' } }, 'EXPIRED')
+                    )
+                  ),
+                  React.createElement('div', { style: styles.hutInfo },
+                    React.createElement('h3', { style: styles.hutName }, hut.name),
+                    React.createElement('p', { style: styles.detail }, `Price: ${Number(hut.rent || hut.price).toLocaleString()} UGX`),
+                    React.createElement('p', { style: styles.detail }, `Lock: ${hut.days} Days`),
+                    React.createElement('p', { style: styles.detail }, `Total income: ${Number(hut.income || hut.totalIncome).toLocaleString()} UGX`),
+                    React.createElement('p', { style: { ...styles.doneLabel, color: '#ff4444' } }, 'EXPIRED')
+                  )
+                );
+              })
+            )
+      ),
       
       React.createElement('div', { style: styles.grid },
         menuItems.map((item) =>
@@ -444,11 +442,66 @@ const styles = {
     letterSpacing: '0.5px',
     animation: 'marquee 12s linear infinite',
   },
+  sectionTitle: {
+    marginBottom: '12px',
+    borderBottom: '2px solid #ff6b35',
+    paddingBottom: '6px',
+    fontSize: '18px',
+    color: '#fff',
+  },
+  list: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '12px',
+  },
+  listItem: {
+    background: '#1a1a1a',
+    borderRadius: '12px',
+    display: 'flex',
+    overflow: 'hidden',
+    border: '1px solid #2a2a2a',
+  },
+  hutImage: {
+    width: '130px',
+    height: '130px',
+    objectFit: 'cover',
+    flexShrink: 0,
+  },
+  hutInfo: {
+    flex: 1,
+    padding: '12px 14px',
+    display: 'flex',
+    flexDirection: 'column',
+    justifyContent: 'center',
+  },
+  hutName: {
+    fontSize: '18px',
+    fontWeight: '700',
+    margin: '0 0 6px',
+    color: '#2196f3',
+  },
+  detail: {
+    fontSize: '14px',
+    color: '#fff',
+    margin: '2px 0',
+  },
+  statusText: {
+    marginTop: '8px',
+    fontSize: '13px',
+    color: '#ff6b35',
+    fontWeight: '600',
+  },
+  doneLabel: {
+    marginTop: '8px',
+    color: '#4caf50',
+    fontWeight: '600',
+    fontSize: '14px',
+  },
   grid: {
     display: 'grid',
     gridTemplateColumns: 'repeat(4, 1fr)',
     gap: '22px',
-    marginTop: '0',
+    marginTop: '30px',
     marginBottom: '20px',
   },
   card: {

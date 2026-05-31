@@ -86,7 +86,8 @@ function VipTask() {
           hutName: hut.name,
           rent: hut.rent,
           days: hut.days,
-          income: hut.income
+          income: hut.income,
+          img: hut.img // FIX: send image path for Dashboard
         })
       });
 
@@ -118,7 +119,7 @@ function VipTask() {
         body: JSON.stringify({
           phoneNumber: phone,
           action: 'collect',
-          rentalKey: rentalKey
+          rentalKey: rentalKey // FIX: use rentalKey not rental_key
         })
       });
 
@@ -141,7 +142,8 @@ function VipTask() {
   };
 
   const getMaturityInfo = (rentedAt, days) => {
-    const maturityDate = new Date(new Date(rentedAt).getTime() + days * 24 * 60 * 60 * 1000);
+    const startTime = rentedAt; // backend sends rented_at
+    const maturityDate = new Date(new Date(startTime).getTime() + days * 24 * 60 * 60 * 1000);
     const now = new Date();
     const diff = maturityDate - now;
 
@@ -174,7 +176,7 @@ function VipTask() {
           style: styles.rentButton
         }, 'Rent Now'),
         onCollect && maturity?.matured &&!maturity?.collected && React.createElement('button', {
-          onClick: () => onCollect(hut.hut_id, hut.income || hut.total_income, hut.rental_key),
+          onClick: () => onCollect(hut.hut_id, hut.income || hut.total_income, hut.rentalKey), // FIX: rentalKey
           style: {...styles.collectButton, opacity: collectingId? 0.6 : 1 },
           disabled:!!collectingId
         }, collectingId === hut.hut_id? 'Collecting...' : 'Collect Income'),
@@ -219,10 +221,10 @@ function VipTask() {
     React.createElement('div', { style: styles.section },
       React.createElement('h3', { style: styles.sectionTitle }, 'Active Rented Huts'),
       activeHuts.length === 0
-    ? React.createElement('p', { style: { textAlign: 'center', color: '#666' } }, 'No active rented huts')
+   ? React.createElement('p', { style: { textAlign: 'center', color: '#666' } }, 'No active rented huts')
         : React.createElement('div', { style: styles.list },
             activeHuts.map(hut => {
-              const maturity = getMaturityInfo(hut.rented_at, hut.days);
+              const maturity = getMaturityInfo(hut.rented_at || hut.startTime, hut.days);
               return renderHutItem(hut, true, maturity, null, handleCollect);
             })
           )
@@ -230,7 +232,7 @@ function VipTask() {
     React.createElement('div', { style: styles.section },
       React.createElement('h3', { style: styles.sectionTitle }, 'Expired Rented Huts'),
       expiredHuts.length === 0
-    ? React.createElement('p', { style: { textAlign: 'center', color: '#666' } }, 'No expired huts yet')
+   ? React.createElement('p', { style: { textAlign: 'center', color: '#666' } }, 'No expired huts yet')
         : React.createElement('div', { style: styles.list },
             expiredHuts.map(hut => {
               const maturity = { collected: true };

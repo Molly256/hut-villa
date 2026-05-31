@@ -5,7 +5,7 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  const { phoneNumber, hutId, hutName, rent, days, income } = req.body;
+  const { phoneNumber, hutId, hutName, rent, days, income, img } = req.body;
 
   console.log('REQ BODY:', req.body);
 
@@ -20,7 +20,7 @@ export default async function handler(req, res) {
     const userKey = `user:${phoneNumber}`;
     const type = await redis.type(userKey);
 
-    // Fix: read user whether it's hash or string
+    // Read user whether it's hash or string
     let user;
     if (type === 'hash') {
       const rawUser = await redis.hgetall(userKey);
@@ -30,14 +30,13 @@ export default async function handler(req, res) {
       user = {
         ...rawUser,
         balance: Number(rawUser.balance || 0),
-        rent: rawUser.rent ? Number(rawUser.rent) : undefined,
-        days: rawUser.days ? Number(rawUser.days) : undefined,
-        income: rawUser.income ? Number(rawUser.income) : undefined
+        rentedHuts: rawUser.rentedHuts ? JSON.parse(rawUser.rentedHuts) : []
       };
     } else if (type === 'string') {
       const raw = await redis.get(userKey);
       user = typeof raw === 'string' ? JSON.parse(raw) : raw;
       user.balance = Number(user.balance || 0);
+      user.rentedHuts = user.rentedHuts || [];
     } else {
       return res.status(404).json({ error: 'User not found' });
     }
@@ -49,25 +48,20 @@ export default async function handler(req, res) {
 
     // Deduct rent
     const newBalance = user.balance - rentAmount;
-    
-    // Fix: save based on type
-    if (type === 'hash') {
-      await redis.hset(userKey, 'balance', String(newBalance));
-    } else {
-      user.balance = newBalance;
-      await redis.set(userKey, JSON.stringify(user));
-    }
 
-    // Create rental record
+    // Create rental record with correct field names for Dashboard.js
     const rentalKey = `rental:${phoneNumber}:${hutId}`;
+    const startTime = new Date().toISOString(); // Dashboard expects startTime
     const rental = {
       id: Date.now().toString(),
       phoneNumber,
       hut_id: Number(hutId),
-      hut_name: hutName,
+      name: hutName, // Dashboard reads hut.name, not hut_name
       rent: rentAmount,
       days: Number(days),
       income: Number(income),
+      img: img || `/assets/huts/${hutName.toLowerCase().replace(' ', '-')}.jpg`, // Save image for Dashboard
+      startTime: startTime, // CRITICAL for expiry calc in Dashboard
       rented_at: Date.now(),
       collected: false
     };
@@ -76,16 +70,27 @@ export default async function handler(req, res) {
     // Track rental keys for this user
     const userRentalsKey = `rentals:${phoneNumber}`;
     const rawRentals = await redis.get(userRentalsKey);
-    const userRentals = typeof rawRentals === 'string' ? JSON.parse(rawRentals) : rawRentals || [];
+    const userRentals = rawRentals ? (typeof rawRentals === 'string' ? JSON.parse(rawRentals) : rawRentals) : [];
     if (!userRentals.includes(rentalKey)) {
       userRentals.push(rentalKey);
       await redis.set(userRentalsKey, JSON.stringify(userRentals));
     }
 
-    const { password, ...safeUser } = { ...user, balance: newBalance };
+    // Add to user.rentedHuts array so Dashboard shows immediately
+    user.rentedHuts.push(rental);
+    user.balance = newBalance;
 
-    // ADD ONLY THIS: Save income history so Bill.js VIP Purchase can read it
-    // Wrapped in try/catch so it never breaks rent logic
+    // Save user based on type
+    if (type === 'hash') {
+      await redis.hset(userKey, 'balance', String(newBalance));
+      await redis.hset(userKey, 'rentedHuts', JSON.stringify(user.rentedHuts));
+    } else {
+      await redis.set(userKey, JSON.stringify(user));
+    }
+
+    const { password, ...safeUser } = user;
+
+    // Save income history for Bill.js VIP Purchase
     try {
       const incomeId = `income:${Date.now()}`;
       const incomeData = {
