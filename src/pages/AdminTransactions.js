@@ -17,6 +17,7 @@ function AdminTransactions() {
   const [message, setMessage] = useState('');
   const [loading, setLoading] = useState(false);
 
+  // eslint-disable-next-line no-unused-vars
   const ADMIN_TOKEN = process.env.REACT_APP_ADMIN_TOKEN;
   const navigate = useNavigate();
 
