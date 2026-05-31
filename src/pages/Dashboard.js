@@ -11,7 +11,6 @@ function Dashboard() {
   const [user, setUser] = useState({ phone: '', balance: 0, nickname: '', avatar: '', role: '', rentedHuts: [] });
   const [loading, setLoading] = useState(true);
   
-  // Admin states - only used when user.role === 'admin'
   const [adminPanel, setAdminPanel] = useState(false);
   const [adminTab, setAdminTab] = useState('reset');
   const [searchPhone, setSearchPhone] = useState('');
@@ -171,29 +170,6 @@ function Dashboard() {
     fetchPending();
   };
 
-  // Split rented huts by expiry using startTime + days
-  const now = Date.now();
-  const activeRentedHuts = (user?.rentedHuts || []).filter(hut => {
-    if (!hut.startTime || !hut.days) return false;
-    const endTime = new Date(hut.startTime).getTime() + (hut.days * 24 * 60 * 60 * 1000);
-    return endTime > now;
-  });
-
-  const expiredRentedHuts = (user?.rentedHuts || []).filter(hut => {
-    if (!hut.startTime || !hut.days) return false;
-    const endTime = new Date(hut.startTime).getTime() + (hut.days * 24 * 60 * 60 * 1000);
-    return endTime <= now;
-  });
-
-  const getTimeLeft = (hut) => {
-    const endTime = new Date(hut.startTime).getTime() + (hut.days * 24 * 60 * 60 * 1000);
-    const diff = endTime - now;
-    if (diff <= 0) return { days: 0, hours: 0 };
-    const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-    const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-    return { days, hours };
-  };
-
   const baseMenuItems = [
     { label: 'Deposit', icon: '💳', path: '/deposit' },
     { label: 'Withdraw', icon: '💸', path: '/withdraw' },
@@ -263,7 +239,7 @@ function Dashboard() {
         )
       ),
 
-      // Admin Panel - only renders if adminPanel true, so vars are "used"
+      // Admin Panel only
       user.role === 'admin' && adminPanel && React.createElement('div', { key: 'admin-panel', style: { background: '#fff', borderRadius: '12px', padding: '16px', marginBottom: '20px' } },
         React.createElement('div', { style: { display: 'flex', gap: '8px', marginBottom: '16px' } },
           React.createElement('button', { 
@@ -345,76 +321,6 @@ function Dashboard() {
               )
             ))
         )
-      ),
-
-      // Active Rented Huts
-      activeRentedHuts.length > 0 && React.createElement('div', { style: { marginTop: '30px' } },
-        React.createElement('h3', { style: styles.sectionTitle }, 'Active Rented Huts'),
-        React.createElement('div', { style: styles.list },
-          activeRentedHuts.map((hut, idx) => {
-            const timeLeft = getTimeLeft(hut);
-            const hutImage = hut.img || hut.image || hut.colorImage;
-            
-            return React.createElement('div', { key: idx, style: styles.listItem },
-              React.createElement('img', {
-                src: hutImage,
-                alt: hut.name,
-                style: styles.hutImage,
-                onError: (e) => e.target.style.display = 'none'
-              }),
-              React.createElement('div', { style: styles.hutInfo },
-                React.createElement('h3', { style: styles.hutName }, hut.name),
-                React.createElement('p', { style: styles.detail }, `Price: ${Number(hut.rent || hut.price).toLocaleString()} UGX`),
-                React.createElement('p', { style: styles.detail }, `Lock: ${hut.days} Days`),
-                React.createElement('p', { style: styles.detail }, `Total income: ${Number(hut.income || hut.totalIncome).toLocaleString()} UGX`),
-                React.createElement('p', { style: styles.statusText }, `${timeLeft.days}d ${timeLeft.hours}h left`)
-              )
-            );
-          })
-        )
-      ),
-
-      // Expired Rented Huts
-      React.createElement('div', { style: { marginTop: '35px' } },
-        React.createElement('h3', { style: styles.sectionTitle }, 'Expired Rented Huts'),
-        expiredRentedHuts.length === 0
-          ? React.createElement('p', { style: { textAlign: 'center', color: '#666' } }, 'No expired huts yet')
-          : React.createElement('div', { style: styles.list },
-              expiredRentedHuts.map((hut, idx) => {
-                const hutImage = hut.img || hut.image || hut.colorImage;
-                
-                return React.createElement('div', { key: idx, style: { ...styles.listItem, opacity: 0.75 } },
-                  React.createElement('div', { style: { position: 'relative' } },
-                    React.createElement('img', {
-                      src: hutImage,
-                      alt: hut.name,
-                      style: styles.hutImage,
-                      onError: (e) => e.target.style.display = 'none'
-                    }),
-                    React.createElement('div', { 
-                      style: { 
-                        position: 'absolute', 
-                        inset: 0, 
-                        background: 'rgba(0,0,0,0.6)', 
-                        display: 'flex', 
-                        alignItems: 'center', 
-                        justifyContent: 'center',
-                        borderRadius: '12px 0 0 12px'
-                      } 
-                    },
-                      React.createElement('span', { style: { color: '#fff', fontWeight: '700', fontSize: '12px' } }, 'EXPIRED')
-                    )
-                  ),
-                  React.createElement('div', { style: styles.hutInfo },
-                    React.createElement('h3', { style: styles.hutName }, hut.name),
-                    React.createElement('p', { style: styles.detail }, `Price: ${Number(hut.rent || hut.price).toLocaleString()} UGX`),
-                    React.createElement('p', { style: styles.detail }, `Lock: ${hut.days} Days`),
-                    React.createElement('p', { style: styles.detail }, `Total income: ${Number(hut.income || hut.totalIncome).toLocaleString()} UGX`),
-                    React.createElement('p', { style: { ...styles.doneLabel, color: '#ff4444' } }, 'EXPIRED')
-                  )
-                );
-              })
-            )
       ),
       
       React.createElement('div', { style: styles.grid },
@@ -528,61 +434,6 @@ const styles = {
     fontWeight: '700',
     letterSpacing: '0.5px',
     animation: 'marquee 12s linear infinite',
-  },
-  sectionTitle: {
-    marginBottom: '12px',
-    borderBottom: '2px solid #ff6b35',
-    paddingBottom: '6px',
-    fontSize: '18px',
-    color: '#fff',
-  },
-  list: {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '12px',
-  },
-  listItem: {
-    background: '#1a1a1a',
-    borderRadius: '12px',
-    display: 'flex',
-    overflow: 'hidden',
-    border: '1px solid #2a2a2a',
-  },
-  hutImage: {
-    width: '130px',
-    height: '130px',
-    objectFit: 'cover',
-    flexShrink: 0,
-  },
-  hutInfo: {
-    flex: 1,
-    padding: '12px 14px',
-    display: 'flex',
-    flexDirection: 'column',
-    justifyContent: 'center',
-  },
-  hutName: {
-    fontSize: '18px',
-    fontWeight: '700',
-    margin: '0 0 6px',
-    color: '#2196f3',
-  },
-  detail: {
-    fontSize: '14px',
-    color: '#fff',
-    margin: '2px 0',
-  },
-  statusText: {
-    marginTop: '8px',
-    fontSize: '13px',
-    color: '#ff6b35',
-    fontWeight: '600',
-  },
-  doneLabel: {
-    marginTop: '8px',
-    color: '#4caf50',
-    fontWeight: '600',
-    fontSize: '14px',
   },
   grid: {
     display: 'grid',

@@ -9,6 +9,26 @@ function VipTask() {
   const [loading, setLoading] = useState(true);
   const [collectingId, setCollectingId] = useState(null);
 
+  const vipLiteHuts = [
+    { id: 1, name: 'Pink Hut', rent: 32000, days: 17, income: 42000, img: '/assets/huts/pink-hut.jpg' },
+    { id: 2, name: 'Red Hut', rent: 50000, days: 19, income: 70000, img: '/assets/huts/red-hut.jpg' },
+    { id: 3, name: 'Green Hut', rent: 100000, days: 20, income: 130000, img: '/assets/huts/green-hut.jpg' },
+    { id: 4, name: 'Orange Hut', rent: 200000, days: 20, income: 250000, img: '/assets/huts/orange-hut.jpg' },
+    { id: 5, name: 'Black Hut', rent: 500000, days: 30, income: 650000, img: '/assets/huts/black-hut.jpg' },
+    { id: 6, name: 'Yellow Hut', rent: 600000, days: 30, income: 800000, img: '/assets/huts/yellow-hut.jpg' },
+  ];
+
+  const vipProHuts = [
+    { id: 7, name: 'Blue Hut', rent: 50000, days: 120, income: 250000, img: '/assets/huts/blue-hut.jpg' },
+    { id: 8, name: 'White Hut', rent: 100000, days: 120, income: 400000, img: '/assets/huts/white-hut.jpg' },
+    { id: 9, name: 'Purple Hut', rent: 500000, days: 120, income: 1000000, img: '/assets/huts/purple-hut.jpg' },
+    { id: 10, name: 'Maroon Hut', rent: 800000, days: 120, income: 1600000, img: '/assets/huts/maroon-hut.jpg' },
+    { id: 11, name: 'Silver Hut', rent: 1000000, days: 120, income: 2000000, img: '/assets/huts/silver-hut.jpg' },
+    { id: 12, name: 'Gold Hut', rent: 2000000, days: 120, income: 4000000, img: '/assets/huts/gold-hut.jpg' },
+  ];
+
+  const allHuts = [...vipLiteHuts,...vipProHuts];
+
   useEffect(() => {
     const savedUser = localStorage.getItem('hutvilla_user');
     if (!savedUser) {
@@ -28,7 +48,6 @@ function VipTask() {
         body: JSON.stringify({ phoneNumber: phone, action: 'get' })
       });
       const data = await res.json();
-      // merge active + expired so your filters still work
       setRentedHuts([...(data.active || []),...(data.expired || [])]);
     } catch (err) {
       console.error(err);
@@ -36,24 +55,6 @@ function VipTask() {
       setLoading(false);
     }
   };
-
-  const vipLiteHuts = [
-    { id: 1, name: 'Pink Hut', rent: 32000, days: 17, income: 42000, img: '/assets/huts/pink-hut.jpg' },
-    { id: 2, name: 'Red Hut', rent: 50000, days: 19, income: 70000, img: '/assets/huts/red-hut.jpg' },
-    { id: 3, name: 'Green Hut', rent: 100000, days: 20, income: 130000, img: '/assets/huts/green-hut.jpg' },
-    { id: 4, name: 'Orange Hut', rent: 200000, days: 20, income: 250000, img: '/assets/huts/orange-hut.jpg' },
-    { id: 5, name: 'Black Hut', rent: 500000, days: 30, income: 650000, img: '/assets/huts/black-hut.jpg' },
-    { id: 6, name: 'Yellow Hut', rent: 600000, days: 30, income: 800000, img: '/assets/huts/yellow-hut.jpg' },
-  ];
-
-  const vipProHuts = [
-    { id: 7, name: 'Blue Hut', rent: 50000, days: 120, income: 250000, img: '/assets/huts/blue-hut.jpg' },
-    { id: 8, name: 'White Hut', rent: 100000, days: 120, income: 400000, img: '/assets/huts/white-hut.jpg' },
-    { id: 9, name: 'Purple Hut', rent: 500000, days: 120, income: 1000000, img: '/assets/huts/purple-hut.jpg' },
-    { id: 10, name: 'Maroon Hut', rent: 800000, days: 120, income: 1600000, img: '/assets/huts/maroon-hut.jpg' },
-    { id: 11, name: 'Silver Hut', rent: 1000000, days: 120, income: 2000000, img: '/assets/huts/silver-hut.jpg' },
-    { id: 12, name: 'Gold Hut', rent: 2000000, days: 120, income: 4000000, img: '/assets/huts/gold-hut.jpg' },
-  ];
 
   const hutsToShow = activeTab === 'VIP LITE'? vipLiteHuts : vipProHuts;
   const activeHuts = rentedHuts.filter(h =>!h.collected);
@@ -87,7 +88,7 @@ function VipTask() {
           rent: hut.rent,
           days: hut.days,
           income: hut.income,
-          img: hut.img // FIX: send image path for Dashboard
+          img: hut.img
         })
       });
 
@@ -119,7 +120,7 @@ function VipTask() {
         body: JSON.stringify({
           phoneNumber: phone,
           action: 'collect',
-          rentalKey: rentalKey // FIX: use rentalKey not rental_key
+          rentalKey: rentalKey
         })
       });
 
@@ -142,7 +143,7 @@ function VipTask() {
   };
 
   const getMaturityInfo = (rentedAt, days) => {
-    const startTime = rentedAt; // backend sends rented_at
+    const startTime = rentedAt;
     const maturityDate = new Date(new Date(startTime).getTime() + days * 24 * 60 * 60 * 1000);
     const now = new Date();
     const diff = maturityDate - now;
@@ -156,6 +157,11 @@ function VipTask() {
       date: maturityDate.toLocaleDateString(),
       timeLeft: `${daysLeft}d ${hoursLeft}h left`
     };
+  };
+
+  // Get hut details from VIP arrays to ensure same img + details
+  const getHutDetails = (hutId) => {
+    return allHuts.find(h => h.id === hutId) || {};
   };
 
   const renderHutItem = (hut, isRented, maturity, onRent, onCollect) =>
@@ -176,7 +182,7 @@ function VipTask() {
           style: styles.rentButton
         }, 'Rent Now'),
         onCollect && maturity?.matured &&!maturity?.collected && React.createElement('button', {
-          onClick: () => onCollect(hut.hut_id, hut.income || hut.total_income, hut.rentalKey), // FIX: rentalKey
+          onClick: () => onCollect(hut.hut_id, hut.income, hut.rentalKey),
           style: {...styles.collectButton, opacity: collectingId? 0.6 : 1 },
           disabled:!!collectingId
         }, collectingId === hut.hut_id? 'Collecting...' : 'Collect Income'),
@@ -218,25 +224,33 @@ function VipTask() {
         return renderHutItem(hut,!!rentedHut, null, handleRent, null);
       })
     ),
+
+    // Active Rented Huts - now uses VIP Lite/Pro details + images
     React.createElement('div', { style: styles.section },
       React.createElement('h3', { style: styles.sectionTitle }, 'Active Rented Huts'),
       activeHuts.length === 0
-   ? React.createElement('p', { style: { textAlign: 'center', color: '#666' } }, 'No active rented huts')
+       ? React.createElement('p', { style: { textAlign: 'center', color: '#666' } }, 'No active rented huts')
         : React.createElement('div', { style: styles.list },
             activeHuts.map(hut => {
+              const hutDetails = getHutDetails(hut.hut_id);
+              const mergedHut = {...hutDetails,...hut }; // VIP details + backend data
               const maturity = getMaturityInfo(hut.rented_at || hut.startTime, hut.days);
-              return renderHutItem(hut, true, maturity, null, handleCollect);
+              return renderHutItem(mergedHut, true, maturity, null, handleCollect);
             })
           )
     ),
+
+    // Expired Rented Huts - now uses VIP Lite/Pro details + images
     React.createElement('div', { style: styles.section },
       React.createElement('h3', { style: styles.sectionTitle }, 'Expired Rented Huts'),
       expiredHuts.length === 0
-   ? React.createElement('p', { style: { textAlign: 'center', color: '#666' } }, 'No expired huts yet')
+       ? React.createElement('p', { style: { textAlign: 'center', color: '#666' } }, 'No expired huts yet')
         : React.createElement('div', { style: styles.list },
             expiredHuts.map(hut => {
+              const hutDetails = getHutDetails(hut.hut_id);
+              const mergedHut = {...hutDetails,...hut }; // VIP details + backend data
               const maturity = { collected: true };
-              return renderHutItem(hut, true, maturity, null, null);
+              return renderHutItem(mergedHut, true, maturity, null, null);
             })
           )
     )
