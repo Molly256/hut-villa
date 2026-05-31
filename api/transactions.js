@@ -7,7 +7,7 @@ async function saveTransaction(phoneNumber, tx) {
   const cleanPhone = phoneNumber.replace(/\D/g, '');
   const historyKey = `history:${cleanPhone}`;
   const historyRaw = await redis.get(historyKey);
-  const history = typeof historyRaw === 'string'? JSON.parse(historyRaw) : (historyRaw || []);
+  const history = Array.isArray(historyRaw)? historyRaw : (typeof historyRaw === 'string'? JSON.parse(historyRaw) : []);
 
   const newTx = {
     id: Date.now().toString() + Math.random().toString(36).substr(2, 5),
@@ -16,7 +16,7 @@ async function saveTransaction(phoneNumber, tx) {
     method: tx.method || '',
     status: tx.status || 'Completed',
     createdAt: new Date().toISOString(),
-   ...tx
+  ...tx
   };
 
   history.unshift(newTx);
@@ -32,62 +32,49 @@ export default async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(200).end();
 
   try {
-    // GET requests
     if (req.method === 'GET') {
       const action = req.query.action;
 
-      // FIXED: User transaction history for Bill.js
       if (action === 'history') {
         const phoneNumber = req.query.phoneNumber;
-        if (!phoneNumber) {
-          return res.status(400).json({ error: 'Phone number required' });
-        }
+        if (!phoneNumber) return res.status(400).json({ error: 'Phone number required' });
 
         const cleanPhone = phoneNumber.replace(/\D/g, '');
         const historyKey = `history:${cleanPhone}`;
         const historyRaw = await redis.get(historyKey);
-        const transactions = typeof historyRaw === 'string'? JSON.parse(historyRaw) : (historyRaw || []);
+        const transactions = Array.isArray(historyRaw)? historyRaw : (typeof historyRaw === 'string'? JSON.parse(historyRaw) : []);
 
         return res.status(200).json({ transactions });
       }
 
       if (action === 'list-pending-deposits') {
         const depositsRaw = await redis.get('pending_deposits');
-        const deposits = typeof depositsRaw === 'string'? JSON.parse(depositsRaw) : (depositsRaw || []);
+        const deposits = Array.isArray(depositsRaw)? depositsRaw : (typeof depositsRaw === 'string'? JSON.parse(depositsRaw) : []);
         return res.status(200).json({ deposits });
       }
 
       if (action === 'list-pending-withdrawals') {
         const withdrawalsRaw = await redis.get('pending_withdrawals');
-        const withdrawals = typeof withdrawalsRaw === 'string'? JSON.parse(withdrawalsRaw) : (withdrawalsRaw || []);
+        const withdrawals = Array.isArray(withdrawalsRaw)? withdrawalsRaw : (typeof withdrawalsRaw === 'string'? JSON.parse(withdrawalsRaw) : []);
         return res.status(200).json({ withdrawals });
       }
 
       return res.status(400).json({ error: 'Invalid GET action' });
     }
 
-    // POST requests
     if (req.method === 'POST') {
       const { action, adminPhone, adminPassword,...data } = req.body;
 
-      // Admin auth for confirm/reject/reset
       if (action && (action.includes('confirm') || action.includes('reject') || action === 'reset-password')) {
         if (adminPhone!== '0753041411' || adminPassword!== '123456') {
           return res.status(403).json({ error: 'Unauthorized: Admin only' });
         }
       }
 
-      // User submits deposit - save as pending for admin approval
       if (action === 'deposit') {
         const { phoneNumber, amount, method } = data;
-
-        if (!phoneNumber ||!amount ||!method) {
-          return res.status(400).json({ error: 'Missing fields' });
-        }
-
-        if (Number(amount) < 10000) {
-          return res.status(400).json({ error: 'Minimum deposit is 10,000 UGX' });
-        }
+        if (!phoneNumber ||!amount ||!method) return res.status(400).json({ error: 'Missing fields' });
+        if (Number(amount) < 10000) return res.status(400).json({ error: 'Minimum deposit is 10,000 UGX' });
 
         const depositId = Date.now().toString();
         const newDeposit = {
@@ -100,20 +87,15 @@ export default async function handler(req, res) {
         };
 
         const depositsRaw = await redis.get('pending_deposits');
-        const deposits = typeof depositsRaw === 'string'? JSON.parse(depositsRaw) : (depositsRaw || []);
-
+        const deposits = Array.isArray(depositsRaw)? depositsRaw : (typeof depositsRaw === 'string'? JSON.parse(depositsRaw) : []);
         deposits.unshift(newDeposit);
         await redis.set('pending_deposits', JSON.stringify(deposits));
-
         return res.status(200).json({ success: true, message: 'Deposit submitted for review' });
       }
 
-      // Reset password action
       if (action === 'reset-password') {
         const { phoneNumber, newPassword } = data;
-        if (!phoneNumber ||!newPassword) {
-          return res.status(400).json({ error: 'Phone number and new password required' });
-        }
+        if (!phoneNumber ||!newPassword) return res.status(400).json({ error: 'Phone number and new password required' });
 
         const cleanPhone = phoneNumber.replace(/\D/g, '').trim();
         const userKey = `user:${cleanPhone}`;
@@ -124,7 +106,7 @@ export default async function handler(req, res) {
         await redis.set(userKey, JSON.stringify(user));
 
         const usersRaw = await redis.get('users');
-        const users = typeof usersRaw === 'string'? JSON.parse(usersRaw) : (usersRaw || []);
+        const users = Array.isArray(usersRaw)? usersRaw : (typeof usersRaw === 'string'? JSON.parse(usersRaw) : []);
         const userIndex = users.findIndex(u => (u.phoneNumber || u.phone) === cleanPhone);
         if (userIndex!== -1) {
           users[userIndex].password = newPassword;
@@ -134,27 +116,21 @@ export default async function handler(req, res) {
         return res.status(200).json({ success: true, message: `Password reset to: ${newPassword}` });
       }
 
-      // FIXED: Confirm deposit - adds balance + removes from pending + saves history
       if (action === 'confirm-deposit') {
         const { phoneNumber, depositId } = data;
-        if (!phoneNumber ||!depositId) {
-          return res.status(400).json({ error: 'Missing required fields' });
-        }
+        if (!phoneNumber ||!depositId) return res.status(400).json({ error: 'Missing required fields' });
 
         const cleanPhone = phoneNumber.replace(/\D/g, '');
         const depositsRaw = await redis.get('pending_deposits');
-        const deposits = typeof depositsRaw === 'string'? JSON.parse(depositsRaw) : (depositsRaw || []);
+        const deposits = Array.isArray(depositsRaw)? depositsRaw : (typeof depositsRaw === 'string'? JSON.parse(depositsRaw) : []);
 
         const depositIndex = deposits.findIndex(d => d.id === depositId && d.phoneNumber === cleanPhone);
-        if (depositIndex === -1) {
-          return res.status(404).json({ error: 'Deposit not found' });
-        }
+        if (depositIndex === -1) return res.status(404).json({ error: 'Deposit not found' });
 
         const deposit = deposits[depositIndex];
         deposits.splice(depositIndex, 1);
         await redis.set('pending_deposits', JSON.stringify(deposits));
 
-        // Update user balance
         const userKey = `user:${cleanPhone}`;
         const rawUser = await redis.get(userKey);
         if (!rawUser) return res.status(404).json({ error: 'User not found' });
@@ -163,16 +139,14 @@ export default async function handler(req, res) {
         user.balance = (Number(user.balance) || 0) + Number(deposit.amount);
         await redis.set(userKey, JSON.stringify(user));
 
-        // Update users array for dashboard
         const usersRaw = await redis.get('users');
-        const users = typeof usersRaw === 'string'? JSON.parse(usersRaw) : (usersRaw || []);
+        const users = Array.isArray(usersRaw)? usersRaw : (typeof usersRaw === 'string'? JSON.parse(usersRaw) : []);
         const userIndex = users.findIndex(u => (u.phoneNumber || u.phone) === cleanPhone);
         if (userIndex!== -1) {
           users[userIndex].balance = user.balance;
           await redis.set('users', JSON.stringify(users));
         }
 
-        // Save to user history as Deposit
         await saveTransaction(cleanPhone, {
           type: 'deposit',
           amount: deposit.amount,
@@ -183,44 +157,34 @@ export default async function handler(req, res) {
         return res.status(200).json({ success: true, message: 'Deposit confirmed. Balance updated.' });
       }
 
-      // FIXED: Reject deposit - just remove from pending
       if (action === 'reject-deposit') {
         const { phoneNumber, depositId } = data;
-        if (!phoneNumber ||!depositId) {
-          return res.status(400).json({ error: 'Missing required fields' });
-        }
+        if (!phoneNumber ||!depositId) return res.status(400).json({ error: 'Missing required fields' });
 
         const cleanPhone = phoneNumber.replace(/\D/g, '');
         const depositsRaw = await redis.get('pending_deposits');
-        const deposits = typeof depositsRaw === 'string'? JSON.parse(depositsRaw) : (depositsRaw || []);
+        const deposits = Array.isArray(depositsRaw)? depositsRaw : (typeof depositsRaw === 'string'? JSON.parse(depositsRaw) : []);
 
         const filtered = deposits.filter(d =>!(d.id === depositId && d.phoneNumber === cleanPhone));
         await redis.set('pending_deposits', JSON.stringify(filtered));
-
         return res.status(200).json({ success: true, message: 'Deposit rejected' });
       }
 
-      // FIXED: Confirm withdrawal - deduct balance + save history
       if (action === 'confirm-withdrawal') {
         const { phoneNumber, withdrawalId } = data;
-        if (!phoneNumber ||!withdrawalId) {
-          return res.status(400).json({ error: 'Missing required fields' });
-        }
+        if (!phoneNumber ||!withdrawalId) return res.status(400).json({ error: 'Missing required fields' });
 
         const cleanPhone = phoneNumber.replace(/\D/g, '');
         const withdrawalsRaw = await redis.get('pending_withdrawals');
-        const withdrawals = typeof withdrawalsRaw === 'string'? JSON.parse(withdrawalsRaw) : (withdrawalsRaw || []);
+        const withdrawals = Array.isArray(withdrawalsRaw)? withdrawalsRaw : (typeof withdrawalsRaw === 'string'? JSON.parse(withdrawalsRaw) : []);
 
         const withdrawalIndex = withdrawals.findIndex(w => w.id === withdrawalId && w.phoneNumber === cleanPhone);
-        if (withdrawalIndex === -1) {
-          return res.status(404).json({ error: 'Withdrawal not found' });
-        }
+        if (withdrawalIndex === -1) return res.status(404).json({ error: 'Withdrawal not found' });
 
         const withdrawal = withdrawals[withdrawalIndex];
         withdrawals.splice(withdrawalIndex, 1);
         await redis.set('pending_withdrawals', JSON.stringify(withdrawals));
 
-        // Save to user history as Withdrawal
         await saveTransaction(cleanPhone, {
           type: 'withdraw',
           amount: withdrawal.amount,
@@ -231,36 +195,37 @@ export default async function handler(req, res) {
         return res.status(200).json({ success: true, message: 'Withdrawal confirmed' });
       }
 
-      // FIXED: Reject withdrawal - refund balance + save history
       if (action === 'reject-withdrawal') {
         const { phoneNumber, withdrawalId } = data;
-        if (!phoneNumber ||!withdrawalId) {
-          return res.status(400).json({ error: 'Missing required fields' });
-        }
+        if (!phoneNumber ||!withdrawalId) return res.status(400).json({ error: 'Missing required fields' });
 
         const cleanPhone = phoneNumber.replace(/\D/g, '');
         const withdrawalsRaw = await redis.get('pending_withdrawals');
-        const withdrawals = typeof withdrawalsRaw === 'string'? JSON.parse(withdrawalsRaw) : (withdrawalsRaw || []);
+        const withdrawals = Array.isArray(withdrawalsRaw)? withdrawalsRaw : (typeof withdrawalsRaw === 'string'? JSON.parse(withdrawalsRaw) : []);
 
         const withdrawalIndex = withdrawals.findIndex(w => w.id === withdrawalId && w.phoneNumber === cleanPhone);
-        if (withdrawalIndex === -1) {
-          return res.status(404).json({ error: 'Withdrawal not found' });
-        }
+        if (withdrawalIndex === -1) return res.status(404).json({ error: 'Withdrawal not found' });
 
         const withdrawal = withdrawals[withdrawalIndex];
         withdrawals.splice(withdrawalIndex, 1);
         await redis.set('pending_withdrawals', JSON.stringify(withdrawals));
 
-        // Refund balance
         const userKey = `user:${cleanPhone}`;
         const rawUser = await redis.get(userKey);
         if (rawUser) {
           const user = typeof rawUser === 'string'? JSON.parse(rawUser) : rawUser;
           user.balance = (Number(user.balance) || 0) + Number(withdrawal.amount);
           await redis.set(userKey, JSON.stringify(user));
+
+          const usersRaw = await redis.get('users');
+          const users = Array.isArray(usersRaw)? usersRaw : (typeof usersRaw === 'string'? JSON.parse(usersRaw) : []);
+          const userIndex = users.findIndex(u => (u.phoneNumber || u.phone) === cleanPhone);
+          if (userIndex!== -1) {
+            users[userIndex].balance = user.balance;
+            await redis.set('users', JSON.stringify(users));
+          }
         }
 
-        // Save to user history as rejected
         await saveTransaction(cleanPhone, {
           type: 'withdraw',
           amount: withdrawal.amount,
@@ -271,12 +236,9 @@ export default async function handler(req, res) {
         return res.status(200).json({ success: true, message: 'Withdrawal rejected and refunded' });
       }
 
-      // NEW: Log VIP purchase/rent income
       if (action === 'log-vip') {
         const { phoneNumber, amount, hutId } = data;
-        if (!phoneNumber ||!amount) {
-          return res.status(400).json({ error: 'Missing fields' });
-        }
+        if (!phoneNumber ||!amount) return res.status(400).json({ error: 'Missing fields' });
 
         await saveTransaction(phoneNumber, {
           type: 'vip_rent',
@@ -288,12 +250,9 @@ export default async function handler(req, res) {
         return res.status(200).json({ success: true });
       }
 
-      // NEW: Log invitation/referral reward
       if (action === 'log-invitation') {
         const { phoneNumber, amount, invitedPhone } = data;
-        if (!phoneNumber ||!amount) {
-          return res.status(400).json({ error: 'Missing fields' });
-        }
+        if (!phoneNumber ||!amount) return res.status(400).json({ error: 'Missing fields' });
 
         await saveTransaction(phoneNumber, {
           type: 'referral',

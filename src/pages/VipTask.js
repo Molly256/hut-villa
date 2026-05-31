@@ -102,6 +102,23 @@ function VipTask() {
       localStorage.setItem('hutvilla_user', JSON.stringify(data.user));
       fetchHuts(phone);
       alert(`${hut.name} rented successfully!`);
+
+      // FIXED: Save VIP purchase to transaction history so Bill.js VIP tab shows it
+      try {
+        await fetch('/api/transactions', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            action: 'log-vip',
+            phoneNumber: phone,
+            amount: hut.rent,
+            hutId: hut.id
+          })
+        });
+      } catch (logErr) {
+        console.error('Failed to log VIP transaction:', logErr);
+      }
+
     } catch (err) {
       console.error(err);
       alert('Network error. Try again.');
@@ -159,7 +176,6 @@ function VipTask() {
     };
   };
 
-  // Get hut details from VIP arrays to ensure same img + details
   const getHutDetails = (hutId) => {
     return allHuts.find(h => h.id === hutId) || {};
   };
@@ -225,30 +241,28 @@ function VipTask() {
       })
     ),
 
-    // Active Rented Huts - now uses VIP Lite/Pro details + images
     React.createElement('div', { style: styles.section },
       React.createElement('h3', { style: styles.sectionTitle }, 'Active Rented Huts'),
       activeHuts.length === 0
-       ? React.createElement('p', { style: { textAlign: 'center', color: '#666' } }, 'No active rented huts')
+      ? React.createElement('p', { style: { textAlign: 'center', color: '#666' } }, 'No active rented huts')
         : React.createElement('div', { style: styles.list },
             activeHuts.map(hut => {
               const hutDetails = getHutDetails(hut.hut_id);
-              const mergedHut = {...hutDetails,...hut }; // VIP details + backend data
+              const mergedHut = {...hutDetails,...hut };
               const maturity = getMaturityInfo(hut.rented_at || hut.startTime, hut.days);
               return renderHutItem(mergedHut, true, maturity, null, handleCollect);
             })
           )
     ),
 
-    // Expired Rented Huts - now uses VIP Lite/Pro details + images
     React.createElement('div', { style: styles.section },
       React.createElement('h3', { style: styles.sectionTitle }, 'Expired Rented Huts'),
       expiredHuts.length === 0
-       ? React.createElement('p', { style: { textAlign: 'center', color: '#666' } }, 'No expired huts yet')
+      ? React.createElement('p', { style: { textAlign: 'center', color: '#666' } }, 'No expired huts yet')
         : React.createElement('div', { style: styles.list },
             expiredHuts.map(hut => {
               const hutDetails = getHutDetails(hut.hut_id);
-              const mergedHut = {...hutDetails,...hut }; // VIP details + backend data
+              const mergedHut = {...hutDetails,...hut };
               const maturity = { collected: true };
               return renderHutItem(mergedHut, true, maturity, null, null);
             })
