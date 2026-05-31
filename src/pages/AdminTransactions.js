@@ -86,13 +86,19 @@ function AdminTransactions() {
     setLoading(true);
     setMessage('');
     try {
-      const res = await fetch('/api/admin/reset-password', {
+      // FIXED: Use /api/transactions with action: 'reset-password' + admin auth
+      const res = await fetch('/api/transactions', {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
-          'x-admin-token': ADMIN_TOKEN
+          'Content-Type': 'application/json'
         },
-        body: JSON.stringify({ targetPhone, newPassword })
+        body: JSON.stringify({
+          action: 'reset-password',
+          adminPhone: '0753041411',
+          adminPassword: '123456',
+          phoneNumber: targetPhone,
+          newPassword
+        })
       });
       const data = await res.json();
       setMessage(res.ok? '✅ Success: Password updated' : `❌ Error: ${data.error}`);

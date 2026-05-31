@@ -79,17 +79,17 @@ export default async function handler(req, res) {
       })
     ).then(arr => arr.filter(Boolean));
 
-    // Calculate total commission - FIX: parse JSON string
-    const hutsIncomeStr = await redis.get(`hutsIncome:${cleanPhone}`);
-    let hutsIncome = [];
+    // Calculate total commission - FIX: read from income:${phone} not hutsIncome
+    const incomeStr = await redis.get(`income:${cleanPhone}`);
+    let income = [];
     try {
-      hutsIncome = hutsIncomeStr ? JSON.parse(hutsIncomeStr) : [];
+      income = incomeStr ? JSON.parse(incomeStr) : [];
     } catch {
-      hutsIncome = [];
+      income = [];
     }
     
-    const totalCommission = Array.isArray(hutsIncome) 
-      ? hutsIncome.filter(h => h?.type === 'referral').reduce((sum, h) => sum + (Number(h.amount) || 0), 0)
+    const totalCommission = Array.isArray(income) 
+      ? income.filter(h => h?.type === 'referral').reduce((sum, h) => sum + (Number(h.amount) || 0), 0)
       : 0;
 
     return res.status(200).json({

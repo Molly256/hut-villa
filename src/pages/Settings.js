@@ -10,6 +10,22 @@ function Settings() {
   const [rentedHuts, setRentedHuts] = useState([]);
   const [loading, setLoading] = useState(false);
 
+  // Bank info form states
+  const [showBankForm, setShowBankForm] = useState(false);
+  const [bankDetails, setBankDetails] = useState({
+    method: 'MTN',
+    accountNumber: '',
+    accountName: ''
+  });
+
+  // Password form states
+  const [showPasswordForm, setShowPasswordForm] = useState(false);
+  const [passwords, setPasswords] = useState({
+    oldPassword: '',
+    newPassword: '',
+    confirmPassword: ''
+  });
+
   useEffect(() => {
     const savedUser = localStorage.getItem('hutvilla_user');
     if (!savedUser) {
@@ -19,6 +35,11 @@ function Settings() {
     const parsedUser = JSON.parse(savedUser);
     setUser(parsedUser);
     setAvatar(parsedUser.avatar || 'https://via.placeholder.com/80');
+
+    // Load existing bank details
+    if (parsedUser.bankDetails) {
+      setBankDetails(parsedUser.bankDetails);
+    }
 
     const huts = JSON.parse(localStorage.getItem(`huts_${parsedUser.phone}`)) || [];
     setRentedHuts(huts);
@@ -88,6 +109,49 @@ function Settings() {
     }
   };
 
+  const handleBankSave = async () => {
+    if (!isLegitUser) {
+      alert('Rent a hut first to add bank details');
+      return;
+    }
+    if (!bankDetails.accountNumber ||!bankDetails.accountName) {
+      alert('Fill account number and account name');
+      return;
+    }
+
+    const success = await updateProfile({ bankDetails });
+    if (success) {
+      alert('Bank details saved successfully');
+      setShowBankForm(false);
+    }
+  };
+
+  const handlePasswordChange = async () => {
+    if (!isLegitUser) {
+      alert('Rent a hut first to change password');
+      return;
+    }
+    if (passwords.oldPassword!== user.password) {
+      alert('Old password incorrect');
+      return;
+    }
+    if (passwords.newPassword.length < 4) {
+      alert('New password must be at least 4 characters');
+      return;
+    }
+    if (passwords.newPassword!== passwords.confirmPassword) {
+      alert('New passwords do not match');
+      return;
+    }
+
+    const success = await updateProfile({ password: passwords.newPassword });
+    if (success) {
+      alert('Password changed successfully');
+      setShowPasswordForm(false);
+      setPasswords({ oldPassword: '', newPassword: '', confirmPassword: '' });
+    }
+  };
+
   const handleLogout = () => {
     localStorage.removeItem('isLoggedIn');
     localStorage.removeItem('hutvilla_user');
@@ -117,7 +181,7 @@ function Settings() {
             src: avatar,
             alt: 'avatar',
             style: {
-             ...styles.avatar,
+            ...styles.avatar,
               opacity: isLegitUser? 1 : 0.6
             }
           }),
@@ -148,22 +212,83 @@ function Settings() {
         React.createElement('span', null, 'Phone Number'),
         React.createElement('span', { style: { color: '#999' } }, user.phone || '---')
       ),
-      // Modify Password
+
+      // Bank Information - NEW INLINE FORM
       React.createElement('div', {
         style: {...styles.item, opacity: isLegitUser? 1 : 0.5 },
-        onClick: () => isLegitUser? navigate('/modifypassword') : alert('Rent a hut first')
-      },
-        React.createElement('span', null, 'Modify login password'),
-        React.createElement('span', { style: styles.arrow }, '›')
-      ),
-      // Bank Information
-      React.createElement('div', {
-        style: {...styles.item, opacity: isLegitUser? 1 : 0.5 },
-        onClick: () => isLegitUser? navigate('/bankinfo') : alert('Rent a hut first')
+        onClick: () => isLegitUser && setShowBankForm(!showBankForm)
       },
         React.createElement('span', null, 'Bank information'),
-        React.createElement('span', { style: styles.arrow }, '›')
+        React.createElement('span', { style: styles.arrow }, showBankForm? '⌄' : '›')
       ),
+      showBankForm && isLegitUser && React.createElement('div', { style: styles.formBox },
+        React.createElement('select', {
+          value: bankDetails.method,
+          onChange: (e) => setBankDetails({...bankDetails, method: e.target.value }),
+          style: styles.input
+        },
+          React.createElement('option', { value: 'MTN' }, 'MTN Mobile Money'),
+          React.createElement('option', { value: 'Airtel' }, 'Airtel Mobile Money'),
+          React.createElement('option', { value: 'Bank' }, 'Bank Account')
+        ),
+        React.createElement('input', {
+          type: 'tel',
+          placeholder: 'Account number / Phone',
+          value: bankDetails.accountNumber,
+          onChange: (e) => setBankDetails({...bankDetails, accountNumber: e.target.value }),
+          style: styles.input
+        }),
+        React.createElement('input', {
+          type: 'text',
+          placeholder: 'Account name',
+          value: bankDetails.accountName,
+          onChange: (e) => setBankDetails({...bankDetails, accountName: e.target.value }),
+          style: styles.input
+        }),
+        React.createElement('button', {
+          onClick: handleBankSave,
+          disabled: loading,
+          style: styles.saveBtn
+        }, loading? 'Saving...' : 'Save Bank Details')
+      ),
+
+      // Modify Password - NEW INLINE FORM
+      React.createElement('div', {
+        style: {...styles.item, opacity: isLegitUser? 1 : 0.5 },
+        onClick: () => isLegitUser && setShowPasswordForm(!showPasswordForm)
+      },
+        React.createElement('span', null, 'Modify login password'),
+        React.createElement('span', { style: styles.arrow }, showPasswordForm? '⌄' : '›')
+      ),
+      showPasswordForm && isLegitUser && React.createElement('div', { style: styles.formBox },
+        React.createElement('input', {
+          type: 'password',
+          placeholder: 'Old password',
+          value: passwords.oldPassword,
+          onChange: (e) => setPasswords({...passwords, oldPassword: e.target.value }),
+          style: styles.input
+        }),
+        React.createElement('input', {
+          type: 'password',
+          placeholder: 'New password',
+          value: passwords.newPassword,
+          onChange: (e) => setPasswords({...passwords, newPassword: e.target.value }),
+          style: styles.input
+        }),
+        React.createElement('input', {
+          type: 'password',
+          placeholder: 'Confirm new password',
+          value: passwords.confirmPassword,
+          onChange: (e) => setPasswords({...passwords, confirmPassword: e.target.value }),
+          style: styles.input
+        }),
+        React.createElement('button', {
+          onClick: handlePasswordChange,
+          disabled: loading,
+          style: styles.saveBtn
+        }, loading? 'Updating...' : 'Change Password')
+      ),
+
       // Version
       React.createElement('div', { style: {...styles.item, background: '#1a1a1a', cursor: 'default' } },
         React.createElement('span', null, 'Version'),
@@ -231,6 +356,33 @@ const styles = {
   arrow: {
     color: '#666',
     fontSize: '20px'
+  },
+  formBox: {
+    padding: '15px',
+    background: '#111',
+    borderBottom: '1px solid #222'
+  },
+  input: {
+    width: '100%',
+    padding: '10px',
+    marginBottom: '10px',
+    background: '#222',
+    border: '1px solid #333',
+    borderRadius: '6px',
+    color: '#fff',
+    fontSize: '14px',
+    boxSizing: 'border-box'
+  },
+  saveBtn: {
+    width: '100%',
+    padding: '10px',
+    background: '#ff6b35',
+    color: '#fff',
+    border: 'none',
+    borderRadius: '6px',
+    fontSize: '14px',
+    fontWeight: '600',
+    cursor: 'pointer'
   },
   logoutBtn: {
     width: '90%',

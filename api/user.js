@@ -6,7 +6,7 @@ export default async function handler(req, res) {
   }
 
   try {
-    const { phoneNumber } = req.body;
+    const { phoneNumber, avatar, nickname, bankDetails, password } = req.body;
 
     if (!phoneNumber) {
       return res.status(400).json({ error: 'Phone number required' });
@@ -18,11 +18,11 @@ export default async function handler(req, res) {
     let user = users.find(u => u.phoneNumber === phoneNumber || u.phone === phoneNumber);
 
     if (!user) {
-      // Create new user if not found
+      // Create new user if not found - ALL users get 'user' role
       user = {
         phoneNumber,
         phone: phoneNumber,
-        role: phoneNumber === '0753520252' ? 'admin' : 'user',
+        role: 'user',
         balance: 0,
         nickname: 'User',
         avatar: '',
@@ -46,12 +46,39 @@ export default async function handler(req, res) {
       if (user.bankMethod === undefined) user.bankMethod = 'MTN Mobile Money';
       if (user.bankNumber === undefined) user.bankNumber = '';
       if (user.bankName === undefined) user.bankName = '';
+
+      // UPDATE fields if provided from Settings
+      let updated = false;
       
-      await redis.set('users', users);
+      if (avatar !== undefined) {
+        user.avatar = avatar;
+        updated = true;
+      }
+      if (nickname !== undefined) {
+        user.nickname = nickname;
+        updated = true;
+      }
+      if (bankDetails !== undefined) {
+        // Store as object for new logic
+        user.bankDetails = bankDetails;
+        // Also sync old fields for compatibility
+        user.bankMethod = bankDetails.method || user.bankMethod;
+        user.bankNumber = bankDetails.accountNumber || user.bankNumber;
+        user.bankName = bankDetails.accountName || user.bankName;
+        updated = true;
+      }
+      if (password !== undefined) {
+        user.password = password;
+        updated = true;
+      }
+
+      if (updated) {
+        await redis.set('users', users);
+      }
     }
 
     // Remove password before sending to frontend
-    const { password, ...safeUser } = user;
+    const { password: pwd, ...safeUser } = user;
     return res.status(200).json({ user: safeUser });
 
   } catch (err) {
@@ -59,5 +86,3 @@ export default async function handler(req, res) {
     return res.status(500).json({ error: 'Server error' });
   }
 }
-
-

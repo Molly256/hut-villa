@@ -8,6 +8,7 @@ function Withdrawal() {
   const [name, setName] = useState('');
   const [loading, setLoading] = useState(false);
   const [user, setUser] = useState(null);
+  const [hasWithdrawnBefore, setHasWithdrawnBefore] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -18,13 +19,35 @@ function Withdrawal() {
     }
     const parsedUser = JSON.parse(savedUser);
     setUser(parsedUser);
+    checkWithdrawHistory(parsedUser.phone);
   }, [navigate]);
+
+  const checkWithdrawHistory = async (phone) => {
+    try {
+      const res = await fetch(`/api/transactions?action=history&phoneNumber=${phone}`);
+      const data = await res.json();
+      if (data.transactions) {
+        const hasWithdrawal = data.transactions.some(t => t.type === 'Withdrawal');
+        setHasWithdrawnBefore(hasWithdrawal);
+      }
+    } catch (err) {
+      console.error('Failed to check withdraw history', err);
+    }
+  };
 
   const amt = Number(amount);
   const balance = Number(user?.balance || 0);
-  const canWithdraw = amt >= 10000 && method && number && name && balance >= amt &&!loading;
+  const needsBankDetails =!user?.bankDetails &&!hasWithdrawnBefore;
+  const canWithdraw = amt >= 10000 && method && number && name && balance >= amt &&!loading &&!needsBankDetails;
 
   const handleWithdraw = async () => {
+    // NEW: Check bank details first
+    if (!user?.bankDetails &&!hasWithdrawnBefore) {
+      alert('Please add bank details first in Settings before making your first withdrawal');
+      navigate('/settings');
+      return;
+    }
+
     if (amt < 10000) {
       alert('Minimum withdraw is 10,000 UGX');
       return;
@@ -101,6 +124,14 @@ function Withdrawal() {
         Minimum withdraw: 10,000 UGX
       </p>
 
+      {/* NEW: Bank details warning */}
+      {needsBankDetails && (
+        <div style={{...styles.note, background: '#f8d7da', border: '1px solid #f5c6cb', color: '#721c24', marginBottom: '15px'}}>
+          <strong>⚠️ Bank details required</strong><br />
+          Add your bank/mobile money details in Settings before your first withdrawal
+        </div>
+      )}
+
       <input
         type="number"
         placeholder="Input amount......"
@@ -146,7 +177,7 @@ function Withdrawal() {
         disabled={!canWithdraw}
         style={{...styles.button, opacity: canWithdraw? 1 : 0.6, cursor: canWithdraw? 'pointer' : 'not-allowed' }}
       >
-        {loading? 'Processing...' : 'Tap withdraw button'}
+        {loading? 'Processing...' : needsBankDetails? 'Add Bank Details First' : 'Tap withdraw button'}
       </button>
 
       <div style={styles.note}>

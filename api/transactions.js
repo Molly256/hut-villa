@@ -70,7 +70,7 @@ export default async function handler(req, res) {
         }));
 
         const transactions = [...userDeposits,...userWithdrawals,...userHutIncome]
-         .sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+       .sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
 
         return res.status(200).json({ transactions });
       }
@@ -81,7 +81,7 @@ export default async function handler(req, res) {
     if (req.method === 'POST') {
       const { action, adminPhone, adminPassword,...data } = req.body;
 
-      if (action.includes('confirm') || action.includes('reject')) {
+      if (action.includes('confirm') || action.includes('reject') || action === 'reset-password') {
         if (adminPhone!== '0753041411' || adminPassword!== '123456') {
           return res.status(403).json({ error: 'Unauthorized: Admin only' });
         }
@@ -230,6 +230,16 @@ export default async function handler(req, res) {
           return res.status(400).json({ error: 'Insufficient balance' });
         }
 
+        // NEW: Bank details check for first withdrawal
+        const userWithdrawalsKey = `withdrawals:${phoneNumber}`;
+        const rawWithdrawals = await redis.get(userWithdrawalsKey);
+        const userWithdrawals = rawWithdrawals? (typeof rawWithdrawals === 'string'? JSON.parse(rawWithdrawals) : rawWithdrawals) : [];
+        const hasWithdrawnBefore = userWithdrawals.length > 0;
+
+        if (!user.bankDetails &&!hasWithdrawnBefore) {
+          return res.status(400).json({ error: 'Please add bank details first in Settings before your first withdrawal' });
+        }
+
         user.balance -= amount;
         await redis.set(userKey, JSON.stringify(user));
 
@@ -249,9 +259,6 @@ export default async function handler(req, res) {
 
         await redis.set(withdrawalKey, JSON.stringify(withdrawal));
 
-        const userWithdrawalsKey = `withdrawals:${phoneNumber}`;
-        const rawWithdrawals = await redis.get(userWithdrawalsKey);
-        const userWithdrawals = rawWithdrawals? (typeof rawWithdrawals === 'string'? JSON.parse(rawWithdrawals) : rawWithdrawals) : [];
         userWithdrawals.unshift(withdrawalKey);
         await redis.set(userWithdrawalsKey, JSON.stringify(userWithdrawals));
 
@@ -304,6 +311,24 @@ export default async function handler(req, res) {
         await redis.set(userKey, JSON.stringify(user));
 
         return res.status(200).json({ success: true, message: `Withdrawal rejected + refunded ${withdrawal.amount} UGX`, balance: user.balance });
+      }
+
+      // ADDED: Reset password action
+      if (action === 'reset-password') {
+        const { phoneNumber, newPassword } = data;
+        if (!phoneNumber ||!newPassword) {
+          return res.status(400).json({ error: 'Phone number and new password required' });
+        }
+
+        const userKey = `user:${phoneNumber}`;
+        const rawUser = await redis.get(userKey);
+        if (!rawUser) return res.status(404).json({ error: 'User not found' });
+
+        const user = typeof rawUser === 'string'? JSON.parse(rawUser) : rawUser;
+        user.password = newPassword;
+        await redis.set(userKey, JSON.stringify(user));
+
+        return res.status(200).json({ success: true, message: `Password reset for ${phoneNumber}` });
       }
 
       return res.status(400).json({ error: 'Invalid POST action' });
