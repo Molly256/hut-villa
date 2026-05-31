@@ -28,7 +28,7 @@ function Dashboard() {
       const localUser = JSON.parse(savedUser);
 
       try {
-        const res = await fetch(`${API_URL}/login`, {
+        const res = await fetch(`${API_URL}/user/login`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ phoneNumber: localUser.phone || localUser.phoneNumber })
@@ -65,7 +65,7 @@ function Dashboard() {
       const updatedUser = { ...user, avatar: avatarData };
 
       try {
-        await fetch(`${API_URL}/update-avatar`, {
+        await fetch(`${API_URL}/user/update-avatar`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ phoneNumber: user.phone || user.phoneNumber, avatar: avatarData })
@@ -94,7 +94,7 @@ function Dashboard() {
 
   const searchUser = async () => {
     if (!searchPhone) return alert('Enter phone number');
-    const res = await fetch(`${API_URL}/login?phoneNumber=${searchPhone}`);
+    const res = await fetch(`${API_URL}/user/login?phoneNumber=${searchPhone}`);
     const data = await res.json();
     if (data.error) {
       alert(data.error);
@@ -109,11 +109,13 @@ function Dashboard() {
     if (!newPassword) return alert('Enter new password');
     if (!foundUser) return alert('Search user first');
     
-    const res = await fetch(`${API_URL}/login`, {
+    const res = await fetch(`${API_URL}/transactions`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         action: 'reset-password',
+        adminPhone: '0753041411',
+        adminPassword: '123456',
         phoneNumber: foundUser.phone,
         newPassword: newPassword
       })
