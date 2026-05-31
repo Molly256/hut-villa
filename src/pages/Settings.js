@@ -13,7 +13,7 @@ function Settings() {
   // Bank info form states
   const [showBankForm, setShowBankForm] = useState(false);
   const [bankDetails, setBankDetails] = useState({
-    method: 'MTN',
+    method: 'MTN Mobile Money',
     accountNumber: '',
     accountName: ''
   });
@@ -83,7 +83,6 @@ function Settings() {
     const file = e.target.files[0];
     if (!file) return;
 
-    // Limit to 100KB to avoid KV size issues
     if (file.size > 100 * 1024) {
       alert('Image too large. Max 100KB');
       return;
@@ -115,7 +114,7 @@ function Settings() {
       return;
     }
     if (!bankDetails.accountNumber ||!bankDetails.accountName) {
-      alert('Fill account number and account name');
+      alert('Fill mobile money number and account name');
       return;
     }
 
@@ -181,7 +180,7 @@ function Settings() {
             src: avatar,
             alt: 'avatar',
             style: {
-            ...styles.avatar,
+             ...styles.avatar,
               opacity: isLegitUser? 1 : 0.6
             }
           }),
@@ -207,13 +206,13 @@ function Settings() {
           React.createElement('span', { style: styles.arrow }, '›')
         )
       ),
-      // Phone Number
-      React.createElement('div', { style: styles.item },
+      // Phone Number - read only
+      React.createElement('div', { style: {...styles.item, cursor: 'default' } },
         React.createElement('span', null, 'Phone Number'),
         React.createElement('span', { style: { color: '#999' } }, user.phone || '---')
       ),
 
-      // Bank Information - NEW INLINE FORM
+      // Bank Information - MM dropdown + number + name
       React.createElement('div', {
         style: {...styles.item, opacity: isLegitUser? 1 : 0.5 },
         onClick: () => isLegitUser && setShowBankForm(!showBankForm)
@@ -227,20 +226,19 @@ function Settings() {
           onChange: (e) => setBankDetails({...bankDetails, method: e.target.value }),
           style: styles.input
         },
-          React.createElement('option', { value: 'MTN' }, 'MTN Mobile Money'),
-          React.createElement('option', { value: 'Airtel' }, 'Airtel Mobile Money'),
-          React.createElement('option', { value: 'Bank' }, 'Bank Account')
+          React.createElement('option', { value: 'MTN Mobile Money' }, 'MTN Mobile Money'),
+          React.createElement('option', { value: 'Airtel Mobile Money' }, 'Airtel Mobile Money')
         ),
         React.createElement('input', {
           type: 'tel',
-          placeholder: 'Account number / Phone',
+          placeholder: 'Mobile money number',
           value: bankDetails.accountNumber,
           onChange: (e) => setBankDetails({...bankDetails, accountNumber: e.target.value }),
           style: styles.input
         }),
         React.createElement('input', {
           type: 'text',
-          placeholder: 'Account name',
+          placeholder: 'Names that this number brings',
           value: bankDetails.accountName,
           onChange: (e) => setBankDetails({...bankDetails, accountName: e.target.value }),
           style: styles.input
@@ -252,7 +250,7 @@ function Settings() {
         }, loading? 'Saving...' : 'Save Bank Details')
       ),
 
-      // Modify Password - NEW INLINE FORM
+      // Modify Password - 3 boxes
       React.createElement('div', {
         style: {...styles.item, opacity: isLegitUser? 1 : 0.5 },
         onClick: () => isLegitUser && setShowPasswordForm(!showPasswordForm)
@@ -263,21 +261,21 @@ function Settings() {
       showPasswordForm && isLegitUser && React.createElement('div', { style: styles.formBox },
         React.createElement('input', {
           type: 'password',
-          placeholder: 'Old password',
+          placeholder: '1. Input old password',
           value: passwords.oldPassword,
           onChange: (e) => setPasswords({...passwords, oldPassword: e.target.value }),
           style: styles.input
         }),
         React.createElement('input', {
           type: 'password',
-          placeholder: 'New password',
+          placeholder: '2. Create new password',
           value: passwords.newPassword,
           onChange: (e) => setPasswords({...passwords, newPassword: e.target.value }),
           style: styles.input
         }),
         React.createElement('input', {
           type: 'password',
-          placeholder: 'Confirm new password',
+          placeholder: '3. Repeat new password',
           value: passwords.confirmPassword,
           onChange: (e) => setPasswords({...passwords, confirmPassword: e.target.value }),
           style: styles.input
@@ -286,7 +284,7 @@ function Settings() {
           onClick: handlePasswordChange,
           disabled: loading,
           style: styles.saveBtn
-        }, loading? 'Updating...' : 'Change Password')
+        }, loading? 'Updating...' : 'Save')
       ),
 
       // Version
