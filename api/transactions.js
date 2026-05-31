@@ -1,7 +1,7 @@
 import { redis } from './redis';
 
-// FIX 1: Turn off bodyParser so GET works for admin panel
-export const config = { api: { bodyParser: false } };
+// FIXED: bodyParser TRUE so admin panel works
+export const config = { api: { bodyParser: true } };
 
 async function saveTransaction(phoneNumber, tx) {
   const cleanPhone = phoneNumber.replace(/\D/g, '');
@@ -16,7 +16,7 @@ async function saveTransaction(phoneNumber, tx) {
     method: tx.method || '',
     status: tx.status || 'Completed',
     createdAt: new Date().toISOString(),
-  ...tx
+ ...tx
   };
 
   history.unshift(newTx);
@@ -32,12 +32,7 @@ export default async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(200).end();
 
   try {
-    // FIX 2: Handle both GET query and POST body
-    let body = req.body;
-    if (typeof body === 'string') {
-      try { body = JSON.parse(body) } catch {}
-    }
-    const action = req.method === 'GET'? req.query.action : body?.action;
+    const action = req.method === 'GET'? req.query.action : req.body?.action;
 
     if (req.method === 'GET') {
       if (action === 'history') {
@@ -68,7 +63,7 @@ export default async function handler(req, res) {
     }
 
     if (req.method === 'POST') {
-      const { action, adminPhone, adminPassword,...data } = body;
+      const { action, adminPhone, adminPassword,...data } = req.body;
 
       if (action && (action.includes('confirm') || action.includes('reject') || action === 'reset-password')) {
         if (adminPhone!== '0753041411' || adminPassword!== '123456') {
@@ -388,7 +383,7 @@ export default async function handler(req, res) {
         return res.status(200).json({ success: true, message: 'Withdrawal rejected and refunded' });
       }
 
-      // FIXED: Prevent duplicate VIP purchase logging
+      // Prevent duplicate VIP purchase logging
       if (action === 'log-vip') {
         const { phoneNumber, amount, hutId } = data;
         if (!phoneNumber ||!amount) return res.status(400).json({ error: 'Missing fields' });
