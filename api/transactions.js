@@ -16,7 +16,7 @@ async function saveTransaction(phoneNumber, tx) {
     method: tx.method || '',
     status: tx.status || 'Completed',
     createdAt: new Date().toISOString(),
-  ...tx
+ ...tx
   };
 
   history.unshift(newTx);
@@ -91,6 +91,65 @@ export default async function handler(req, res) {
         deposits.unshift(newDeposit);
         await redis.set('pending_deposits', JSON.stringify(deposits));
         return res.status(200).json({ success: true, message: 'Deposit submitted for review' });
+      }
+
+      // NEW: User submits withdrawal request
+      if (action === 'withdraw') {
+        const { phoneNumber, amount, method, accountName } = data;
+        if (!phoneNumber ||!amount ||!method) return res.status(400).json({ error: 'Missing fields' });
+        if (Number(amount) < 10000) return res.status(400).json({ error: 'Minimum withdrawal is 10,000 UGX' });
+
+        const cleanPhone = phoneNumber.replace(/\D/g, '');
+        const userKey = `user:${cleanPhone}`;
+        const rawUser = await redis.get(userKey);
+        if (!rawUser) return res.status(404).json({ error: 'User not found' });
+
+        const user = typeof rawUser === 'string'? JSON.parse(rawUser) : rawUser;
+        const withdrawAmount = Number(amount);
+
+        if (Number(user.balance) < withdrawAmount) {
+          return res.status(400).json({ error: 'Insufficient balance' });
+        }
+
+        // Deduct balance immediately
+        user.balance = Number(user.balance) - withdrawAmount;
+        await redis.set(userKey, JSON.stringify(user));
+
+        // Update users array
+        const usersRaw = await redis.get('users');
+        const users = Array.isArray(usersRaw)? usersRaw : (typeof usersRaw === 'string'? JSON.parse(usersRaw) : []);
+        const userIndex = users.findIndex(u => (u.phoneNumber || u.phone) === cleanPhone);
+        if (userIndex!== -1) {
+          users[userIndex].balance = user.balance;
+          await redis.set('users', JSON.stringify(users));
+        }
+
+        // Save as pending for admin approval
+        const withdrawalId = Date.now().toString();
+        const newWithdrawal = {
+          id: withdrawalId,
+          phoneNumber: cleanPhone,
+          amount: withdrawAmount,
+          method,
+          accountName: accountName || '',
+          status: 'pending',
+          createdAt: new Date().toISOString()
+        };
+
+        const withdrawalsRaw = await redis.get('pending_withdrawals');
+        const withdrawals = Array.isArray(withdrawalsRaw)? withdrawalsRaw : (typeof withdrawalsRaw === 'string'? JSON.parse(withdrawalsRaw) : []);
+        withdrawals.unshift(newWithdrawal);
+        await redis.set('pending_withdrawals', JSON.stringify(withdrawals));
+
+        // Save to user history as pending
+        await saveTransaction(cleanPhone, {
+          type: 'withdraw',
+          amount: withdrawAmount,
+          method: method,
+          status: 'Pending'
+        });
+
+        return res.status(200).json({ success: true, message: 'Withdrawal request submitted' });
       }
 
       if (action === 'reset-password') {
