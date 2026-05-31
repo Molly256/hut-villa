@@ -191,7 +191,6 @@ export default async function handler(req, res) {
 
         const user = typeof rawUser === 'string'? JSON.parse(rawUser) : rawUser;
 
-        // Check if first deposit for referral commission
         const historyKey = `history:${cleanPhone}`;
         const historyRaw = await redis.get(historyKey);
         const history = Array.isArray(historyRaw)? historyRaw : (typeof historyRaw === 'string'? JSON.parse(historyRaw) : []);
@@ -215,10 +214,9 @@ export default async function handler(req, res) {
           status: 'Completed'
         });
 
-        // FIXED: Pay referral commission on first deposit only
         if (!hasDeposit && user.invitedBy) {
           const inviterPhone = user.invitedBy.replace(/\D/g, '');
-          const commission = Math.floor(Number(deposit.amount) * 0.1); // 10% Team A
+          const commission = Math.floor(Number(deposit.amount) * 0.1);
 
           if (commission > 0) {
             const inviterKey = `user:${inviterPhone}`;
@@ -228,14 +226,12 @@ export default async function handler(req, res) {
               inviter.balance = (Number(inviter.balance) || 0) + commission;
               await redis.set(inviterKey, JSON.stringify(inviter));
 
-              // Update inviter in users array
               const inviterIndex = users.findIndex(u => (u.phoneNumber || u.phone) === inviterPhone);
               if (inviterIndex!== -1) {
                 users[inviterIndex].balance = inviter.balance;
                 await redis.set('users', JSON.stringify(users));
               }
 
-              // Log referral transaction for inviter
               await saveTransaction(inviterPhone, {
                 type: 'referral',
                 amount: commission,
@@ -328,11 +324,30 @@ export default async function handler(req, res) {
         return res.status(200).json({ success: true, message: 'Withdrawal rejected and refunded' });
       }
 
+      // FIXED: Prevent duplicate VIP purchase logging
       if (action === 'log-vip') {
         const { phoneNumber, amount, hutId } = data;
         if (!phoneNumber ||!amount) return res.status(400).json({ error: 'Missing fields' });
 
-        await saveTransaction(phoneNumber, {
+        const cleanPhone = phoneNumber.replace(/\D/g, '');
+        const historyKey = `history:${cleanPhone}`;
+        const historyRaw = await redis.get(historyKey);
+        const history = Array.isArray(historyRaw)? historyRaw : (typeof historyRaw === 'string'? JSON.parse(historyRaw) : []);
+
+        // Check for duplicate: same hutId + amount within 10 seconds
+        const now = Date.now();
+        const duplicate = history.find(tx =>
+          tx.type === 'vip_rent' &&
+          tx.hutId === hutId &&
+          Number(tx.amount) === Number(amount) &&
+          now - new Date(tx.createdAt).getTime() < 10000
+        );
+
+        if (duplicate) {
+          return res.status(200).json({ success: true, message: 'Already logged' });
+        }
+
+        await saveTransaction(cleanPhone, {
           type: 'vip_rent',
           amount: amount,
           hutId: hutId || '',
