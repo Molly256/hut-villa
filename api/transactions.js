@@ -238,7 +238,6 @@ export default async function handler(req, res) {
               await saveTransaction(inviterPhone, {
                 type: 'referral',
                 amount: commissionA,
-                level: 'A',
                 invitedPhone: cleanPhone,
                 status: 'Completed'
               });
@@ -265,7 +264,6 @@ export default async function handler(req, res) {
                   await saveTransaction(inviterBPhone, {
                     type: 'referral',
                     amount: commissionB,
-                    level: 'B',
                     invitedPhone: cleanPhone,
                     status: 'Completed'
                   });
@@ -292,7 +290,6 @@ export default async function handler(req, res) {
                       await saveTransaction(inviterCPhone, {
                         type: 'referral',
                         amount: commissionC,
-                        level: 'C',
                         invitedPhone: cleanPhone,
                         status: 'Completed'
                       });
