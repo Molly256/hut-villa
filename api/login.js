@@ -30,7 +30,7 @@ export default async function handler(req, res) {
       return res.status(401).json({ error: 'Invalid phone or password' });
     }
 
-    // FIX: Upstash returns string. Parse safely
+    // Upstash returns string. Parse safely
     const user = typeof raw === 'string' ? JSON.parse(raw) : raw;
 
     if (!user || !user.password) {

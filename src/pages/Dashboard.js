@@ -95,11 +95,8 @@ function Dashboard() {
   const searchUser = async () => {
     if (!searchPhone) return alert('Enter phone number');
     try {
-      const res = await fetch(`${API_URL}/login`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ phoneNumber: searchPhone })
-      });
+      const cleanPhone = searchPhone.replace(/\D/g, '');
+      const res = await fetch(`${API_URL}/user?phone=${cleanPhone}`);
       const data = await res.json();
       if (data.error) {
         alert(data.error);
@@ -115,7 +112,7 @@ function Dashboard() {
   };
 
   const resetPassword = async () => {
-    if (!newPassword) return alert('Enter new password');
+    if (!newPassword) return alert('Enter temp password first');
     if (!foundUser) return alert('Search user first');
     
     try {
@@ -131,7 +128,13 @@ function Dashboard() {
         })
       });
       const data = await res.json().catch(() => ({}));
-      alert(data.message || data.error || 'No response from server');
+      if (data.success) {
+        alert(data.message);
+        setFoundUser({ ...foundUser, password: newPassword });
+        setNewPassword('');
+      } else {
+        alert(data.error || 'Reset failed');
+      }
     } catch (err) {
       alert('Network error: ' + err.message);
     }
@@ -265,18 +268,34 @@ function Dashboard() {
               ),
               ...(foundUser ? [
                 React.createElement('div', { key: 'user-info', style: { borderTop: '1px solid #eee', paddingTop: '12px' } },
-                  React.createElement('p', null, React.createElement('b', null, 'Name: '), foundUser.name),
+                  React.createElement('p', null, React.createElement('b', null, 'Name: '), foundUser.nickname || foundUser.name || 'N/A'),
                   React.createElement('p', null, React.createElement('b', null, 'Phone: '), foundUser.phone),
-                  React.createElement('p', null, React.createElement('b', null, 'Current Password: '), foundUser.password),
-                  React.createElement('p', null, React.createElement('b', null, 'Balance: '), foundUser.balance, ' UGX'),
+                  React.createElement('p', null, React.createElement('b', null, 'Balance: '), Number(foundUser.balance || 0).toLocaleString(), ' UGX'),
+                  
+                  React.createElement('div', { style: { display: 'flex', alignItems: 'center', gap: '8px', marginTop: '12px', marginBottom: '8px' } },
+                    React.createElement('span', null, React.createElement('b', null, 'Password: ')),
+                    React.createElement('input', {
+                      type: 'text',
+                      value: foundUser.password || '****',
+                      readOnly: true,
+                      style: { flex: 1, padding: '6px', border: '1px solid #ccc', borderRadius: '4px', background: '#f5f5f5' }
+                    }),
+                    React.createElement('button', { 
+                      onClick: resetPassword, 
+                      style: { padding: '6px 12px', background: '#ff4444', color: '#fff', border: 'none', borderRadius: '4px', fontWeight: '700', cursor: 'pointer' } 
+                    }, 'Reset')
+                  ),
+                  
                   React.createElement('input', {
                     type: 'text',
-                    placeholder: 'Enter new password',
+                    placeholder: 'Enter temp password for user',
                     value: newPassword,
                     onChange: (e) => setNewPassword(e.target.value),
                     style: { width: '100%', padding: '8px', border: '1px solid #ccc', borderRadius: '6px', marginTop: '8px' }
                   }),
-                  React.createElement('button', { onClick: resetPassword, style: { width: '100%', padding: '10px', background: '#4caf50', color: '#fff', border: 'none', borderRadius: '6px', marginTop: '8px', fontWeight: '700' } }, 'Update Password')
+                  React.createElement('p', { style: { fontSize: '12px', color: '#666', marginTop: '4px' } }, 
+                    'User logs in with temp password, then changes it in Settings'
+                  )
                 )
               ] : [])
             )

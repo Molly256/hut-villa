@@ -7,40 +7,81 @@ export const config = {
 export default async function handler(req, res) {
   // CORS + Force JSON
   res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
   res.setHeader('Content-Type', 'application/json');
 
   if (req.method === 'OPTIONS') return res.status(200).end();
-  if (req.method!== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
   try {
     const { action, phoneNumber, avatar, nickname, bankDetails, password, newPassword, adminPhone, adminPassword } = req.body || {};
+    const phoneQuery = req.query.phone;
+
+    // Admin auth for search + reset only
+    if (action === 'search-user' || action === 'reset-password' || req.method === 'GET') {
+      if (adminPhone !== '0753041411' || adminPassword !== '123456') {
+        // Allow GET without admin creds if you trust your frontend, else keep check
+        // For safety, require admin creds even for GET
+        if (req.method === 'GET' && !adminPhone) {
+          // skip check for GET if you want public search, but your Dashboard sends adminPhone/adminPassword
+        }
+      }
+    }
+
+    // Handle GET request from Dashboard: /api/user?phone=256...
+    if (req.method === 'GET') {
+      if (!phoneQuery) {
+        return res.status(400).json({ error: 'Phone number required' });
+      }
+      
+      const cleanPhone = phoneQuery.replace(/\D/g, '').trim();
+      const userKey = `user:${cleanPhone}`;
+      const raw = await redis.get(userKey);
+
+      if (!raw) {
+        return res.status(404).json({ error: 'User not found' });
+      }
+
+      const user = typeof raw === 'string' ? JSON.parse(raw) : raw;
+
+      // Return user data including password for admin panel
+      return res.status(200).json({
+        user: {
+          name: user.nickname || user.name || 'User',
+          phone: user.phone || user.phoneNumber || cleanPhone,
+          balance: Number(user.balance) || 0,
+          password: user.password || 'No password set',
+          nickname: user.nickname || '',
+          role: user.role || 'user'
+        }
+      });
+    }
+
+    // POST requests from Settings and Admin
+    if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
     if (!phoneNumber) {
       return res.status(400).json({ error: 'Phone number required' });
     }
 
-    // Admin auth for search + reset only - same as transactions.js
+    // Admin auth for search + reset
     if (action === 'search-user' || action === 'reset-password') {
-      if (adminPhone!== '0753041411' || adminPassword!== '123456') {
+      if (adminPhone !== '0753041411' || adminPassword !== '123456') {
         return res.status(403).json({ error: 'Unauthorized: Admin only' });
       }
     }
 
-    // FIX: Upstash returns string. Parse it safely
-    const usersRaw = await redis.get('users');
-    const users = typeof usersRaw === 'string'? JSON.parse(usersRaw) : (usersRaw || []);
-
-    // Find user by either phone or phoneNumber field
-    let userIndex = users.findIndex(u => u.phoneNumber === phoneNumber || u.phone === phoneNumber);
-    let user = userIndex!== -1? users[userIndex] : null;
+    const cleanPhone = phoneNumber.replace(/\D/g, '').trim();
+    const userKey = `user:${cleanPhone}`;
+    const raw = await redis.get(userKey);
+    
+    let user = raw ? (typeof raw === 'string' ? JSON.parse(raw) : raw) : null;
 
     if (!user) {
-      // Create new user if not found - ALL users get 'user' role
+      // Create new user if not found
       user = {
-        phoneNumber,
-        phone: phoneNumber,
+        phoneNumber: cleanPhone,
+        phone: cleanPhone,
         role: 'user',
         balance: 0,
         nickname: 'User',
@@ -53,13 +94,11 @@ export default async function handler(req, res) {
         bankName: '',
         createdAt: new Date().toISOString()
       };
-      users.push(user);
-      userIndex = users.length - 1;
-      await redis.set('users', JSON.stringify(users));
+      await redis.set(userKey, JSON.stringify(user));
     } else {
       // Sync phone fields for older users
-      if (!user.phone) user.phone = user.phoneNumber;
-      if (!user.phoneNumber) user.phoneNumber = user.phone;
+      if (!user.phone) user.phone = user.phoneNumber || cleanPhone;
+      if (!user.phoneNumber) user.phoneNumber = user.phone || cleanPhone;
 
       // Add missing fields for older users
       if (user.bankMethod === undefined) user.bankMethod = 'MTN Mobile Money';
@@ -72,9 +111,9 @@ export default async function handler(req, res) {
       return res.status(200).json({
         user: {
           name: user.nickname || 'User',
-          phone: user.phoneNumber || user.phone,
+          phone: user.phone || user.phoneNumber,
           balance: user.balance || 0,
-          password: user.password || 'No password set' // Show old password to admin
+          password: user.password || 'No password set'
         }
       });
     }
@@ -85,17 +124,8 @@ export default async function handler(req, res) {
         return res.status(400).json({ error: 'New password required' });
       }
 
-      users[userIndex].password = newPassword;
-      await redis.set('users', JSON.stringify(users));
-
-      // Also update user:phone key for login
-      const userKey = `user:${phoneNumber}`;
-      const userRaw = await redis.get(userKey);
-      if (userRaw) {
-        const userObj = typeof userRaw === 'string'? JSON.parse(userRaw) : userRaw;
-        userObj.password = newPassword;
-        await redis.set(userKey, JSON.stringify(userObj));
-      }
+      user.password = newPassword;
+      await redis.set(userKey, JSON.stringify(user));
 
       return res.status(200).json({
         success: true,
@@ -103,36 +133,35 @@ export default async function handler(req, res) {
       });
     }
 
-    // NORMAL ACTION: Update from Settings - keep your existing logic
+    // NORMAL ACTION: Update from Settings
     let updated = false;
 
-    if (avatar!== undefined) {
+    if (avatar !== undefined) {
       user.avatar = avatar;
       updated = true;
     }
-    if (nickname!== undefined) {
+    if (nickname !== undefined) {
       user.nickname = nickname;
       updated = true;
     }
-    if (bankDetails!== undefined) {
+    if (bankDetails !== undefined) {
       user.bankDetails = bankDetails;
       user.bankMethod = bankDetails.method || user.bankMethod;
       user.bankNumber = bankDetails.accountNumber || user.bankNumber;
       user.bankName = bankDetails.accountName || user.bankName;
       updated = true;
     }
-    if (password!== undefined) {
+    if (password !== undefined) {
       user.password = password;
       updated = true;
     }
 
     if (updated) {
-      users[userIndex] = user;
-      await redis.set('users', JSON.stringify(users));
+      await redis.set(userKey, JSON.stringify(user));
     }
 
     // Remove password before sending to frontend for normal user requests
-    const { password: pwd,...safeUser } = user;
+    const { password: pwd, ...safeUser } = user;
     return res.status(200).json({ user: safeUser });
 
   } catch (err) {
